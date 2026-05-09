@@ -427,7 +427,7 @@ h1 {
   overflow: hidden;
 }
 
-#metro-svg { width: 100%; height: 460px; display: block; }
+#metro-svg { width: 100%; height: 540px; display: block; }
 
 /* Status bar */
 .status-bar {
@@ -798,15 +798,15 @@ h1 {
   <div class="center-panel">
 
     <div class="simulation-card">
-      <svg id="metro-svg" viewBox="0 0 620 430">
+      <svg id="metro-svg" viewBox="0 0 620 520">
         <!-- Metro ring -->
-        <circle cx="300" cy="230" r="160" fill="none" stroke="#c0392b" stroke-width="13"/>
-        <circle cx="300" cy="230" r="160" fill="none" stroke="#e74c3c" stroke-width="7"/>
+        <circle cx="300" cy="260" r="190" fill="none" stroke="#c0392b" stroke-width="14"/>
+        <circle cx="300" cy="260" r="190" fill="none" stroke="#e74c3c" stroke-width="8"/>
 
         <g id="stations-layer"></g>
 
-        <text id="ctr1" x="300" y="224" text-anchor="middle" font-size="15" font-weight="700" fill="#64748b" font-family="DM Sans, sans-serif"></text>
-        <text id="ctr2" x="300" y="244" text-anchor="middle" font-size="12" fill="#94a3b8" font-family="DM Sans, sans-serif"></text>
+        <text id="ctr1" x="300" y="254" text-anchor="middle" font-size="15" font-weight="700" fill="#64748b" font-family="DM Sans, sans-serif"></text>
+        <text id="ctr2" x="300" y="274" text-anchor="middle" font-size="12" fill="#94a3b8" font-family="DM Sans, sans-serif"></text>
 
         <g id="train">
           <rect x="-26" y="-12" width="52" height="24" rx="7" fill="#0f172a"/>
@@ -886,7 +886,7 @@ h1 {
 </div><!-- end .bento -->
 
 <script>
-const CX = 300, CY = 230, R = 160, DEG = Math.PI / 180;
+const CX = 300, CY = 260, R = 190, DEG = Math.PI / 180;
 
 const ALL_STATIONS_DEFS = {
   lego: { name: 'Legoland',      label: 'L',  capacity: {} },
@@ -937,21 +937,21 @@ function renderSVGStations() {
     g.id = `stn-${stnId}`;
     const circ = document.createElementNS(NS, 'circle');
     circ.setAttribute('cx', stn.x); circ.setAttribute('cy', stn.y);
-    circ.setAttribute('r', '30'); circ.setAttribute('fill', 'white');
-    circ.setAttribute('stroke', '#cbd5e1'); circ.setAttribute('stroke-width', '3.5');
+    circ.setAttribute('r', '36'); circ.setAttribute('fill', 'white');
+    circ.setAttribute('stroke', '#cbd5e1'); circ.setAttribute('stroke-width', '4');
     const lbl = document.createElementNS(NS, 'text');
-    lbl.setAttribute('x', stn.x); lbl.setAttribute('y', stn.y - 5);
+    lbl.setAttribute('x', stn.x); lbl.setAttribute('y', stn.y - 6);
     lbl.setAttribute('text-anchor', 'middle');
-    lbl.setAttribute('font-size', stn.label.length > 1 ? '12' : '13');
+    lbl.setAttribute('font-size', stn.label.length > 1 ? '14' : '16');
     lbl.setAttribute('font-weight', '800'); lbl.setAttribute('fill', '#1e293b');
     lbl.setAttribute('font-family', 'DM Sans, sans-serif');
     lbl.textContent = stn.label;
     const nm = document.createElementNS(NS, 'text');
-    nm.setAttribute('x', stn.x); nm.setAttribute('y', stn.y + 8);
-    nm.setAttribute('text-anchor', 'middle'); nm.setAttribute('font-size', '10');
+    nm.setAttribute('x', stn.x); nm.setAttribute('y', stn.y + 11);
+    nm.setAttribute('text-anchor', 'middle'); nm.setAttribute('font-size', '12');
     nm.setAttribute('fill', '#94a3b8'); nm.setAttribute('font-family', 'DM Sans, sans-serif');
     const dispName = stn.name.split(' ')[0];
-    nm.textContent = dispName.length > 8 ? dispName.slice(0, 7) + '.' : dispName;
+    nm.textContent = dispName.length > 9 ? dispName.slice(0, 8) + '.' : dispName;
     g.appendChild(circ); g.appendChild(lbl); g.appendChild(nm);
     layer.appendChild(g);
   }
@@ -1776,7 +1776,7 @@ function renderStatistik({ antalAnsøgere, antalUdd, antalGrp, totalPladser, rat
   clearStatistik();
   const g = document.createElementNS(NS, 'g');
   g.setAttribute('id', 'statistik-overlay');
-  const cx = 300, cy = 230;
+  const cx = 300, cy = 260;
   const cardW = 200, cardH = 156;
   const cardX = cx - cardW / 2, cardY = cy - cardH / 2;
   const bg = document.createElementNS(NS, 'rect');
@@ -1853,7 +1853,7 @@ function renderRunde1Statistik({ rNr, optaget, afvist, ledige, pladserFlyttet, t
   clearStatistik();
   const g = document.createElementNS(NS, 'g');
   g.setAttribute('id', 'statistik-overlay');
-  const cx = 300, cy = 230;
+  const cx = 300, cy = 260;
   const cardW = 175, cardH = 138;
   const cardX = cx - cardW / 2, cardY = cy - cardH / 2;
   const bg = document.createElementNS(NS, 'rect');
