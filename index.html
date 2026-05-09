@@ -862,6 +862,7 @@ h1 {
         </svg>
         <span class="result-panel-title">Endelig fordeling — KOT-fordelingen er stoppet</span>
       </div>
+      <div id="priority-breakdown" style="display:none;padding:10px 16px 8px;flex-wrap:wrap;gap:8px;align-items:center;border-bottom:1px solid var(--border);"></div>
       <div class="res-row" id="result-row"></div>
       <div class="result-note" id="result-note"></div>
     </div>
@@ -1089,6 +1090,7 @@ function getWishes(pid) {
     const has49 = (cap[49] || 0) > 0;
     if (has49) return w.grp === 49;
     if (w.grp === 49) return false;
+    if (w.grp === 33) return true; // gruppe 33 kræver ikke aktiv kapacitet
     return (cap[w.grp] || 0) > 0;
   });
 }
@@ -1139,6 +1141,36 @@ function shuffleWishes() {
       WISH_OVERRIDE[pid].push({ stn, grp: 49 });
     }
   }
+  // Ca. hver anden shuffle: 2 ansøgere får gruppe 33 på alle uddannelser
+  if (Math.random() < 0.5 && [...selected].length >= 2) {
+    const pool = [...selected].sort(() => Math.random() - 0.5).slice(0, 2);
+    for (const pid of pool) {
+      const seenStns = [];
+      for (const w of (ALL_WISHES[pid] || [])) {
+        if (!(w.stn in STATIONS)) continue;
+        if (!seenStns.includes(w.stn)) seenStns.push(w.stn);
+      }
+      WISH_OVERRIDE[pid] = [];
+      // Sjælden dispensation: én uddannelse får grp.10 i stedet for 33
+      let dispensationStn = null;
+      if (seenStns.length > 1 && Math.random() < 0.25) {
+        const eligible = seenStns.filter(s => (CAPACITY[s]?.[10] || 0) > 0);
+        if (eligible.length) dispensationStn = eligible[Math.floor(Math.random() * eligible.length)];
+      }
+      for (const stn of seenStns) {
+        const cap = CAPACITY[stn] || {};
+        if (stn === dispensationStn) {
+          WISH_OVERRIDE[pid].push({ stn, grp: 10 });
+          if ((cap[60] || 0) > 0 && Math.random() < 0.65)
+            WISH_OVERRIDE[pid].push({ stn, grp: 60 });
+        } else {
+          WISH_OVERRIDE[pid].push({ stn, grp: 33 });
+        }
+        WISH_OVERRIDE[pid].push({ stn, grp: 49 });
+      }
+    }
+  }
+
   renderActiveCards();
   if (!locked) steps = buildSteps();
   document.getElementById('btn-reset-wishes').disabled = false;
@@ -2571,6 +2603,26 @@ function stepSlutOpsummering() {
         if (t.textContent === 'Pladser omfordelt') t.textContent = 'Heraf kandidat (grp.33)';
       });
     }
+    // Prioritetsfordeling
+    const priCounts = {};
+    for (const pid of selected) {
+      const finalKey = [...FINAL_KEYS].find(k => k.startsWith(pid + '-'));
+      if (!finalKey) continue;
+      const stnId = finalKey.split('-').slice(1, -1).join('-');
+      const wishes = getWishes(pid);
+      const seenStns = [];
+      for (const w of wishes) { if (!seenStns.includes(w.stn)) seenStns.push(w.stn); }
+      const pri = seenStns.indexOf(stnId) + 1;
+      if (pri > 0) priCounts[pri] = (priCounts[pri] || 0) + 1;
+    }
+    const pb = document.getElementById('priority-breakdown');
+    pb.style.display = 'flex';
+    pb.style.flexWrap = 'wrap';
+    pb.innerHTML = '<span style="font-size:13px;font-weight:700;color:var(--text-2);margin-right:4px;">Prioritet:</span>' +
+      Object.entries(priCounts).sort(([a],[b]) => +a - +b).map(([pri, n]) =>
+        `<span style="background:#f1f5f9;border:1.5px solid var(--border);border-radius:20px;padding:3px 12px;font-size:13px;font-weight:700;color:var(--text);">${pri}. prioritet: <span style="color:#4f46e5">${n}</span></span>`
+      ).join('');
+
     setCenter('Færdig', 'Endelig fordeling');
     setStatus('Endelig fordeling',
       `${optaget} optaget (heraf ${kandidat} på grp.33 kandidat) · ${afvist} afvist · ${ledige} ledige pladser.`);
@@ -2875,6 +2927,8 @@ function resetSimState() {
   document.getElementById('status-bar').innerHTML =
     '<span style="color:#94a3b8;">Vælg hvilke ansøgere og grupper der skal med i fordelingen. Derefter tryk Start</span>';
   document.getElementById('result-panel').classList.remove('show');
+  const pb = document.getElementById('priority-breakdown');
+  if (pb) { pb.style.display = 'none'; pb.innerHTML = ''; }
   autokørPaused = false;
   setPauseBtnState(false);
   enableNextBtn(false);
