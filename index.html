@@ -723,6 +723,9 @@ h1 {
 #cap-box-right strong:first-child { margin-top: 0; }
 
 
+#cap-box-right.collapsed { display: none; }
+#cap-right-chevron.collapsed { transform: rotate(-90deg); }
+
 /* Station highlight override */
 .stn-active circle {
   stroke: var(--indigo) !important;
@@ -863,9 +866,10 @@ h1 {
   <div class="right-panel">
 
     <div class="right-card">
-      <div class="right-card-header">
+      <div class="right-card-header" id="cap-right-header" onclick="toggleCapRight()" style="cursor:pointer;user-select:none;">
         <div class="right-card-dot" style="background:#4f46e5;"></div>
         <span class="right-card-label">Kapacitet</span>
+        <span id="cap-right-chevron" style="margin-left:auto;font-size:11px;color:var(--text-3);transition:transform .2s;display:inline-block;">▾</span>
       </div>
       <div id="cap-box-right"></div>
     </div>
@@ -1368,6 +1372,14 @@ function togglePerson(pid, on) {
   savePrefs();
   updateSelCount();
   renderActiveCards();
+}
+
+function toggleCapRight() {
+  const box = document.getElementById('cap-box-right');
+  const chevron = document.getElementById('cap-right-chevron');
+  const nowCollapsed = box.classList.toggle('collapsed');
+  chevron.classList.toggle('collapsed', nowCollapsed);
+  localStorage.setItem('capRightCollapsed', nowCollapsed ? '1' : '0');
 }
 
 function toggleIntro() {
@@ -2800,6 +2812,10 @@ let CAPACITY_ORIGINAL = {};
 })();
 const savedModel = (() => { try { return parseInt(localStorage.getItem('metro_model') || '5'); } catch(e) { return 5; } })();
 applyModel(savedModel in MODEL_CONFIGS ? savedModel : 5);
+if (localStorage.getItem('capRightCollapsed') === '1') {
+  document.getElementById('cap-box-right').classList.add('collapsed');
+  document.getElementById('cap-right-chevron').classList.add('collapsed');
+}
 if (localStorage.getItem('introCollapsed') === '1') {
   document.getElementById('intro-text').classList.add('collapsed');
   document.getElementById('intro-toggle').classList.add('collapsed');
