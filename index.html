@@ -780,6 +780,12 @@ h1 {
       </div>
     </div>
 
+    <!-- Shuffle-knap -->
+    <div style="display:flex;gap:8px;padding:4px 2px;">
+      <button class="btn-sel" onclick="shuffleWishes()" style="flex:1;font-weight:700;">Shuffle grupper</button>
+      <button class="btn-sel" id="btn-reset-wishes" onclick="resetWishes()" disabled style="flex:1;">Nulstil grupper</button>
+    </div>
+
     <!-- Pladskonfiguration -->
     <div class="collapsible">
       <div class="coll-header" id="cfg-header" onclick="toggleCfgList()">
@@ -997,6 +1003,9 @@ function applyModel(n) {
 
 function onModelSelect(n) {
   if (locked) return;
+  WISH_OVERRIDE = null;
+  const rb = document.getElementById('btn-reset-wishes');
+  if (rb) rb.disabled = true;
   applyModel(n);
   resetSimState();
 }
@@ -1070,8 +1079,11 @@ const ALL_WISHES = {
 
 let selected = new Set(Object.keys(PERSONS));
 
+let WISH_OVERRIDE = null;
+
 function getWishes(pid) {
-  return (ALL_WISHES[pid] || []).filter(w => {
+  const base = WISH_OVERRIDE ? (WISH_OVERRIDE[pid] || []) : (ALL_WISHES[pid] || []);
+  return base.filter(w => {
     if (!(w.stn in STATIONS)) return false;
     const cap = CAPACITY[w.stn] || {};
     const has49 = (cap[49] || 0) > 0;
@@ -1079,6 +1091,65 @@ function getWishes(pid) {
     if (w.grp === 49) return false;
     return (cap[w.grp] || 0) > 0;
   });
+}
+
+function shuffleWishes() {
+  if (animating || locked) return;
+  WISH_OVERRIDE = {};
+  for (const [pid, allW] of Object.entries(ALL_WISHES)) {
+    const seenStns = [];
+    for (const w of allW) {
+      if (!(w.stn in STATIONS)) continue;
+      if (!seenStns.includes(w.stn)) seenStns.push(w.stn);
+    }
+    WISH_OVERRIDE[pid] = [];
+    for (const stn of seenStns) {
+      const cap = CAPACITY[stn] || {};
+      const has10 = (cap[10] || 0) > 0, has20 = (cap[20] || 0) > 0;
+      const has60 = (cap[60] || 0) > 0, has70 = (cap[70] || 0) > 0;
+      const grps = [];
+      if (has10 && has20) {
+        if (Math.random() < 0.5) {
+          // Begge kvoter
+          grps.push(10, 20);
+          if (Math.random() < 0.5) {
+            if (has60) grps.push(60);
+            if (has70) grps.push(70);
+          }
+        } else {
+          // Kun én kvote
+          if (Math.random() < 0.5) {
+            grps.push(10);
+            if (has60 && Math.random() < 0.65) grps.push(60);
+          } else {
+            grps.push(20);
+            if (has70 && Math.random() < 0.65) grps.push(70);
+          }
+        }
+      } else if (has10) {
+        grps.push(10);
+        if (has60 && Math.random() < 0.65) grps.push(60);
+      } else if (has20) {
+        grps.push(20);
+        if (has70 && Math.random() < 0.65) grps.push(70);
+      } else {
+        for (const g of [60, 70].filter(g => (cap[g] || 0) > 0)) grps.push(g);
+      }
+      for (const g of grps) WISH_OVERRIDE[pid].push({ stn, grp: g });
+      WISH_OVERRIDE[pid].push({ stn, grp: 49 });
+    }
+  }
+  renderActiveCards();
+  if (!locked) steps = buildSteps();
+  document.getElementById('btn-reset-wishes').disabled = false;
+}
+
+function resetWishes() {
+  if (animating) return;
+  WISH_OVERRIDE = null;
+  renderActiveCards();
+  if (!locked) steps = buildSteps();
+  document.getElementById('btn-reset-wishes').disabled = true;
 }
 
 function buildRound1(selSet) {
@@ -1259,7 +1330,7 @@ function renderCapBoxRight() {
 function renderActiveCards() {
   const container = document.getElementById('active-cards');
   container.innerHTML = '';
-  for (const pid of selected) {
+  for (const pid of [...selected].sort()) {
     const person = PERSONS[pid];
     const wishes = getWishes(pid);
     const seenStns = [];
@@ -1520,12 +1591,14 @@ function selectAllGrps() {
     for (const grp of [10, 20, 60, 70]) {
       CAPACITY[stnId][grp] = CAPACITY_DEFAULTS[stnId][grp];
     }
+    CAPACITY[stnId][49] = 0;
   }
   applyStationConfig();
   CAPACITY_ORIGINAL = JSON.parse(JSON.stringify(CAPACITY));
   savePrefs();
   renderCapConfig();
   renderCapBoxRight();
+  renderActiveCards();
 }
 
 function selectNoneGrps() {
@@ -1540,6 +1613,18 @@ function selectNoneGrps() {
   savePrefs();
   renderCapConfig();
   renderCapBoxRight();
+  renderActiveCards();
+}
+
+function resetGrps() {
+  if (animating || locked) return;
+  CAPACITY = JSON.parse(JSON.stringify(CAPACITY_DEFAULTS));
+  applyStationConfig();
+  CAPACITY_ORIGINAL = JSON.parse(JSON.stringify(CAPACITY));
+  savePrefs();
+  renderCapConfig();
+  renderCapBoxRight();
+  renderActiveCards();
 }
 
 /* SVG avatarer */
