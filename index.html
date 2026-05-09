@@ -775,6 +775,8 @@ h1 {
         <div class="sel-actions">
           <button class="btn-sel" onclick="selectAll()">Alle</button>
           <button class="btn-sel" onclick="selectNone()">Ingen</button>
+          <button class="btn-sel" onclick="selectRandom(5)">Vælg 5</button>
+          <button class="btn-sel" onclick="selectRandom(15)">Vælg 15</button>
         </div>
         <div class="sel-count" id="sel-count"></div>
       </div>
@@ -1617,6 +1619,16 @@ function selectNone() {
   renderActiveCards();
 }
 
+function selectRandom(n) {
+  if (animating) return;
+  const all = Object.keys(PERSONS).sort(() => Math.random() - 0.5);
+  selected = new Set(all.slice(0, n));
+  savePrefs();
+  renderAppList();
+  renderActiveCards();
+  updateSelCount();
+}
+
 function selectAllGrps() {
   if (animating || locked) return;
   for (const stnId of Object.keys(CAPACITY)) {
@@ -1867,6 +1879,7 @@ function pulseStn(stnId) {
 /* Tog */
 let trainAngle = 115;
 let animating = false;
+let animFrame = null;
 let locked = false;
 
 function positionTrain(angle) {
@@ -1882,6 +1895,7 @@ function animateTrain(fromA, totalDeg, ms, waypoints, onDone) {
   const wps = waypoints.map(w => ({ ...w, fired: false }));
   let start = null;
   function frame(ts) {
+    if (!animating) return;
     if (!start) start = ts;
     const t = Math.min((ts - start) / ms, 1);
     const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
@@ -1890,15 +1904,16 @@ function animateTrain(fromA, totalDeg, ms, waypoints, onDone) {
     for (const wp of wps) {
       if (!wp.fired && progress >= wp.progress) { wp.fired = true; wp.fn(); }
     }
-    if (t < 1) { requestAnimationFrame(frame); }
+    if (t < 1) { animFrame = requestAnimationFrame(frame); }
     else {
+      animFrame = null;
       trainAngle = ((fromA - totalDeg) % 360 + 360) % 360;
       animating = false;
       enableNextBtn();
       if (onDone) onDone();
     }
   }
-  requestAnimationFrame(frame);
+  animFrame = requestAnimationFrame(frame);
 }
 
 function setStatus(badge, msg) {
@@ -2627,6 +2642,16 @@ function stepSlutOpsummering() {
     setStatus('Endelig fordeling',
       `${optaget} optaget (heraf ${kandidat} på grp.33 kandidat) · ${afvist} afvist · ${ledige} ledige pladser.`);
     document.getElementById('btn-next').disabled = true;
+    // Lås op igen så man kan ændre ansøgere og grupper uden at genstarte
+    locked = false;
+    document.querySelectorAll('.model-btn').forEach(b => b.disabled = false);
+    document.getElementById('autokør-cb').disabled = false;
+    document.getElementById('autokør-delay').disabled = false;
+    document.querySelectorAll('.btn-sel').forEach(b => {
+      if (b.id !== 'btn-reset-wishes' || WISH_OVERRIDE) b.disabled = false;
+    });
+    renderAppList();
+    renderCapConfig();
   };
 }
 
@@ -2826,6 +2851,7 @@ function stepTogkørsel(rNr) {
 }
 
 let autokørPaused = false;
+let autokørTimerId = null;
 
 function getAutokørDelay() {
   return (parseFloat(document.getElementById('autokør-delay')?.value) || 2) * 1000;
@@ -2855,7 +2881,8 @@ function setPauseBtnState(paused) {
 function enableNextBtn(autoTrigger = true) {
   const auto = autoTrigger && document.getElementById('autokør-cb')?.checked;
   if (auto && !autokørPaused) {
-    setTimeout(nextStep, getAutokørDelay());
+    if (autokørTimerId) clearTimeout(autokørTimerId);
+    autokørTimerId = setTimeout(nextStep, getAutokørDelay());
   } else {
     document.getElementById('btn-next').disabled = false;
   }
@@ -2896,6 +2923,7 @@ function nextStep() {
 }
 
 function resetSimState() {
+  if (autokørTimerId) { clearTimeout(autokørTimerId); autokørTimerId = null; }
   step = 0;
   roundNumber = 0;
   prevFinalKeys = null;
@@ -2936,7 +2964,8 @@ function resetSimState() {
 }
 
 function reset() {
-  if (animating) return;
+  if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+  animating = false;
   locked = false;
   document.querySelectorAll('.btn-sel').forEach(b => b.disabled = false);
   document.getElementById('autokør-cb').disabled = false;
