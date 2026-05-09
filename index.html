@@ -1070,10 +1070,21 @@ const ALL_WISHES = {
 
 let selected = new Set(Object.keys(PERSONS));
 
+function getWishes(pid) {
+  return (ALL_WISHES[pid] || []).filter(w => {
+    if (!(w.stn in STATIONS)) return false;
+    const cap = CAPACITY[w.stn] || {};
+    const has49 = (cap[49] || 0) > 0;
+    if (has49) return w.grp === 49;
+    if (w.grp === 49) return false;
+    return (cap[w.grp] || 0) > 0;
+  });
+}
+
 function buildRound1(selSet) {
   const entries = [];
   for (const pid of selSet) {
-    const wishes = (ALL_WISHES[pid] || []).filter(w => w.stn in STATIONS);
+    const wishes = getWishes(pid);
     const stnOrder = {};
     let pos = 1;
     const seen = new Set();
@@ -1098,7 +1109,7 @@ function computeFinalKeys(round1) {
   const prefList = {};
   for (const pid of allPersons) {
     prefList[pid] = [];
-    for (const w of (ALL_WISHES[pid] || [])) {
+    for (const w of getWishes(pid)) {
       if (round1Set.has(`${pid}-${w.stn}-${w.grp}`))
         prefList[pid].push({ stn: w.stn, grp: w.grp, key: `${w.stn}-${w.grp}` });
     }
@@ -1250,7 +1261,7 @@ function renderActiveCards() {
   container.innerHTML = '';
   for (const pid of selected) {
     const person = PERSONS[pid];
-    const wishes = (ALL_WISHES[pid] || []).filter(w => w.stn in STATIONS);
+    const wishes = getWishes(pid);
     const seenStns = [];
     for (const w of wishes) { if (!seenStns.includes(w.stn)) seenStns.push(w.stn); }
 
@@ -1426,6 +1437,7 @@ function toggleGrpCfg(stnId, grp, checked) {
   savePrefs();
   renderCapConfig();
   renderCapBoxRight();
+  renderActiveCards();
 }
 
 function renderCapConfig() {
@@ -2220,7 +2232,7 @@ function applyKandidatPladsflyt() {
 function computeKandidatOptag() {
   const results = [];
   for (const pid of selected) {
-    const wishes = (ALL_WISHES[pid] || []).filter(w => w.stn in STATIONS);
+    const wishes = getWishes(pid);
     // Find grp.33 ønsker for denne person
     const grp33Wishes = wishes
       .map((w, idx) => ({ ...w, rank: idx }))
