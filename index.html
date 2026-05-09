@@ -27,6 +27,12 @@
   --radius: 20px;
   --radius-sm: 12px;
   --radius-xs: 8px;
+
+  /* Typografi */
+  --font-xs:   9px;
+  --font-sm:  11px;
+  --font-md:  13px;
+  --font-lg:  15px;
 }
 
 html, body {
@@ -73,7 +79,7 @@ body {
 }
 
 .train-icon span {
-  font-size: 13px;
+  font-size: var(--font-md);
   font-weight: 800;
   color: white;
   font-family: 'DM Mono', monospace;
@@ -87,11 +93,37 @@ h1 {
 }
 
 .subtitle {
-  font-size: 13px;
+  font-size: var(--font-md);
   color: var(--text-2);
   margin-top: 2px;
   line-height: 1.5;
+  overflow: hidden;
+  transition: max-height 0.25s ease, opacity 0.2s ease, margin-top 0.2s ease;
+  max-height: 200px;
+  opacity: 1;
 }
+.subtitle.collapsed {
+  max-height: 0;
+  opacity: 0;
+  margin-top: 0;
+}
+.intro-toggle {
+  background: none;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--text-2);
+  padding: 1px 6px;
+  margin-left: 8px;
+  vertical-align: middle;
+  line-height: 1.6;
+  transition: transform 0.2s, background 0.15s;
+  display: inline-block;
+  transform-origin: center 55%;
+}
+.intro-toggle:hover { background: #f1f5f9; }
+.intro-toggle.collapsed { transform: rotate(-90deg); }
 
 /* ── Main layout ── */
 .bento {
@@ -167,7 +199,7 @@ h1 {
 }
 
 .coll-icon {
-  font-size: 9px;
+  font-size: var(--font-xs);
   color: var(--text-3);
   transition: transform .2s;
   font-family: 'DM Mono', monospace;
@@ -214,14 +246,14 @@ h1 {
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 11px;
+  font-size: var(--font-sm);
   flex-shrink: 0;
   border: 2px solid transparent;
   font-family: 'DM Mono', monospace;
 }
 
-.person-name { font-size: 13px; font-weight: 600; }
-.wishes { font-size: 11px; color: var(--text-2); line-height: 1.7; }
+.person-name { font-size: var(--font-md); font-weight: 600; }
+.wishes { font-size: var(--font-sm); color: var(--text-2); line-height: 1.7; }
 .wish { display: flex; align-items: center; gap: 3px; flex-wrap: wrap; }
 
 .wn {
@@ -244,18 +276,19 @@ h1 {
 .g60 { background: #fff0c0; color: #6b4400; }
 .g70 { background: #ffd8c8; color: #7a2e00; }
 .g33 { background: #e9d5ff; color: #5b21b6; }
+.g49 { background: #d1fae5; color: #065f46; }
 
 /* Cap box */
 .cap-box {
   padding: 10px 14px;
-  font-size: 11px;
+  font-size: var(--font-sm);
   color: var(--text-2);
   line-height: 1.9;
   max-height: 260px;
   overflow-y: auto;
 }
 
-.cap-box strong { font-size: 11px; color: var(--text); display: block; margin-bottom: 2px; margin-top: 6px; font-weight: 700; }
+.cap-box strong { font-size: var(--font-sm); color: var(--text); display: block; margin-bottom: 2px; margin-top: 6px; font-weight: 700; }
 .cap-box strong:first-child { margin-top: 0; }
 
 .cap-dot {
@@ -306,7 +339,7 @@ h1 {
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 9px;
+  font-size: var(--font-xs);
   flex-shrink: 0;
   border: 1.5px solid transparent;
   font-family: 'DM Mono', monospace;
@@ -315,7 +348,7 @@ h1 {
 .app-name { font-size: 12px; color: var(--text); font-weight: 500; }
 
 .sel-count {
-  font-size: 11px;
+  font-size: var(--font-sm);
   color: var(--text-3);
   margin-top: 2px;
   text-align: center;
@@ -332,7 +365,7 @@ h1 {
 }
 
 .btn-sel {
-  font-size: 11px;
+  font-size: var(--font-sm);
   padding: 3px 10px;
   border-radius: 20px;
   border: 1.5px solid var(--border);
@@ -364,10 +397,10 @@ h1 {
 .cap-cfg-row:last-child { border-bottom: none; }
 
 .cap-cfg-stn {
-  font-size: 11px;
+  font-size: var(--font-sm);
   font-weight: 700;
   color: var(--text-2);
-  width: 46px;
+  width: 62px;
   flex-shrink: 0;
   font-family: 'DM Mono', monospace;
 }
@@ -439,7 +472,7 @@ h1 {
   border-radius: 12px;
   border: none;
   cursor: pointer;
-  font-size: 13px;
+  font-size: var(--font-md);
   font-weight: 700;
   font-family: 'DM Sans', sans-serif;
   transition: opacity .2s, transform .1s, box-shadow .15s;
@@ -471,12 +504,33 @@ h1 {
   align-items: center;
   gap: 6px;
   margin-left: 6px;
-  font-size: 13px;
+  font-size: var(--font-md);
   font-weight: 600;
   color: var(--text-2);
   cursor: pointer;
   user-select: none;
   font-family: 'DM Sans', sans-serif;
+}
+
+.delay-input {
+  width: 46px;
+  padding: 4px 6px;
+  border-radius: 7px;
+  border: 1.5px solid var(--border);
+  font-size: var(--font-md);
+  font-family: 'DM Mono', monospace;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--surface);
+  text-align: center;
+}
+
+.btn-pause {
+  background: var(--surface-2);
+  color: var(--text-2);
+  border: 1.5px solid var(--border);
+  padding: 8px 16px;
+  font-size: var(--font-md);
 }
 
 /* Result panel */
@@ -500,7 +554,7 @@ h1 {
 }
 
 .result-panel-title {
-  font-size: 13px;
+  font-size: var(--font-md);
   font-weight: 700;
   color: var(--indigo);
 }
@@ -527,7 +581,7 @@ h1 {
 
 .result-note {
   margin: 0 16px 14px;
-  font-size: 11px;
+  font-size: var(--font-sm);
   color: var(--text-2);
   border-left: 3px solid var(--indigo);
   padding-left: 10px;
@@ -545,7 +599,7 @@ h1 {
   align-items: center;
   justify-content: space-between;
   padding: 8px 14px;
-  font-size: 11px;
+  font-size: var(--font-sm);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .07em;
@@ -599,7 +653,7 @@ h1 {
 }
 
 .pladsflyt-grp {
-  font-size: 11px;
+  font-size: var(--font-sm);
   font-weight: 700;
   padding: 2px 7px;
   border-radius: 4px;
@@ -607,7 +661,7 @@ h1 {
 }
 
 .pladsflyt-arrow {
-  font-size: 11px;
+  font-size: var(--font-sm);
   color: var(--text-3);
   font-weight: 700;
 }
@@ -652,7 +706,7 @@ h1 {
 /* Kapacitet panel */
 #cap-box-right {
   padding: 12px 16px;
-  font-size: 9px;
+  font-size: var(--font-xs);
   color: var(--text-2);
   line-height: 1.9;
 }
@@ -674,16 +728,21 @@ h1 {
   stroke: var(--indigo) !important;
   stroke-width: 4.5px !important;
 }
+
+.model-selector { display:flex; align-items:center; gap:5px; padding:7px 14px 6px; border-bottom:1px solid #e2e8f0; }
+.model-selector-label { font-size:var(--font-sm); color:#64748b; font-weight:600; margin-right:2px; }
+.model-btn { padding:3px 14px; border:1.5px solid #cbd5e1; border-radius:6px; background:white; font-size:var(--font-sm); font-weight:700; color:#475569; cursor:pointer; }
+.model-btn.active { background:#1e293b; border-color:#1e293b; color:white; }
+.model-btn:disabled { opacity:0.4; cursor:not-allowed; }
 </style>
 </head>
 <body>
 
 <div class="page-header">
   <div class="header-title">
-    <div class="train-icon"><span>M</span></div>
     <div>
-      <h1>KOT — Fordelingsalgoritmen</h1>
-      <p class="subtitle">Fordelingen kører indtil alle ansøgere er placeret på den højest mulige prioriterede uddannelse, hvor de kan få en plads. I hver runde lægger ansøgerne en undersøges det om de kan optages på de uddannelser og grupper, de har søgt. Efter hver omgang ryddes der op, så hver ansøger kun er placerert på den højest prioriterede uddannelse, hvor der er plads. Ansøgere vil blive afvist, hvis pladserne allerede er optaget. Derefter flyttes ledige pladser mellem grupper, og en ny runde køres. Processen fortsætter, indtil alle ansøgere enten er optaget på deres højest mulige prioritet eller afvist på alle ønsker.</p>
+      <h1>KOT — Fordelingsalgoritmen <button class="intro-toggle" id="intro-toggle" onclick="toggleIntro()" title="Skjul/vis beskrivelse">▾</button></h1>
+      <p class="subtitle" id="intro-text">Fordelingen kører indtil alle ansøgere er placeret på den højest mulige prioriterede uddannelse, hvor de kan få en plads. I hver runde lægger ansøgerne en undersøges det om de kan optages på de uddannelser og grupper, de har søgt. Efter hver omgang ryddes der op, så hver ansøger kun er placerert på den højest prioriterede uddannelse, hvor der er plads. Ansøgere vil blive afvist, hvis pladserne allerede er optaget. Derefter flyttes ledige pladser mellem grupper, og en ny runde køres. Processen fortsætter, indtil alle ansøgere enten er optaget på deres højest mulige prioritet eller afvist på alle ønsker.</p>
     </div>
   </div>
 </div>
@@ -744,40 +803,7 @@ h1 {
         <circle cx="300" cy="230" r="160" fill="none" stroke="#c0392b" stroke-width="13"/>
         <circle cx="300" cy="230" r="160" fill="none" stroke="#e74c3c" stroke-width="7"/>
 
-        <!-- Legoland 90°: (300, 70) -->
-        <g id="stn-lego">
-          <circle cx="300" cy="70" r="30" fill="white" stroke="#cbd5e1" stroke-width="3.5"/>
-          <text x="300" y="65" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="DM Sans, sans-serif">L</text>
-          <text x="300" y="78" text-anchor="middle" font-size="10" fill="#94a3b8" font-family="DM Sans, sans-serif">Legoland</text>
-        </g>
-
-        <!-- Medicin 18°: (452, 181) -->
-        <g id="stn-med">
-          <circle cx="452" cy="181" r="30" fill="white" stroke="#cbd5e1" stroke-width="3.5"/>
-          <text x="452" y="176" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="DM Sans, sans-serif">M</text>
-          <text x="452" y="189" text-anchor="middle" font-size="10" fill="#94a3b8" font-family="DM Sans, sans-serif">Medicin</text>
-        </g>
-
-        <!-- Tivoli 306°: (394, 360) -->
-        <g id="stn-tiv">
-          <circle cx="394" cy="360" r="30" fill="white" stroke="#cbd5e1" stroke-width="3.5"/>
-          <text x="394" y="355" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="DM Sans, sans-serif">T</text>
-          <text x="394" y="368" text-anchor="middle" font-size="10" fill="#94a3b8" font-family="DM Sans, sans-serif">Tivoli</text>
-        </g>
-
-        <!-- Lærer 234°: (206, 360) -->
-        <g id="stn-lae">
-          <circle cx="206" cy="360" r="30" fill="white" stroke="#cbd5e1" stroke-width="3.5"/>
-          <text x="206" y="355" text-anchor="middle" font-size="12" font-weight="800" fill="#1e293b" font-family="DM Sans, sans-serif">Læ</text>
-          <text x="206" y="368" text-anchor="middle" font-size="10" fill="#94a3b8" font-family="DM Sans, sans-serif">Lærer</text>
-        </g>
-
-        <!-- Bon-Bon 162°: (148, 181) -->
-        <g id="stn-bon">
-          <circle cx="148" cy="181" r="30" fill="white" stroke="#cbd5e1" stroke-width="3.5"/>
-          <text x="148" y="176" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="DM Sans, sans-serif">B</text>
-          <text x="148" y="189" text-anchor="middle" font-size="10" fill="#94a3b8" font-family="DM Sans, sans-serif">Bon-Bon</text>
-        </g>
+        <g id="stations-layer"></g>
 
         <text id="ctr1" x="300" y="224" text-anchor="middle" font-size="13" font-weight="700" fill="#64748b" font-family="DM Sans, sans-serif"></text>
         <text id="ctr2" x="300" y="242" text-anchor="middle" font-size="10" fill="#94a3b8" font-family="DM Sans, sans-serif"></text>
@@ -792,6 +818,13 @@ h1 {
         </g>
       </svg>
 
+      <div class="model-selector" id="model-selector">
+        <span class="model-selector-label">Uddannelser:</span>
+        <button class="model-btn" data-model="3" onclick="onModelSelect(3)">3</button>
+        <button class="model-btn active" data-model="5" onclick="onModelSelect(5)">5</button>
+        <button class="model-btn" data-model="7" onclick="onModelSelect(7)">7</button>
+      </div>
+
       <div class="status-bar" id="status-bar">
         <span style="color:#94a3b8;">Vælg hvilke ansøgere og grupper der skal med i fordelingen. Derefter tryk Start</span>
       </div>
@@ -800,9 +833,14 @@ h1 {
         <button class="btn btn-go" id="btn-next" onclick="nextStep()">&#9654; Start</button>
         <button class="btn btn-reset" onclick="reset()">&#8635; Genstart</button>
         <label class="autokør-label">
-          <input type="checkbox" id="autokør-cb">
+          <input type="checkbox" id="autokør-cb" onchange="onAutokørChange()">
           Autokør
         </label>
+        <label class="autokør-label" id="delay-label" style="display:none;">
+          <input type="number" id="autokør-delay" min="0" max="10" value="2" step="1" class="delay-input">
+          sek
+        </label>
+        <button class="btn btn-pause" id="pause-btn" style="display:none;" onclick="togglePause()">⏸ Pause</button>
       </div>
     </div>
 
@@ -850,22 +888,36 @@ h1 {
 <script>
 const CX = 300, CY = 230, R = 160, DEG = Math.PI / 180;
 
-const STATIONS = {
-  lego: { angle: 90,  name: 'Legoland',     label: 'L',  capacity: {} },
-  med:  { angle: 18,  name: 'Medicin',      label: 'M',  capacity: {} },
-  tiv:  { angle: 306, name: 'Tivoli',       label: 'T',  capacity: {} },
-  lae:  { angle: 234, name: 'Lærer',        label: 'Læ', capacity: {} },
-  bon:  { angle: 162, name: 'Bon-Bon Land', label: 'B',  capacity: {} },
+const ALL_STATIONS_DEFS = {
+  lego: { name: 'Legoland',      label: 'L',  capacity: {} },
+  med:  { name: 'Medicin',       label: 'M',  capacity: {} },
+  tiv:  { name: 'Tivoli',        label: 'T',  capacity: {} },
+  lae:  { name: 'Lærer',         label: 'Læ', capacity: {} },
+  bon:  { name: 'Bon-Bon Land',  label: 'B',  capacity: {} },
+  syk:  { name: 'Laborant', label: 'La', capacity: {} },
+  fin:  { name: 'Jura',     label: 'Ju', capacity: {} },
 };
 
-let CAPACITY = {
-  lego: { 10: 3,  20: 2,  60: 1,  70: 1,  33: 0 },
-  med:  { 10: 3,  20: 2,  60: 1,  70: 1,  33: 0 },
-  tiv:  { 10: 3,  20: 3,  60: 1,  70: 1,  33: 0 },
-  lae:  { 10: 3,  20: 4,  60: 1,  70: 1,  33: 0 },
-  bon:  { 10: 3,  20: 3,  60: 1,  70: 1,  33: 0 },
+const ALL_CAPACITY_DEFS = {
+  lego: { 10: 3,  20: 2,  60: 1,  70: 1,  33: 0, 49: 0 },
+  med:  { 10: 3,  20: 2,  60: 1,  70: 1,  33: 0, 49: 0 },
+  tiv:  { 10: 3,  20: 3,  60: 1,  70: 1,  33: 0, 49: 0 },
+  lae:  { 10: 3,  20: 4,  60: 1,  70: 1,  33: 0, 49: 0 },
+  bon:  { 10: 3,  20: 3,  60: 1,  70: 1,  33: 0, 49: 0 },
+  syk:  { 10: 3,  20: 3,  60: 1,  70: 1,  33: 0, 49: 0 },
+  fin:  { 10: 3,  20: 3,  60: 1,  70: 1,  33: 0, 49: 0 },
 };
-const CAPACITY_DEFAULTS = JSON.parse(JSON.stringify(CAPACITY));
+
+const MODEL_CONFIGS = {
+  3: ['lego', 'med', 'tiv'],
+  5: ['lego', 'med', 'tiv', 'lae', 'bon'],
+  7: ['lego', 'syk', 'med', 'fin', 'tiv', 'lae', 'bon'],
+};
+
+let activeModel = 5;
+let STATIONS = {};
+let CAPACITY = {};
+let CAPACITY_DEFAULTS = {};
 
 function applyStationConfig() {
   for (const [stnId, cap] of Object.entries(CAPACITY)) {
@@ -875,9 +927,74 @@ function applyStationConfig() {
     }
   }
 }
-for (const s of Object.values(STATIONS)) {
-  s.x = +(CX + R * Math.cos(s.angle * DEG)).toFixed(1);
-  s.y = +(CY - R * Math.sin(s.angle * DEG)).toFixed(1);
+
+function renderSVGStations() {
+  const layer = document.getElementById('stations-layer');
+  if (!layer) return;
+  layer.innerHTML = '';
+  for (const [stnId, stn] of Object.entries(STATIONS)) {
+    const g = document.createElementNS(NS, 'g');
+    g.id = `stn-${stnId}`;
+    const circ = document.createElementNS(NS, 'circle');
+    circ.setAttribute('cx', stn.x); circ.setAttribute('cy', stn.y);
+    circ.setAttribute('r', '30'); circ.setAttribute('fill', 'white');
+    circ.setAttribute('stroke', '#cbd5e1'); circ.setAttribute('stroke-width', '3.5');
+    const lbl = document.createElementNS(NS, 'text');
+    lbl.setAttribute('x', stn.x); lbl.setAttribute('y', stn.y - 5);
+    lbl.setAttribute('text-anchor', 'middle');
+    lbl.setAttribute('font-size', stn.label.length > 1 ? '12' : '13');
+    lbl.setAttribute('font-weight', '800'); lbl.setAttribute('fill', '#1e293b');
+    lbl.setAttribute('font-family', 'DM Sans, sans-serif');
+    lbl.textContent = stn.label;
+    const nm = document.createElementNS(NS, 'text');
+    nm.setAttribute('x', stn.x); nm.setAttribute('y', stn.y + 8);
+    nm.setAttribute('text-anchor', 'middle'); nm.setAttribute('font-size', '10');
+    nm.setAttribute('fill', '#94a3b8'); nm.setAttribute('font-family', 'DM Sans, sans-serif');
+    const dispName = stn.name.split(' ')[0];
+    nm.textContent = dispName.length > 8 ? dispName.slice(0, 7) + '.' : dispName;
+    g.appendChild(circ); g.appendChild(lbl); g.appendChild(nm);
+    layer.appendChild(g);
+  }
+}
+
+function computeSTNProgress(fromAngle) {
+  const result = {};
+  for (const [stnId, stn] of Object.entries(STATIONS)) {
+    result[stnId] = +((fromAngle - stn.angle + 360) % 360).toFixed(1);
+  }
+  return result;
+}
+
+function applyModel(n) {
+  if (locked) return;
+  activeModel = n;
+  const ids = MODEL_CONFIGS[n];
+  const spacing = 360 / ids.length;
+  STATIONS = {};
+  for (let i = 0; i < ids.length; i++) {
+    const id = ids[i];
+    const def = ALL_STATIONS_DEFS[id];
+    const angle = +((90 - i * spacing + 3600) % 360).toFixed(2);
+    const x = +(CX + R * Math.cos(angle * DEG)).toFixed(1);
+    const y = +(CY - R * Math.sin(angle * DEG)).toFixed(1);
+    STATIONS[id] = { name: def.name, label: def.label, angle, x, y, capacity: {} };
+  }
+  CAPACITY = {};
+  for (const id of ids) CAPACITY[id] = { ...ALL_CAPACITY_DEFS[id] };
+  CAPACITY_DEFAULTS = JSON.parse(JSON.stringify(CAPACITY));
+  CAPACITY_ORIGINAL = JSON.parse(JSON.stringify(CAPACITY));
+  applyStationConfig();
+  renderSVGStations();
+  document.querySelectorAll('.model-btn').forEach(b => {
+    b.classList.toggle('active', +b.dataset.model === n);
+  });
+  try { localStorage.setItem('metro_model', n); } catch(e) {}
+}
+
+function onModelSelect(n) {
+  if (locked) return;
+  applyModel(n);
+  resetSimState();
 }
 
 const GROUP_COLORS = {
@@ -886,6 +1003,7 @@ const GROUP_COLORS = {
   60: { fill: '#fff0c0', text: '#6b4400' },
   70: { fill: '#ffd8c8', text: '#7a2e00' },
   33: { fill: '#e9d5ff', text: '#5b21b6' },
+  49: { fill: '#d1fae5', text: '#065f46' },
 };
 
 const PERSONS = {
@@ -918,32 +1036,32 @@ const PERSONS = {
 };
 
 const ALL_WISHES = {
-  a: [{stn:'lego',grp:10},{stn:'lego',grp:60},{stn:'tiv',grp:20},{stn:'lae',grp:10},{stn:'lae',grp:20},{stn:'lae',grp:60},{stn:'lae',grp:70}],
-  b: [{stn:'bon',grp:20},{stn:'bon',grp:70},{stn:'lego',grp:10},{stn:'lego',grp:60},{stn:'med',grp:10},{stn:'med',grp:20},{stn:'med',grp:60},{stn:'med',grp:70}],
-  c: [{stn:'lego',grp:10},{stn:'lego',grp:60},{stn:'bon',grp:20},{stn:'bon',grp:70},{stn:'tiv',grp:20},{stn:'lae',grp:10},{stn:'lae',grp:20},{stn:'lae',grp:60},{stn:'lae',grp:70}],
-  d: [{stn:'lego',grp:10},{stn:'med',grp:10},{stn:'lae',grp:10},{stn:'bon',grp:10},{stn:'bon',grp:20},{stn:'bon',grp:60},{stn:'bon',grp:70}],
-  e: [{stn:'med',grp:10},{stn:'lae',grp:10},{stn:'tiv',grp:10},{stn:'tiv',grp:20},{stn:'tiv',grp:60},{stn:'tiv',grp:70}],
-  f: [{stn:'med',grp:10},{stn:'med',grp:60},{stn:'lego',grp:10},{stn:'lego',grp:60},{stn:'bon',grp:10},{stn:'bon',grp:20},{stn:'bon',grp:60},{stn:'bon',grp:70}],
-  g: [{stn:'lego',grp:10},{stn:'tiv',grp:20},{stn:'bon',grp:20},{stn:'med',grp:10},{stn:'med',grp:20},{stn:'med',grp:60},{stn:'med',grp:70}],
-  h: [{stn:'lae',grp:10},{stn:'lae',grp:60},{stn:'med',grp:10},{stn:'med',grp:60},{stn:'bon',grp:10},{stn:'bon',grp:20},{stn:'bon',grp:60},{stn:'bon',grp:70}],
-  i: [{stn:'tiv',grp:20},{stn:'bon',grp:20},{stn:'lego',grp:10},{stn:'lego',grp:60},{stn:'med',grp:10},{stn:'med',grp:20},{stn:'med',grp:60},{stn:'med',grp:70}],
-  j: [{stn:'bon',grp:20},{stn:'bon',grp:70},{stn:'tiv',grp:20},{stn:'lego',grp:10},{stn:'lego',grp:20},{stn:'lego',grp:60},{stn:'lego',grp:70}],
-  k: [{stn:'med',grp:10},{stn:'lego',grp:10},{stn:'lae',grp:10},{stn:'bon',grp:10},{stn:'bon',grp:20},{stn:'bon',grp:60},{stn:'bon',grp:70}],
-  l: [{stn:'lego',grp:10},{stn:'lego',grp:60},{stn:'lae',grp:10},{stn:'lae',grp:60},{stn:'med',grp:10},{stn:'med',grp:60},{stn:'tiv',grp:10},{stn:'tiv',grp:20},{stn:'tiv',grp:60},{stn:'tiv',grp:70}],
-  m: [{stn:'tiv',grp:20},{stn:'lego',grp:10},{stn:'bon',grp:20},{stn:'bon',grp:70},{stn:'lae',grp:10},{stn:'lae',grp:20},{stn:'lae',grp:60},{stn:'lae',grp:70}],
-  n: [{stn:'med',grp:10},{stn:'med',grp:60},{stn:'lae',grp:10},{stn:'bon',grp:10},{stn:'bon',grp:20},{stn:'bon',grp:60},{stn:'bon',grp:70}],
-  o: [{stn:'lae',grp:10},{stn:'med',grp:10},{stn:'tiv',grp:20},{stn:'lego',grp:10},{stn:'lego',grp:20},{stn:'lego',grp:60},{stn:'lego',grp:70}],
-  p: [{stn:'lego',grp:10},{stn:'lego',grp:60},{stn:'med',grp:10},{stn:'tiv',grp:10},{stn:'tiv',grp:20},{stn:'tiv',grp:60},{stn:'tiv',grp:70}],
-  q: [{stn:'bon',grp:20},{stn:'bon',grp:70},{stn:'tiv',grp:20},{stn:'lae',grp:10},{stn:'lae',grp:60},{stn:'lego',grp:10},{stn:'lego',grp:20},{stn:'lego',grp:60},{stn:'lego',grp:70}],
-  r: [{stn:'med',grp:10},{stn:'lego',grp:10},{stn:'bon',grp:20},{stn:'tiv',grp:10},{stn:'tiv',grp:20},{stn:'tiv',grp:60},{stn:'tiv',grp:70}],
-  s: [{stn:'lae',grp:10},{stn:'lae',grp:60},{stn:'med',grp:10},{stn:'med',grp:60},{stn:'bon',grp:20},{stn:'bon',grp:70},{stn:'lego',grp:10},{stn:'lego',grp:20},{stn:'lego',grp:60},{stn:'lego',grp:70}],
-  t: [{stn:'tiv',grp:20},{stn:'bon',grp:20},{stn:'lego',grp:10},{stn:'med',grp:10},{stn:'med',grp:20},{stn:'med',grp:60},{stn:'med',grp:70}],
-  u: [{stn:'med',grp:10},{stn:'med',grp:60},{stn:'lae',grp:10},{stn:'tiv',grp:20},{stn:'bon',grp:10},{stn:'bon',grp:20},{stn:'bon',grp:60},{stn:'bon',grp:70}],
-  v: [{stn:'lego',grp:10},{stn:'med',grp:10},{stn:'lae',grp:10},{stn:'bon',grp:10},{stn:'bon',grp:20},{stn:'bon',grp:60},{stn:'bon',grp:70}],
-  w: [{stn:'bon',grp:20},{stn:'bon',grp:70},{stn:'lego',grp:10},{stn:'lego',grp:60},{stn:'tiv',grp:10},{stn:'tiv',grp:20},{stn:'tiv',grp:60},{stn:'tiv',grp:70}],
-  x: [{stn:'tiv',grp:20},{stn:'lego',grp:10},{stn:'lego',grp:60},{stn:'med',grp:10},{stn:'med',grp:60},{stn:'lae',grp:10},{stn:'lae',grp:20},{stn:'lae',grp:60},{stn:'lae',grp:70}],
-  y: [{stn:'lae',grp:10},{stn:'lae',grp:60},{stn:'bon',grp:20},{stn:'bon',grp:70},{stn:'med',grp:10},{stn:'med',grp:20},{stn:'med',grp:60},{stn:'med',grp:70}],
-  z: [{stn:'med',grp:10},{stn:'lae',grp:33}],
+  a: [{stn:'lego',grp:10},{stn:'lego',grp:60},{stn:'lego',grp:49},{stn:'syk',grp:20},{stn:'syk',grp:49},{stn:'tiv',grp:20},{stn:'tiv',grp:49},{stn:'lae',grp:10},{stn:'lae',grp:20},{stn:'lae',grp:60},{stn:'lae',grp:70},{stn:'lae',grp:49}],
+  b: [{stn:'fin',grp:20},{stn:'fin',grp:49},{stn:'bon',grp:20},{stn:'bon',grp:70},{stn:'bon',grp:49},{stn:'lego',grp:10},{stn:'lego',grp:60},{stn:'lego',grp:49},{stn:'med',grp:10},{stn:'med',grp:20},{stn:'med',grp:60},{stn:'med',grp:70},{stn:'med',grp:49}],
+  c: [{stn:'lego',grp:10},{stn:'lego',grp:60},{stn:'lego',grp:49},{stn:'fin',grp:20},{stn:'fin',grp:49},{stn:'bon',grp:20},{stn:'bon',grp:70},{stn:'bon',grp:49},{stn:'tiv',grp:20},{stn:'tiv',grp:49},{stn:'lae',grp:10},{stn:'lae',grp:20},{stn:'lae',grp:60},{stn:'lae',grp:70},{stn:'lae',grp:49}],
+  d: [{stn:'syk',grp:10},{stn:'syk',grp:49},{stn:'lego',grp:10},{stn:'lego',grp:49},{stn:'med',grp:10},{stn:'med',grp:49},{stn:'lae',grp:10},{stn:'lae',grp:49},{stn:'bon',grp:10},{stn:'bon',grp:20},{stn:'bon',grp:60},{stn:'bon',grp:70},{stn:'bon',grp:49}],
+  e: [{stn:'med',grp:10},{stn:'med',grp:49},{stn:'syk',grp:10},{stn:'syk',grp:49},{stn:'lae',grp:10},{stn:'lae',grp:49},{stn:'tiv',grp:10},{stn:'tiv',grp:20},{stn:'tiv',grp:60},{stn:'tiv',grp:70},{stn:'tiv',grp:49}],
+  f: [{stn:'med',grp:10},{stn:'med',grp:60},{stn:'med',grp:49},{stn:'syk',grp:10},{stn:'syk',grp:20},{stn:'syk',grp:49},{stn:'lego',grp:10},{stn:'lego',grp:60},{stn:'lego',grp:49},{stn:'bon',grp:10},{stn:'bon',grp:20},{stn:'bon',grp:60},{stn:'bon',grp:70},{stn:'bon',grp:49}],
+  g: [{stn:'fin',grp:10},{stn:'fin',grp:49},{stn:'lego',grp:10},{stn:'lego',grp:49},{stn:'tiv',grp:20},{stn:'tiv',grp:49},{stn:'bon',grp:20},{stn:'bon',grp:49},{stn:'med',grp:10},{stn:'med',grp:20},{stn:'med',grp:60},{stn:'med',grp:70},{stn:'med',grp:49}],
+  h: [{stn:'syk',grp:10},{stn:'syk',grp:49},{stn:'lae',grp:10},{stn:'lae',grp:60},{stn:'lae',grp:49},{stn:'med',grp:10},{stn:'med',grp:60},{stn:'med',grp:49},{stn:'bon',grp:10},{stn:'bon',grp:20},{stn:'bon',grp:60},{stn:'bon',grp:70},{stn:'bon',grp:49}],
+  i: [{stn:'fin',grp:20},{stn:'fin',grp:49},{stn:'tiv',grp:20},{stn:'tiv',grp:49},{stn:'bon',grp:20},{stn:'bon',grp:49},{stn:'lego',grp:10},{stn:'lego',grp:60},{stn:'lego',grp:49},{stn:'med',grp:10},{stn:'med',grp:20},{stn:'med',grp:60},{stn:'med',grp:70},{stn:'med',grp:49}],
+  j: [{stn:'bon',grp:20},{stn:'bon',grp:70},{stn:'bon',grp:49},{stn:'fin',grp:20},{stn:'fin',grp:49},{stn:'tiv',grp:20},{stn:'tiv',grp:49},{stn:'lego',grp:10},{stn:'lego',grp:20},{stn:'lego',grp:60},{stn:'lego',grp:70},{stn:'lego',grp:49}],
+  k: [{stn:'med',grp:10},{stn:'med',grp:49},{stn:'syk',grp:10},{stn:'syk',grp:49},{stn:'lego',grp:10},{stn:'lego',grp:49},{stn:'lae',grp:10},{stn:'lae',grp:49},{stn:'bon',grp:10},{stn:'bon',grp:20},{stn:'bon',grp:60},{stn:'bon',grp:70},{stn:'bon',grp:49}],
+  l: [{stn:'fin',grp:10},{stn:'fin',grp:49},{stn:'lego',grp:10},{stn:'lego',grp:60},{stn:'lego',grp:49},{stn:'lae',grp:10},{stn:'lae',grp:60},{stn:'lae',grp:49},{stn:'med',grp:10},{stn:'med',grp:60},{stn:'med',grp:49},{stn:'tiv',grp:10},{stn:'tiv',grp:20},{stn:'tiv',grp:60},{stn:'tiv',grp:70},{stn:'tiv',grp:49}],
+  m: [{stn:'syk',grp:20},{stn:'syk',grp:49},{stn:'tiv',grp:20},{stn:'tiv',grp:49},{stn:'lego',grp:10},{stn:'lego',grp:49},{stn:'bon',grp:20},{stn:'bon',grp:70},{stn:'bon',grp:49},{stn:'lae',grp:10},{stn:'lae',grp:20},{stn:'lae',grp:60},{stn:'lae',grp:70},{stn:'lae',grp:49}],
+  n: [{stn:'med',grp:10},{stn:'med',grp:60},{stn:'med',grp:49},{stn:'syk',grp:10},{stn:'syk',grp:49},{stn:'lae',grp:10},{stn:'lae',grp:49},{stn:'bon',grp:10},{stn:'bon',grp:20},{stn:'bon',grp:60},{stn:'bon',grp:70},{stn:'bon',grp:49}],
+  o: [{stn:'fin',grp:20},{stn:'fin',grp:49},{stn:'lae',grp:10},{stn:'lae',grp:49},{stn:'med',grp:10},{stn:'med',grp:49},{stn:'tiv',grp:20},{stn:'tiv',grp:49},{stn:'lego',grp:10},{stn:'lego',grp:20},{stn:'lego',grp:60},{stn:'lego',grp:70},{stn:'lego',grp:49}],
+  p: [{stn:'fin',grp:10},{stn:'fin',grp:49},{stn:'lego',grp:10},{stn:'lego',grp:60},{stn:'lego',grp:49},{stn:'med',grp:10},{stn:'med',grp:49},{stn:'tiv',grp:10},{stn:'tiv',grp:20},{stn:'tiv',grp:60},{stn:'tiv',grp:70},{stn:'tiv',grp:49}],
+  q: [{stn:'syk',grp:20},{stn:'syk',grp:49},{stn:'bon',grp:20},{stn:'bon',grp:70},{stn:'bon',grp:49},{stn:'tiv',grp:20},{stn:'tiv',grp:49},{stn:'lae',grp:10},{stn:'lae',grp:60},{stn:'lae',grp:49},{stn:'lego',grp:10},{stn:'lego',grp:20},{stn:'lego',grp:60},{stn:'lego',grp:70},{stn:'lego',grp:49}],
+  r: [{stn:'fin',grp:20},{stn:'fin',grp:49},{stn:'med',grp:10},{stn:'med',grp:49},{stn:'lego',grp:10},{stn:'lego',grp:49},{stn:'bon',grp:20},{stn:'bon',grp:49},{stn:'tiv',grp:10},{stn:'tiv',grp:20},{stn:'tiv',grp:60},{stn:'tiv',grp:70},{stn:'tiv',grp:49}],
+  s: [{stn:'syk',grp:10},{stn:'syk',grp:49},{stn:'lae',grp:10},{stn:'lae',grp:60},{stn:'lae',grp:49},{stn:'med',grp:10},{stn:'med',grp:60},{stn:'med',grp:49},{stn:'bon',grp:20},{stn:'bon',grp:70},{stn:'bon',grp:49},{stn:'lego',grp:10},{stn:'lego',grp:20},{stn:'lego',grp:60},{stn:'lego',grp:70},{stn:'lego',grp:49}],
+  t: [{stn:'fin',grp:20},{stn:'fin',grp:49},{stn:'tiv',grp:20},{stn:'tiv',grp:49},{stn:'bon',grp:20},{stn:'bon',grp:49},{stn:'lego',grp:10},{stn:'lego',grp:49},{stn:'med',grp:10},{stn:'med',grp:20},{stn:'med',grp:60},{stn:'med',grp:70},{stn:'med',grp:49}],
+  u: [{stn:'syk',grp:20},{stn:'syk',grp:49},{stn:'med',grp:10},{stn:'med',grp:60},{stn:'med',grp:49},{stn:'lae',grp:10},{stn:'lae',grp:49},{stn:'tiv',grp:20},{stn:'tiv',grp:49},{stn:'bon',grp:10},{stn:'bon',grp:20},{stn:'bon',grp:60},{stn:'bon',grp:70},{stn:'bon',grp:49}],
+  v: [{stn:'fin',grp:10},{stn:'fin',grp:49},{stn:'lego',grp:10},{stn:'lego',grp:49},{stn:'med',grp:10},{stn:'med',grp:49},{stn:'lae',grp:10},{stn:'lae',grp:49},{stn:'bon',grp:10},{stn:'bon',grp:20},{stn:'bon',grp:60},{stn:'bon',grp:70},{stn:'bon',grp:49}],
+  w: [{stn:'syk',grp:20},{stn:'syk',grp:49},{stn:'bon',grp:20},{stn:'bon',grp:70},{stn:'bon',grp:49},{stn:'lego',grp:10},{stn:'lego',grp:60},{stn:'lego',grp:49},{stn:'tiv',grp:10},{stn:'tiv',grp:20},{stn:'tiv',grp:60},{stn:'tiv',grp:70},{stn:'tiv',grp:49}],
+  x: [{stn:'fin',grp:20},{stn:'fin',grp:49},{stn:'tiv',grp:20},{stn:'tiv',grp:49},{stn:'lego',grp:10},{stn:'lego',grp:60},{stn:'lego',grp:49},{stn:'med',grp:10},{stn:'med',grp:60},{stn:'med',grp:49},{stn:'lae',grp:10},{stn:'lae',grp:20},{stn:'lae',grp:60},{stn:'lae',grp:70},{stn:'lae',grp:49}],
+  y: [{stn:'fin',grp:10},{stn:'fin',grp:49},{stn:'lae',grp:10},{stn:'lae',grp:60},{stn:'lae',grp:49},{stn:'bon',grp:20},{stn:'bon',grp:70},{stn:'bon',grp:49},{stn:'med',grp:10},{stn:'med',grp:20},{stn:'med',grp:60},{stn:'med',grp:70},{stn:'med',grp:49}],
+  z: [{stn:'med',grp:10},{stn:'med',grp:49},{stn:'syk',grp:10},{stn:'syk',grp:49},{stn:'lae',grp:33},{stn:'lae',grp:49}],
 };
 
 let selected = new Set(Object.keys(PERSONS));
@@ -951,7 +1069,7 @@ let selected = new Set(Object.keys(PERSONS));
 function buildRound1(selSet) {
   const entries = [];
   for (const pid of selSet) {
-    const wishes = ALL_WISHES[pid] || [];
+    const wishes = (ALL_WISHES[pid] || []).filter(w => w.stn in STATIONS);
     const stnOrder = {};
     let pos = 1;
     const seen = new Set();
@@ -1066,10 +1184,20 @@ function renderCapBoxRight() {
   for (const [stnId, stn] of Object.entries(STATIONS)) {
     html += `<strong>${stn.name}</strong>`;
     const capEntries = Object.entries(CAPACITY[stnId] || {})
-      .sort(([a], [b]) => (a == 33 ? 1 : b == 33 ? -1 : a - b));
+      .sort(([a], [b]) => { const k = g => g==33?999:g==49?998:+g; return k(a)-k(b); });
     for (const [grp, cap] of capEntries) {
       const gc = GROUP_COLORS[grp] || { fill: '#eee', text: '#555' };
       const grpLabel = `<span style="font-size:11px;font-weight:700;color:#94a3b8;width:34px;flex-shrink:0;font-family:'DM Mono',monospace">g${grp}</span>`;
+      if (+grp === 49 && cap > 0) {
+        const gc49 = GROUP_COLORS[49];
+        const occ49 = (placedState[`${stnId}-49`] || []).length;
+        html += `<div style="display:flex;align-items:center;gap:4px;margin-bottom:3px;">
+          ${grpLabel}
+          <span style="font-size:9px;font-weight:700;color:${gc49.text};background:${gc49.fill};padding:1px 6px;border-radius:4px;">Frit optag</span>
+          ${occ49 > 0 ? `<span style="color:#94a3b8;font-size:9px;margin-left:2px">${occ49} optaget</span>` : ''}
+        </div>`;
+        continue;
+      }
       if (cap === 0) {
         html += `<div style="display:flex;align-items:center;gap:4px;margin-bottom:3px;">
           ${grpLabel}
@@ -1118,9 +1246,9 @@ function renderActiveCards() {
   container.innerHTML = '';
   for (const pid of selected) {
     const person = PERSONS[pid];
-    const wishes = ALL_WISHES[pid] || [];
-    const seenStns = [], stnsArr = [];
-    for (const w of wishes) { if (!seenStns.includes(w.stn)) { seenStns.push(w.stn); stnsArr.push(w); } }
+    const wishes = (ALL_WISHES[pid] || []).filter(w => w.stn in STATIONS);
+    const seenStns = [];
+    for (const w of wishes) { if (!seenStns.includes(w.stn)) seenStns.push(w.stn); }
 
     const card = document.createElement('div');
     card.className = 'person-card';
@@ -1242,6 +1370,14 @@ function togglePerson(pid, on) {
   renderActiveCards();
 }
 
+function toggleIntro() {
+  const txt = document.getElementById('intro-text');
+  const btn = document.getElementById('intro-toggle');
+  const nowCollapsed = txt.classList.toggle('collapsed');
+  btn.classList.toggle('collapsed', nowCollapsed);
+  localStorage.setItem('introCollapsed', nowCollapsed ? '1' : '0');
+}
+
 function togglePassList() {
   document.getElementById('pass-header').classList.toggle('open');
   document.getElementById('active-cards').classList.toggle('open');
@@ -1256,9 +1392,23 @@ function toggleCfgList() {
 function toggleGrpCfg(stnId, grp, checked) {
   if (animating) return;
   const defaults = { 10: 3, 20: 3, 60: 1, 70: 1 };
-  CAPACITY[stnId][grp] = checked ? defaults[grp] : 0;
-  if (grp == 10 && !checked) CAPACITY[stnId][60] = 0;
-  if (grp == 20 && !checked) CAPACITY[stnId][70] = 0;
+  if (grp == 49) {
+    if (checked) {
+      // Frit optag: disable all other groups
+      for (const g of [10, 20, 60, 70, 33]) CAPACITY[stnId][g] = 0;
+      CAPACITY[stnId][49] = 999;
+    } else {
+      CAPACITY[stnId][49] = 0;
+      // Restore defaults for regular groups
+      const defs = ALL_CAPACITY_DEFS[stnId];
+      for (const g of [10, 20, 60, 70]) CAPACITY[stnId][g] = defs ? (defs[g] || 0) : 0;
+    }
+  } else {
+    CAPACITY[stnId][grp] = checked ? (defaults[grp] || 0) : 0;
+    if (grp == 10 && !checked) CAPACITY[stnId][60] = 0;
+    if (grp == 20 && !checked) CAPACITY[stnId][70] = 0;
+    if (checked) CAPACITY[stnId][49] = 0; // Enabling a regular group clears grp.49
+  }
   applyStationConfig();
   CAPACITY_ORIGINAL = JSON.parse(JSON.stringify(CAPACITY));
   savePrefs();
@@ -1267,12 +1417,14 @@ function toggleGrpCfg(stnId, grp, checked) {
 }
 
 function renderCapConfig() {
-  const GRP_COLORS = { 10: 'g10', 20: 'g20', 60: 'g60', 70: 'g70', 33: 'g33' };
-  const GRP_PAIRS  = { 60: 10, 70: 20, 33: -1 }; // 33 har ingen parent men er altid disabled
+  const GRP_COLORS = { 10: 'g10', 20: 'g20', 60: 'g60', 70: 'g70', 49: 'g49', 33: 'g33' };
+  const GRP_PAIRS  = { 60: 10, 70: 20 }; // parent dependency
   const list = document.getElementById('cfg-list');
   list.innerHTML = '';
   for (const [stnId, stn] of Object.entries(STATIONS)) {
     const cap = CAPACITY[stnId];
+    const has49 = (cap[49] || 0) > 0;
+    const hasRegular = [10, 20, 60, 70].some(g => (cap[g] || 0) > 0);
     const row = document.createElement('div');
     row.className = 'cap-cfg-row';
     const stnLabel = document.createElement('div');
@@ -1281,19 +1433,26 @@ function renderCapConfig() {
     row.appendChild(stnLabel);
     const grpWrap = document.createElement('div');
     grpWrap.className = 'cap-cfg-grps';
-    for (const grp of [10, 20, 60, 70, 33]) {
+    for (const grp of [10, 20, 60, 70, 49, 33]) {
       const parent = GRP_PAIRS[grp];
-      const isDisabled = grp === 33 || (parent !== undefined && parent !== -1 && cap[parent] === 0);
+      let isDisabled;
+      if (grp === 33) {
+        isDisabled = true;
+      } else if (grp === 49) {
+        isDisabled = false;
+      } else {
+        isDisabled = has49 || (parent !== undefined && (cap[parent] || 0) === 0);
+      }
       const label = document.createElement('label');
       label.className = 'grp-cb' + (isDisabled ? ' disabled' : '');
       const cb = document.createElement('input');
       cb.type = 'checkbox';
-      cb.checked = cap[grp] > 0 && !isDisabled;
+      cb.checked = (cap[grp] || 0) > 0 && !isDisabled;
       cb.disabled = isDisabled || locked;
       cb.onchange = () => toggleGrpCfg(stnId, grp, cb.checked);
       const tag = document.createElement('span');
       tag.className = GRP_COLORS[grp];
-      tag.textContent = `${grp}${cap[grp] > 0 ? ' ×' + cap[grp] : ''}`;
+      tag.textContent = grp === 49 ? '49' : `${grp}${(cap[grp] || 0) > 0 ? ' ×' + cap[grp] : ''}`;
       label.appendChild(cb);
       label.appendChild(tag);
       grpWrap.appendChild(label);
@@ -1348,7 +1507,7 @@ function selectAllGrps() {
 function selectNoneGrps() {
   if (animating || locked) return;
   for (const stnId of Object.keys(CAPACITY)) {
-    for (const grp of [10, 20, 60, 70]) {
+    for (const grp of [10, 20, 60, 70, 49]) {
       CAPACITY[stnId][grp] = 0;
     }
   }
@@ -1799,7 +1958,7 @@ function renderResultPanel() {
 
 /* Waypoints */
 function buildWaypoints() {
-  const stnProgress = { lego: 25, med: 97, tiv: 169, lae: 241, bon: 313 };
+  const stnProgress = computeSTNProgress(115);
   return Object.entries(stnProgress).map(([stnId, progress]) => ({
     progress,
     fn: () => {
@@ -1818,7 +1977,7 @@ function buildWaypoints() {
 
 /* Runde 2 waypoints — viser status per station mens KOT-fordelingen kører */
 function buildWaypoints2(rNr) {
-  const stnProgress = { lego: 25, med: 97, tiv: 169, lae: 241, bon: 313 };
+  const stnProgress = computeSTNProgress(trainAngle);
   return Object.entries(stnProgress).map(([stnId, progress]) => ({
     progress,
     fn: () => {
@@ -2049,7 +2208,7 @@ function applyKandidatPladsflyt() {
 function computeKandidatOptag() {
   const results = [];
   for (const pid of selected) {
-    const wishes = ALL_WISHES[pid] || [];
+    const wishes = (ALL_WISHES[pid] || []).filter(w => w.stn in STATIONS);
     // Find grp.33 ønsker for denne person
     const grp33Wishes = wishes
       .map((w, idx) => ({ ...w, rank: idx }))
@@ -2290,7 +2449,7 @@ function stepSlutOpsummering() {
     const kandidat = [...FINAL_KEYS].filter(k => k.endsWith('-33')).length;
     const afvist = selected.size - optaget;
     const totalCap = Object.values(CAPACITY).reduce((s, grps) =>
-      s + Object.values(grps).reduce((a, b) => a + b, 0), 0);
+      s + Object.entries(grps).reduce((a, [g, v]) => +g === 49 ? a : a + v, 0), 0);
     const ledige = totalCap - optaget;
     renderRunde1Statistik({
       titel: 'ENDELIG FORDELING',
@@ -2330,6 +2489,7 @@ function buildSteps() {
       for (const [stnId, stn] of Object.entries(STATIONS)) {
         if (Object.keys(stn.capacity).length > 0) uddSet.add(stnId);
         for (const [grp, cap] of Object.entries(stn.capacity)) {
+          if (+grp === 49) continue;
           grpSet.add(`${stnId}-${grp}`);
           totalPladser += cap;
         }
@@ -2403,7 +2563,7 @@ function stepRundeOpsummering(moves) {
     const optaget = new Set([...FINAL_KEYS].map(k => k.split('-')[0])).size;
     const afvist = selected.size - optaget;
     const totalCap = Object.values(CAPACITY).reduce((s, grps) =>
-      s + Object.values(grps).reduce((a, b) => a + b, 0), 0);
+      s + Object.entries(grps).reduce((a, [g, v]) => +g === 49 ? a : a + v, 0), 0);
     const ledige = totalCap - optaget;
     const pladserFlyttet = moves.reduce((s, m) => s + m.antal, 0);
     renderRunde1Statistik({ rNr, optaget, afvist, ledige, pladserFlyttet });
@@ -2504,15 +2664,47 @@ function stepTogkørsel(rNr) {
   };
 }
 
+let autokørPaused = false;
+
+function getAutokørDelay() {
+  return (parseFloat(document.getElementById('autokør-delay')?.value) || 2) * 1000;
+}
+
+function onAutokørChange() {
+  const on = document.getElementById('autokør-cb').checked;
+  document.getElementById('delay-label').style.display = on ? 'flex' : 'none';
+  document.getElementById('pause-btn').style.display = on ? '' : 'none';
+  if (!on) { autokørPaused = false; setPauseBtnState(false); }
+}
+
+function togglePause() {
+  autokørPaused = !autokørPaused;
+  setPauseBtnState(autokørPaused);
+  if (!autokørPaused && !document.getElementById('btn-next').disabled) {
+    document.getElementById('btn-next').disabled = true;
+    setTimeout(nextStep, getAutokørDelay());
+  }
+}
+
+function setPauseBtnState(paused) {
+  const btn = document.getElementById('pause-btn');
+  btn.textContent = paused ? '▶ Fortsæt' : '⏸ Pause';
+}
+
 function enableNextBtn(autoTrigger = true) {
-  document.getElementById('btn-next').disabled = false;
-  if (autoTrigger && document.getElementById('autokør-cb')?.checked) {
-    setTimeout(nextStep, 2000);
+  const auto = autoTrigger && document.getElementById('autokør-cb')?.checked;
+  if (auto && !autokørPaused) {
+    setTimeout(nextStep, getAutokørDelay());
+  } else {
+    document.getElementById('btn-next').disabled = false;
   }
 }
 
 function nextStep() {
   if (animating) return;
+  // Genaktiver altid knappen ved starten — den kan have været deaktiveret
+  // af vores autokør-scheduling fra forrige trin
+  document.getElementById('btn-next').disabled = false;
   if (step === 0) {
     ROUND1 = buildRound1(selected);
     FINAL_KEYS = computeFinalKeys(ROUND1);
@@ -2523,26 +2715,26 @@ function nextStep() {
     renderAppList();
     renderCapConfig();
     document.querySelectorAll('.btn-sel').forEach(b => b.disabled = true);
+    document.getElementById('autokør-cb').disabled = true;
+    document.getElementById('autokør-delay').disabled = true;
+    document.querySelectorAll('.model-btn').forEach(b => b.disabled = true);
   }
   if (step < steps.length) {
     steps[step++]();
     // Synkrone trin deaktiverer ikke knappen — autokør håndterer dem her
     if (document.getElementById('autokør-cb')?.checked &&
         !document.getElementById('btn-next').disabled) {
-      setTimeout(nextStep, 2000);
+      if (autokørPaused) {
+        // Forbliv aktiv så bruger kan trykke manuelt
+      } else {
+        document.getElementById('btn-next').disabled = true;
+        setTimeout(nextStep, getAutokørDelay());
+      }
     }
   }
 }
 
-function reset() {
-  if (animating) return;
-  locked = false;
-  document.querySelectorAll('.btn-sel').forEach(b => b.disabled = false);
-  // Gendan originale kapaciteter (applyPladsflyt og toggleGrpCfg muterer disse)
-  for (const stnId of Object.keys(CAPACITY)) {
-    CAPACITY[stnId] = JSON.parse(JSON.stringify(CAPACITY_ORIGINAL[stnId]));
-  }
-  applyStationConfig();
+function resetSimState() {
   step = 0;
   roundNumber = 0;
   prevFinalKeys = null;
@@ -2555,13 +2747,14 @@ function reset() {
   overflowEls = {};
   pavEls = {};
   placedState = {};
+  clearStatistik();
   renderCapBoxRight();
   renderCapConfig();
   renderAppList();
-
+  renderActiveCards();
   renderPladsflytClear();
   for (const pid of Object.keys(PERSONS)) {
-    document.getElementById(`card-${pid}`)?.classList.remove('active', 'done');
+    document.getElementById(`card-${pid}`)?.classList.remove('done');
     const rd = document.getElementById(`result-${pid}`);
     if (rd) rd.innerHTML = '';
   }
@@ -2573,12 +2766,29 @@ function reset() {
   document.getElementById('status-bar').innerHTML =
     '<span style="color:#94a3b8;">Vælg hvilke ansøgere og grupper der skal med i fordelingen. Derefter tryk Start</span>';
   document.getElementById('result-panel').classList.remove('show');
+  autokørPaused = false;
+  setPauseBtnState(false);
   enableNextBtn(false);
   document.getElementById('btn-next').textContent = '▶ Start';
 }
 
+function reset() {
+  if (animating) return;
+  locked = false;
+  document.querySelectorAll('.btn-sel').forEach(b => b.disabled = false);
+  document.getElementById('autokør-cb').disabled = false;
+  document.getElementById('autokør-delay').disabled = false;
+  document.querySelectorAll('.model-btn').forEach(b => b.disabled = false);
+  // Gendan originale kapaciteter (applyPladsflyt og toggleGrpCfg muterer disse)
+  for (const stnId of Object.keys(CAPACITY)) {
+    CAPACITY[stnId] = JSON.parse(JSON.stringify(CAPACITY_ORIGINAL[stnId]));
+  }
+  applyStationConfig();
+  resetSimState();
+}
+
 /* Init */
-// Indlæs gemte præferencer fra localStorage
+let CAPACITY_ORIGINAL = {};
 (function loadPrefs() {
   try {
     const savedSel = localStorage.getItem('metro_selected');
@@ -2586,17 +2796,14 @@ function reset() {
       const arr = JSON.parse(savedSel).filter(pid => pid in PERSONS);
       if (arr.length > 0) selected = new Set(arr);
     }
-    const savedCap = localStorage.getItem('metro_capacity');
-    if (savedCap) {
-      const sc = JSON.parse(savedCap);
-      for (const stnId of Object.keys(CAPACITY)) {
-        if (sc[stnId]) CAPACITY[stnId] = { ...CAPACITY[stnId], ...sc[stnId] };
-      }
-    }
   } catch(e) {}
 })();
-let CAPACITY_ORIGINAL = JSON.parse(JSON.stringify(CAPACITY));
-applyStationConfig();
+const savedModel = (() => { try { return parseInt(localStorage.getItem('metro_model') || '5'); } catch(e) { return 5; } })();
+applyModel(savedModel in MODEL_CONFIGS ? savedModel : 5);
+if (localStorage.getItem('introCollapsed') === '1') {
+  document.getElementById('intro-text').classList.add('collapsed');
+  document.getElementById('intro-toggle').classList.add('collapsed');
+}
 steps = buildSteps();
 renderAppList();
 renderActiveCards();
