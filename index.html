@@ -1052,10 +1052,11 @@ const LEARNING_TEXTS = {
         .map(pid => ({ name: PERSONS[pid]?.name, n: new Set(getWishes(pid).map(w => w.stn)).size }))
         .filter(a => a.n > 1).sort((a, b) => b.n - a.n).slice(0, 2);
       return `
-<p>Inden KOT-fordelingen starter, har systemet indlæst data fra tre kilder:</p>
+<p>Inden KOT-fordelingen kan starte skal der være indlæst data fra fire kilder:</p>
 <ul style="margin:12px 0;padding-left:22px;display:flex;flex-direction:column;gap:9px;">
+  <li><strong>Udbud</strong> — Alle uddannelser og udbud</li>
   <li><strong>Optagelse.dk</strong> — Alle ansøgere og deres prioriterede ønsker</li>
-  <li><strong>Uddannelserne</strong> — antal pladser pr. gruppe (kvote 1, kvote 2, standby) og regler for pladsflyt</li>
+  <li><strong>Uddannelserne</strong> — Grupper, samt pladsantal og regler for pladsflyt</li>
   <li><strong>Rangeringslister</strong> — Alle kvalificerede ansøgere inkl. karaktergennemsnit, kvote 2-point, standby m.m</li>
 </ul>
 <p>Klar til fordeling: <strong>${n} ansøgere</strong> · <strong>${stnList.length} uddannelser</strong> (${stnList.map(s => s.name).join(', ')}) · <strong>${totalCap} pladser</strong> i alt (ca. ${ratio} plads pr. ansøger).</p>
@@ -1083,7 +1084,7 @@ ${multiWish.length ? `<p>${multiWish.map(a => `<strong>${a.name}</strong> har s�
         return `<strong>${PERSONS[pid]?.name}</strong> har <strong>garanteret optagelse</strong> på ${STATIONS[stnId]?.name?.split(' ')[0]} grp.${grp} — ${PERSONS[pid]?.name?.split(' ')[0]} placeres automatisk øverst på rangeringslisten uanset karakterer`;
       }).filter(Boolean);
       return `
-<p>Fordelingen starter nu med at placere alle <strong>${selected.size} ansøgere midlertidigt</strong> på samtlige uddannelser de har søgt — uanset om der er plads.</p>
+<p>Fordelingen starter med at placere alle <strong>${selected.size} ansøgere midlertidigt</strong> på samtlige uddannelser og grupper de er indberettet på — i dette trin tages ikke hensyn til om der er plads.</p>
 ${multi.length ? `<p>For eksempel:</p>
 <ul style="margin:10px 0;padding-left:22px;display:flex;flex-direction:column;gap:7px;">
   ${multi.map(a => `<li><strong>${a.name}</strong> har søgt ${a.stns.length} uddannelser: ${a.stns.map(s => STATIONS[s]?.name?.split(' ')[0]).join(', ')}</li>`).join('')}
@@ -1091,7 +1092,7 @@ ${multi.length ? `<p>For eksempel:</p>
 <p>Disse ansøgere tæller med på <em>alle</em> deres ønskede uddannelser på én gang — algoritmen skal se alle præferencer inden den sorterer.</p>` : ''}
 ${singleCount ? `<p>${singleCount} ansøger${singleCount > 1 ? 'e har' : ' har'} kun søgt én uddannelse og placeres direkte.</p>` : ''}
 ${garInfo.length ? `<p style="background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;padding:10px 14px;margin-top:10px;">${garInfo.join('<br>')}.</p>` : ''}
-<p>Du vil nu se toget køre rundt og sætte ansøgerne af.</p>`;
+<p>Du vil nu se KOT fordelingen køre rundt og placere ansøgerne på uddannelserne.</p>`;
     }
   },
 
@@ -1121,11 +1122,11 @@ ${garInfo.length ? `<p style="background:#fef3c7;border:1px solid #f59e0b;border
           return `<strong>${PERSONS[pid]?.name}</strong> beholder sin garanterede plads på ${STATIONS[stnId]?.name?.split(' ')[0]} grp.${grp}`;
         });
       return `
-<p>Toget har sat alle ansøgere af. <strong>${multiEntries.length} ansøger${multiEntries.length === 1 ? '' : 'e'}</strong> sidder på mere end én uddannelse på én gang — nu ryddes der op.</p>
+<p>Alle ansøgere er placeret. <strong>${multiEntries.length} ansøger${multiEntries.length === 1 ? '' : 'e'}</strong> er placeret på mere end én uddannelse eller flere grupper på samme uddannelse — nu ryddes der op.</p>
 <p><strong>Princippet:</strong> hver ansøger beholder kun pladsen på sin højeste prioritet. De øvrige frigives til andre.</p>
 ${examples.length ? `<ul style="margin:12px 0;padding-left:22px;display:flex;flex-direction:column;gap:8px;">${examples.map(e => `<li>${e}</li>`).join('')}</ul>` : ''}
 ${garPlaced.length ? `<p style="background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;padding:10px 14px;margin-top:10px;">${garPlaced.join(' · ')} — garanteret optagelse sikrer pladsen uanset konkurrencen.</p>` : ''}
-<p>Efter clearing vil <strong>${totalPlaced} ansøgere</strong> have én plads${unplaced > 0 ? ` — <strong>${unplaced}</strong> står stadig uden` : ''}.</p>`;
+<p>Efter clearing er <strong>${totalPlaced} ansøgere</strong> tildelt en plads${unplaced > 0 ? ` — <strong>${unplaced}</strong> har ikke en plads` : ''}.</p>`;
     }
   },
 
@@ -1137,9 +1138,9 @@ ${garPlaced.length ? `<p style="background:#fef3c7;border:1px solid #f59e0b;bord
       const unplacedPids = [...selected].filter(pid => !placed.has(pid));
       const unplacedNames = unplacedPids.slice(0, 4).map(pid => PERSONS[pid]?.name);
       return `
-<p>Clearing er færdig. <strong>${placed.size} ansøgere</strong> har nu én plads${unplacedPids.length > 0 ? ` — <strong>${unplacedPids.length}</strong> har endnu ingen plads` : ' — alle er optaget'}.</p>
+<p>Clearingen er færdig. <strong>${placed.size} ansøgere</strong> har nu en plads${unplacedPids.length > 0 ? ` — <strong>${unplacedPids.length}</strong> har endnu ingen plads` : ' — alle er optaget'}.</p>
 ${unplacedPids.length ? `<p>Uden plads: <strong>${unplacedNames.join(', ')}${unplacedPids.length > 4 ? ` og ${unplacedPids.length - 4} andre` : ''}</strong>.</p>` : ''}
-<p>Nu tjekker KOT om der er ledige pladser i én gruppe som kan flyttes til en anden gruppe på samme uddannelse. For eksempel: hvis kvote 2 har ledige pladser men kvote 1 er fyldt, kan de ledige pladser flyttes til kvote 1.</p>
+<p>Nu tjekker KOT om der er ledige pladser i grupper som kan flyttes til en anden gruppe på samme uddannelse, hvor alle pladser er optaget. For eksempel: hvis kvote 2 har ledige pladser men kvote 1 er fyldt, kan de ledige pladser flyttes til kvote 1.</p>
 <p>Pladsflyt kan åbne for at ansøgere der venter på kvote 1 kan optages — selvom kvote 1 var "fuldt" efter clearing.</p>`;
     }
   },
@@ -1169,7 +1170,7 @@ ${unplacedPids.length ? `<p>Uden plads: <strong>${unplacedNames.join(', ')}${unp
   <li><strong>${unplacedCount} afvist</strong> — ingen plads endnu</li>
   <li><strong>${ledige} ledige pladser</strong> tilbage</li>
 </ul>
-${notFirst.length ? `<p><strong>${notFirst.length} ansøger${notFirst.length === 1 ? '' : 'e'}</strong> sidder ikke på sin 1. prioritet — fx sidder <strong>${notFirst[0].name}</strong> på ${notFirst[0].got} frem for ${notFirst[0].want}.</p><p>KOT kører en ny runde for at se om de kan rykke op.</p>` : '<p>Alle optagne sidder på deres højest mulige prioritet. KOT kører en ekstra runde for at bekræfte stabiliteten.</p>'}`;
+${notFirst.length ? `<p><strong>${notFirst.length} ansøger${notFirst.length === 1 ? '' : 'e'}</strong> har ikke fået deres 1. prioritet — fx sidder <strong>${notFirst[0].name}</strong> på ${notFirst[0].got} frem for ${notFirst[0].want}.</p><p>KOT kører en ny runde for at se om de kan rykke op.</p>` : '<p>Alle optagne sidder på deres højest mulige prioritet. KOT kører en ekstra runde for at bekræfte stabiliteten.</p>'}`;
     }
   },
 
@@ -1186,9 +1187,9 @@ ${notFirst.length ? `<p><strong>${notFirst.length} ansøger${notFirst.length ===
       }, []);
       const ex = candidates.slice(0, 3).map(a => a.type === 'unplaced' ? `<strong>${a.name}</strong> har ingen plads og håber på ${a.want}` : `<strong>${a.name}</strong> sidder på ${a.got} men ønsker ${a.want}`);
       return `
-<p>Pladsflyttet i runde 1 har måske frigjort pladser. KOT kører nu <strong>runde 2</strong> for at se om nogen kan flytte til en højere prioritet.</p>
+<p>Pladsflyttet i runde 1 har måske frigjort nogle pladser. KOT kører nu <strong>runde 2</strong> for at se om nogen kan flytte til en højere prioritet.</p>
 ${candidates.length ? `<p><strong>${candidates.length} ansøger${candidates.length === 1 ? '' : 'e'}</strong> sidder ikke på sin bedste mulige plads:</p>
-<ul style="margin:10px 0;padding-left:22px;display:flex;flex-direction:column;gap:6px;">${ex.map(e => `<li>${e}</li>`).join('')}${candidates.length > 3 ? `<li>... og ${candidates.length - 3} andre</li>` : ''}</ul>` : '<p>Alle sidder allerede på deres bedste plads — men algoritmen kører en ekstra runde for at bekræfte det.</p>'}`;
+<ul style="margin:10px 0;padding-left:22px;display:flex;flex-direction:column;gap:6px;">${ex.map(e => `<li>${e}</li>`).join('')}${candidates.length > 3 ? `<li>... og ${candidates.length - 3} andre</li>` : ''}</ul>` : '<p>Alle ansøgere har fået deres højest mulige prioritet — men algoritmen kører en ekstra runde for at bekræfte det.</p>'}`;
     }
   },
 
@@ -1208,9 +1209,9 @@ ${candidates.length ? `<p><strong>${candidates.length} ansøger${candidates.leng
       });
       const totalPlaced = new Set([...FINAL_KEYS].map(k => k.split('-')[0])).size;
       return `
-<p>Toget har kørt runde 2. Igen er der ansøgere som er midlertidigt placeret på flere uddannelser — nu ryddes der op på samme måde som i runde 1.</p>
+<p>Fordelingen har kørt runde 2. Igen er der ansøgere som er midlertidigt placeret på flere uddannelser — nu ryddes der op på samme måde som i runde 1.</p>
 ${examples.length ? `<ul style="margin:10px 0;padding-left:22px;display:flex;flex-direction:column;gap:6px;">${examples.map(e => `<li>${e}</li>`).join('')}</ul>` : ''}
-<p>Efter clearing: <strong>${totalPlaced} ansøgere</strong> har én plads.</p>`;
+<p>Efter clearing: <strong>${totalPlaced} ansøgere</strong> har en plads.</p>`;
     }
   },
 
@@ -1221,8 +1222,8 @@ ${examples.length ? `<ul style="margin:10px 0;padding-left:22px;display:flex;fle
       const placed = new Set([...FINAL_KEYS].map(k => k.split('-')[0]));
       const unplacedPids = [...selected].filter(pid => !placed.has(pid));
       return `
-<p>Clearing runde 2 er færdig. <strong>${placed.size} ansøgere</strong> har én plads${unplacedPids.length ? ` — <strong>${unplacedPids.length}</strong> venter stadig` : ''}.</p>
-<p>KOT tjekker igen om der er ledige pladser at flytte mellem grupper. Hver runde kan åbne for nye muligheder, fordi ansøgere kan have rykket til bedre pladser og dermed frigivet pladser i lavere grupper.</p>`;
+<p>Clearing runde 2 er færdig. <strong>${placed.size} ansøgere</strong> har fået en plads${unplacedPids.length ? ` — <strong>${unplacedPids.length}</strong> venter stadig` : ''}.</p>
+<p>KOT tjekker igen om der er ledige pladser at flytte mellem grupper. Hver runde kan åbne for nye muligheder, fordi ansøgere kan være flyttet til højere prioritet og dermed frigivet pladser i lavere grupper.</p>`;
     }
   },
 
@@ -1251,7 +1252,7 @@ ${examples.length ? `<ul style="margin:10px 0;padding-left:22px;display:flex;fle
   <li><strong>${unplacedCount} afvist</strong></li>
   <li><strong>${ledige} ledige pladser</strong></li>
 </ul>
-${notFirst.length ? `<p>${notFirst.length} ansøger${notFirst.length === 1 ? '' : 'e'} sidder stadig ikke på sin 1. prioritet${notFirst.length <= 3 ? ` (${notFirst.join(', ')})` : ''}. KOT kører runde 3.</p>` : '<p>Fordelingen er ved at stabilisere sig. KOT kører runde 3 for at bekræfte.</p>'}`;
+${notFirst.length ? `<p>${notFirst.length} ansøger${notFirst.length === 1 ? '' : 'e'} har stadig ikke fået deres 1. prioritet${notFirst.length <= 3 ? ` (${notFirst.join(', ')})` : ''}. KOT kører runde 3.</p>` : '<p>Fordelingen er ved at stabilisere sig. KOT kører runde 3 for at bekræfte.</p>'}`;
     }
   },
 
@@ -1267,7 +1268,7 @@ ${notFirst.length ? `<p>${notFirst.length} ansøger${notFirst.length === 1 ? '' 
         return acc;
       }, []);
       return `
-<p>KOT kører nu <strong>runde 3</strong>. Algoritmen gentager sig selv for at sikre at alle sidder på den bedst mulige plads.</p>
+<p>KOT kører nu <strong>runde 3</strong>. Algoritmen gentager sig selv for at sikre at alle ansøgere har fået deres højest mulige prioritet.</p>
 ${candidates.length ? `<p>Ansøgere der stadig kan forbedres: ${candidates.slice(0, 4).join(', ')}${candidates.length > 4 ? ` og ${candidates.length - 4} andre` : ''}.</p>` : '<p>Der er meget få der kan forbedres nu — algoritmen er næsten stabil.</p>'}`;
     }
   },
@@ -1279,7 +1280,7 @@ ${candidates.length ? `<p>Ansøgere der stadig kan forbedres: ${candidates.slice
       if (!FINAL_KEYS) return '<p>Clearing er ved at starte...</p>';
       const totalPlaced = new Set([...FINAL_KEYS].map(k => k.split('-')[0])).size;
       return `
-<p>Runde 3's togkørsel er overstået. Nu ryddes der igen op: <strong>én plads pr. ansøger</strong>, højeste prioritet beholdes.</p>
+<p>Runde 3 fordelingen er færdig. Nu ryddes der igen op: <strong>en plads pr. ansøger</strong>, højeste prioritet beholdes.</p>
 <p>Denne clearing er sandsynligvis kortere end de foregående, da færre ansøgere har ændret plads i denne runde.</p>
 <p>Efter clearing: <strong>${totalPlaced} ansøgere</strong> har én plads.</p>`;
     }
@@ -1293,7 +1294,7 @@ ${candidates.length ? `<p>Ansøgere der stadig kan forbedres: ${candidates.slice
       const unplacedPids = [...selected].filter(pid => !placed.has(pid));
       return `
 <p><strong>${placed.size} ansøgere</strong> er optaget${unplacedPids.length ? `, <strong>${unplacedPids.length}</strong> har stadig ingen plads` : ' — alle er optaget'}.</p>
-<p>KOT kører pladsflyt for tredje gang. Der er nu langt færre ledige pladser at flytte end i de første runder, og måske sker der ingen flytning denne gang.</p>`;
+<p>KOT kører pladsflyt for tredje gang. Der er nu langt færre ledige pladser at flytte end i de første runder, og måske sker der ingen pladsflyt denne gang.</p>`;
     }
   },
 
@@ -1314,7 +1315,7 @@ ${candidates.length ? `<p>Ansøgere der stadig kan forbedres: ${candidates.slice
   <li><strong>${unplacedCount} afvist</strong></li>
   <li><strong>${ledige} ledige pladser</strong></li>
 </ul>
-<p>KOT kører nu runde 4 — en afsluttende runde for at tjekke om algoritmen er nået til ro, eller om der stadig er ansøgere der kan forbedre sig.</p>`;
+<p>KOT kører nu runde 4 — en afsluttende runde for at tjekke om algoritmen er nået til ro, eller om der stadig er ansøgere der kan flyttes til en højere prioritet.</p>`;
     }
   },
 
@@ -1331,9 +1332,9 @@ ${candidates.length ? `<p>Ansøgere der stadig kan forbedres: ${candidates.slice
         return acc;
       }, []);
       return `
-<p>KOT kører nu <strong>runde 4</strong>. Denne runde er et stabilitetscheck: algoritmen kører én runde mere for at se om nogen ansøgere kan forbedre sig.</p>
+<p>KOT kører nu <strong>runde 4</strong>. Denne runde er et stabilitetscheck: algoritmen kører en runde mere for at se om nogen ansøgere ikke har deres højest mulige prioritet.</p>
 ${notFirst.length ? `<p>Endnu ${notFirst.length} ansøger${notFirst.length === 1 ? '' : 'e'} sidder ikke på sin 1. prioritet: <strong>${notFirst.slice(0, 3).join(', ')}${notFirst.length > 3 ? '...' : ''}</strong>.</p>` : ''}
-<p>Hvis ingen ændrer plads i denne runde, stopper algoritmen — <strong>fordelingen er stabil</strong>.</p>`;
+<p>Hvis ingen ændrer plads i denne runde, stopper algoritmen — og <strong>fordelingen er stabil</strong>.</p>`;
     }
   },
 
@@ -1344,8 +1345,8 @@ ${notFirst.length ? `<p>Endnu ${notFirst.length} ansøger${notFirst.length === 1
       const kandPids = ROUND1 ? [...new Set(ROUND1.filter(p => +p.grp === 33).map(p => p.person))] : [];
       const names = kandPids.map(pid => PERSONS[pid]?.name);
       return `
-<p>Den ordinære fordeling er nu stabil. Nu kører <strong>kandidatrunden</strong> — en særlig fase for ansøgere i gruppe 33.</p>
-<p>Gruppe 33 er for ansøgere med en relevant kandidatuddannelse, som søger en professionsbachelor. De konkurrerer ikke i de normale kvotegrupper, men vurderes særskilt af uddannelsen.</p>
+<p>Den ordinære fordeling er nu stabil. Nu køres en <strong>kandidatrunde</strong> — en særlig runde for ansøgere med en kandidatuddannelse.</p>
+<p>Gruppe 33 er for ansøgere med en kandidatuddannelse. De kan kun optages hvis der er ledige pladser på den uddannelse de har søgt.</p>
 ${kandPids.length > 0 ? `<p>I denne fordeling er der <strong>${kandPids.length} ansøger${kandPids.length === 1 ? '' : 'e'}</strong> med gruppe 33: <strong>${names.join(', ')}</strong>.</p><p>KOT tjekker nu om der er pladser til dem.</p>` : '<p>I denne fordeling er der <strong>ingen</strong> ansøgere med gruppe 33, så runden er hurtig overstået.</p>'}`;
     }
   },
@@ -1380,7 +1381,7 @@ ${kandPids.length > 0 ? `<p>I denne fordeling er der <strong>${kandPids.length} 
           return `<strong>${PERSONS[pid]?.name}</strong> (garanteret optagelse — ${STATIONS[stnId]?.name?.split(' ')[0]} grp.${grp})`;
         });
       return `
-<p>Algoritmen er <strong>stabil</strong> — ingen kan forbedre sig yderligere, og kandidatrunden er gennemført.</p>
+<p>Algoritmen er <strong>stabil</strong> — ingen kan forbedre deres placering yderligere, og kandidatrunden er gennemført.</p>
 <p>Det endelige resultat:</p>
 <ul style="margin:12px 0;padding-left:22px;display:flex;flex-direction:column;gap:7px;">
   <li><strong>${placedCount} optaget</strong>${kandidat > 0 ? ` — heraf ${kandidat} via gruppe 33` : ''}</li>
