@@ -2065,8 +2065,8 @@ function renderRangeringslister() {
           const p = PERSONS[pid];
           if (!p) return;
 
-          // Cutoff line between last spot and first without spot
-          if (idx === limit) {
+          // Cutoff line only before simulation runs
+          if (!simActive && idx === limit) {
             const cutDiv = document.createElement('div');
             cutDiv.className = 'rang-cutoff';
             cutDiv.innerHTML = `<span class="rang-cutoff-label">ingen plads</span>`;
@@ -3276,8 +3276,8 @@ function buildSteps() {
     // Step 1: Klar
     withLearning('runde1-klar', () => {
       clearStatistik();
-      setStatus('Runde 1 · Midlertidg placering', 'Tryk på næste for at fordele alle ansøgere midlertigt på de grupper de har søgt.');
-      setCenter('Start fordelingen', '');
+      setStatus('Runde 1 — Klar', 'Tryk på næste for at fordele alle ansøgere midlertidigt på de grupper de har søgt.');
+      setCenter('Runde 1', 'Klar');
     }),
     // Step 2: Runde 1 togkørsel (ingen modal — lad dem se det med det samme)
     () => {
@@ -3288,7 +3288,7 @@ function buildSteps() {
       animateTrain(115, 360, 6000, buildWaypoints(), () => {
         setStatus('Runde 1 — Midlertidigt optag',
           'Alle ansøgere er midlertidigt placeret på deres ønskede uddannelser. Tryk Næste for at rydde op så hver ansøger kun beholder pladsen på deres højeste prioritet.');
-        setCenter('Midlertidigt optag', 'Klar til clearing');
+        setCenter('Runde 1', 'Klar til clearing');
       });
     },
     // Step 3: Clearing efter runde 1
@@ -3302,8 +3302,8 @@ function buildSteps() {
 
 // Fabrik: clearing-trin (vises som "Clearing efter runde N")
 function doClearing(rNr, onDone) {
-  setStatus(`Clearing · Runde ${rNr}`, 'Rydder op — hver ansøger beholder pladsen med den højeste prioritet.');
-  setCenter('Clearing', 'Én plads pr. person');
+  setStatus(`Runde ${rNr} — Clearing`, 'Rydder op — hver ansøger beholder pladsen med den højeste prioritet.');
+  setCenter(`Runde ${rNr}`, 'Clearing');
   document.getElementById('btn-next').disabled = true;
   setTimeout(() => {
     // Gem fordeling inden clearing — bruges til stabilitetscheck efter næste togkørsel
@@ -3317,7 +3317,7 @@ function doClearing(rNr, onDone) {
       for (const stnId of Object.keys(STATIONS)) repositionStnPavs(stnId);
     }, 650);
     updateCardResults();
-    setStatus(`Clearing · Runde ${rNr} — Færdig`,
+    setStatus(`Runde ${rNr} — Clearing færdig`,
       'Hver ansøger er nu kun optaget på pladsen med sin højeste prioritet. Inden for samme uddannelse er pladsen på laveste gruppenumre beholdt, hvis ansøger var optaget i flere grupper.');
     enableNextBtn();
     if (onDone) onDone();
@@ -3346,8 +3346,8 @@ function stepRundeOpsummering(moves) {
 function stepPladsflyt() {
   const rNr = roundNumber; // fanges ved oprettelse
   return withLearning(`pladsflyt-${rNr}`, () => {
-    setStatus('Pladsflyt', 'Tjekker om ledige pladser kan flyttes mellem gruppe 10↔20 eller 60↔70...');
-    setCenter('Pladsflyt', 'Omfordeling');
+    setStatus(`Runde ${rNr} — Pladsflyt`, 'Tjekker om ledige pladser kan flyttes mellem gruppe 10↔20 eller 60↔70...');
+    setCenter(`Runde ${rNr}`, 'Pladsflyt');
     document.getElementById('btn-next').disabled = true;
 
     setTimeout(() => {
@@ -3363,23 +3363,23 @@ function stepPladsflyt() {
         renderRangeringslister();
 
         if (moves.length === 0) {
-          setStatus('Pladsflyt — ingen flytning',
+          setStatus(`Runde ${rNr} — Pladsflyt`,
             'Der er ingen ledige pladser at flytte.');
-          setCenter('Pladsflyt', 'Ingen ændringer');
+          setCenter(`Runde ${rNr}`, 'Ingen ændringer');
         } else {
           const total = moves.reduce((s, m) => s + m.antal, 0);
           const summary = moves.map(m =>
             `${STATIONS[m.stnId].name.split(' ')[0]}: ${m.antal} plads${m.antal>1?'er':''} fra grp.${m.fra}→grp.${m.til}`
           ).join(' · ');
-          setStatus('Pladsflyt — udført',
+          setStatus(`Runde ${rNr} — Pladsflyt`,
             `${total} plads${total>1?'er':''} flyttet. ${summary}`);
-          setCenter('Pladsflyt', `${total} plads${total>1?'er':''} flyttet`);
+          setCenter(`Runde ${rNr}`, `${total} plads${total>1?'er':''} flyttet`);
         }
         // Kø næste: opsummering efter hver runde
         steps.push(stepRundeOpsummering(moves));
       } catch (err) {
         console.error('Pladsflyt fejl:', err);
-        setStatus('Pladsflyt — fejl', `Fejl: ${err.message}`);
+        setStatus(`Runde ${rNr} — Pladsflyt fejl`, `Fejl: ${err.message}`);
       }
       enableNextBtn();
     }, 600);
