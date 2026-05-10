@@ -1012,7 +1012,7 @@ h1 {
     </div>
     <div style="padding:18px 32px 24px;border-top:1px solid #e2e8f0;display:flex;justify-content:flex-end;flex-shrink:0;">
       <button onclick="closeLearningModal()" style="background:linear-gradient(135deg,#4f46e5,#7c3aed);color:white;border:none;border-radius:12px;padding:13px 32px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(79,70,229,0.3);">
-        Forstået — vis næste trin ▶
+        Forstået
       </button>
     </div>
   </div>
@@ -1069,7 +1069,7 @@ const LEARNING_TEXTS = {
     title: 'Runde 1 — Midlertidigt optag',
     body: () => {
       const multi = [...selected]
-        .map(pid => ({ name: PERSONS[pid]?.name, stns: [...new Set(getWishes(pid).map(w => w.stn))] }))
+        .map(pid => { const ws = getWishes(pid); return { name: PERSONS[pid]?.name, stns: [...new Set(ws.map(w => w.stn))], grpCount: ws.length }; })
         .filter(a => a.stns.length > 1).slice(0, 3);
       const singleCount = [...selected]
         .filter(pid => new Set(getWishes(pid).map(w => w.stn)).size === 1).length;
@@ -1079,16 +1079,18 @@ const LEARNING_TEXTS = {
         if (!garKey) return null;
         const parts = garKey.split('-');
         const stnId = parts.slice(1,-1).join('-'), grp = parts[parts.length-1];
-        return `<strong>${PERSONS[pid]?.name}</strong> har <strong>garanteret optagelse</strong> på ${STATIONS[stnId]?.name?.split(' ')[0]} grp.${grp} — ${PERSONS[pid]?.name?.split(' ')[0]} placeres automatisk øverst på rangeringslisten uanset karakterer`;
+        const firstName = PERSONS[pid]?.name?.split(' ')[0];
+        const stnShort = STATIONS[stnId]?.name?.split(' ')[0];
+        return `<strong>${PERSONS[pid]?.name}</strong> har <strong>garanteret optagelse</strong> på ${stnShort} grp.${grp} — det betyder at ${firstName} altid er øverst på rangeringslisten der. Men i runde 1 placeres ${firstName} <em>på alle sine ønskede uddannelser</em> — også de højere prioriteter. Garanteret optagelse er et sikkerhedsnet: efter clearing beholder ${firstName} kun den bedst opnåelige plads, og ender kun på ${stnShort} grp.${grp} hvis ingen af de højere prioriteter kunne opfyldes.`;
       }).filter(Boolean);
       return `
 <p>Fordelingen starter med at placere alle <strong>${selected.size} ansøgere midlertidigt</strong> på samtlige uddannelser og grupper de er indberettet på — i dette trin tages ikke hensyn til om der er plads.</p>
 ${multi.length ? `<p>For eksempel:</p>
 <ul style="margin:10px 0;padding-left:22px;display:flex;flex-direction:column;gap:7px;">
-  ${multi.map(a => `<li><strong>${a.name}</strong> har søgt ${a.stns.length} uddannelser: ${a.stns.map(s => STATIONS[s]?.name?.split(' ')[0]).join(', ')}</li>`).join('')}
+  ${multi.map(a => `<li><strong>${a.name}</strong> har søgt ${a.stns.length} uddannelser med ${a.grpCount} grupper i alt: ${a.stns.map(s => STATIONS[s]?.name?.split(' ')[0]).join(', ')}</li>`).join('')}
 </ul>
 <p>Disse ansøgere tæller med på <em>alle</em> deres ønskede uddannelser på én gang — algoritmen skal se alle præferencer inden den sorterer.</p>` : ''}
-${singleCount ? `<p>${singleCount} ansøger${singleCount > 1 ? 'e har' : ' har'} kun søgt én uddannelse og placeres direkte.</p>` : ''}
+${singleCount ? `<p>${singleCount} ansøger${singleCount > 1 ? 'e har' : ' har'} kun søgt én uddannelse — de kan stadig være indberettet på flere grupper under den og indgår også i clearing.</p>` : ''}
 ${garInfo.length ? `<p style="background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;padding:10px 14px;margin-top:10px;">${garInfo.join('<br>')}.</p>` : ''}
 <p>Du vil nu se KOT fordelingen køre rundt og placere ansøgerne på uddannelserne.</p>`;
     }
@@ -1183,11 +1185,11 @@ ${notFirst.length ? `<p><strong>${notFirst.length} ansøger${notFirst.length ===
         else { const stn = k.split('-').slice(1, -1).join('-'); if (w.length > 1 && w[0] !== stn) acc.push({ name: PERSONS[pid]?.name, want: STATIONS[w[0]]?.name?.split(' ')[0], got: STATIONS[stn]?.name?.split(' ')[0], type: 'lower' }); }
         return acc;
       }, []);
-      const ex = candidates.slice(0, 3).map(a => a.type === 'unplaced' ? `<strong>${a.name}</strong> har ingen plads og håber på ${a.want}` : `<strong>${a.name}</strong> sidder på ${a.got} men ønsker ${a.want}`);
+      const ex = candidates.slice(0, 3).map(a => a.type === 'unplaced' ? `<strong>${a.name}</strong> har ingen plads og ønsker ${a.want}` : `<strong>${a.name}</strong> sidder på ${a.got} men ønsker ${a.want}`);
       return `
-<p>Pladsflyttet i runde 1 har måske frigjort nogle pladser. KOT kører nu <strong>runde 2</strong> for at se om nogen kan flytte til en højere prioritet.</p>
-${candidates.length ? `<p><strong>${candidates.length} ansøger${candidates.length === 1 ? '' : 'e'}</strong> sidder ikke på sin bedste mulige plads:</p>
-<ul style="margin:10px 0;padding-left:22px;display:flex;flex-direction:column;gap:6px;">${ex.map(e => `<li>${e}</li>`).join('')}${candidates.length > 3 ? `<li>... og ${candidates.length - 3} andre</li>` : ''}</ul>` : '<p>Alle ansøgere har fået deres højest mulige prioritet — men algoritmen kører en ekstra runde for at bekræfte det.</p>'}`;
+<p>KOT har nu kørt <strong>runde 2</strong> for at tjekke om nogen kunne flyttes til en højere prioritet efter pladsflyttet i runde 1.</p>
+${candidates.length ? `<p><strong>${candidates.length} ansøger${candidates.length === 1 ? '' : 'e'}</strong> sidder stadig ikke på sin bedste mulige plads:</p>
+<ul style="margin:10px 0;padding-left:22px;display:flex;flex-direction:column;gap:6px;">${ex.map(e => `<li>${e}</li>`).join('')}${candidates.length > 3 ? `<li>... og ${candidates.length - 3} andre</li>` : ''}</ul>` : '<p>Alle ansøgere har nu fået deres højest mulige prioritet.</p>'}`;
     }
   },
 
@@ -1266,8 +1268,8 @@ ${notFirst.length ? `<p>${notFirst.length} ansøger${notFirst.length === 1 ? '' 
         return acc;
       }, []);
       return `
-<p>KOT kører nu <strong>runde 3</strong>. Algoritmen gentager sig selv for at sikre at alle ansøgere har fået deres højest mulige prioritet.</p>
-${candidates.length ? `<p>Ansøgere der stadig kan forbedres: ${candidates.slice(0, 4).join(', ')}${candidates.length > 4 ? ` og ${candidates.length - 4} andre` : ''}.</p>` : '<p>Der er meget få der kan forbedres nu — algoritmen er næsten stabil.</p>'}`;
+<p>KOT har nu kørt <strong>runde 3</strong>. Algoritmen gentager sig selv for at sikre at alle ansøgere har fået deres højest mulige prioritet.</p>
+${candidates.length ? `<p>Ansøgere der stadig ikke sidder optimalt: ${candidates.slice(0, 4).join(', ')}${candidates.length > 4 ? ` og ${candidates.length - 4} andre` : ''}.</p>` : '<p>Ingen kan forbedres yderligere — algoritmen er næsten stabil.</p>'}`;
     }
   },
 
@@ -1330,9 +1332,9 @@ ${candidates.length ? `<p>Ansøgere der stadig kan forbedres: ${candidates.slice
         return acc;
       }, []);
       return `
-<p>KOT kører nu <strong>runde 4</strong>. Denne runde er et stabilitetscheck: algoritmen kører en runde mere for at se om nogen ansøgere ikke har deres højest mulige prioritet.</p>
-${notFirst.length ? `<p>Endnu ${notFirst.length} ansøger${notFirst.length === 1 ? '' : 'e'} sidder ikke på sin 1. prioritet: <strong>${notFirst.slice(0, 3).join(', ')}${notFirst.length > 3 ? '...' : ''}</strong>.</p>` : ''}
-<p>Hvis ingen ændrer plads i denne runde, stopper algoritmen — og <strong>fordelingen er stabil</strong>.</p>`;
+<p>KOT har nu kørt <strong>runde 4</strong> som stabilitetscheck — en ekstra runde for at bekræfte at ingen ansøgere kan flyttes til en højere prioritet.</p>
+${notFirst.length ? `<p>Endnu ${notFirst.length} ansøger${notFirst.length === 1 ? '' : 'e'} sidder ikke på sin 1. prioritet: <strong>${notFirst.slice(0, 3).join(', ')}${notFirst.length > 3 ? '...' : ''}</strong>.</p>` : '<p>Alle ansøgere sidder nu på deres bedst mulige prioritet.</p>'}
+<p>Se statusbaren — hvis ingen ændrede plads i denne runde er <strong>fordelingen stabil</strong>.</p>`;
     }
   },
 
@@ -1343,9 +1345,9 @@ ${notFirst.length ? `<p>Endnu ${notFirst.length} ansøger${notFirst.length === 1
       const kandPids = ROUND1 ? [...new Set(ROUND1.filter(p => +p.grp === 33).map(p => p.person))] : [];
       const names = kandPids.map(pid => PERSONS[pid]?.name);
       return `
-<p>Den ordinære fordeling er nu stabil. Nu køres en <strong>kandidatrunde</strong> — en særlig runde for ansøgere med en kandidatuddannelse.</p>
+<p>Den ordinære fordeling er nu stabil, og <strong>kandidatrunden</strong> er kørt — en særlig runde for ansøgere med en kandidatuddannelse.</p>
 <p>Gruppe 33 er for ansøgere med en kandidatuddannelse. De kan kun optages hvis der er ledige pladser på den uddannelse de har søgt.</p>
-${kandPids.length > 0 ? `<p>I denne fordeling er der <strong>${kandPids.length} ansøger${kandPids.length === 1 ? '' : 'e'}</strong> med gruppe 33: <strong>${names.join(', ')}</strong>.</p><p>KOT tjekker nu om der er pladser til dem.</p>` : '<p>I denne fordeling er der <strong>ingen</strong> ansøgere med gruppe 33, så runden er hurtig overstået.</p>'}`;
+${kandPids.length > 0 ? `<p>I denne fordeling er der <strong>${kandPids.length} ansøger${kandPids.length === 1 ? '' : 'e'}</strong> med gruppe 33: <strong>${names.join(', ')}</strong>. Se om de er optaget i kapacitetsvisningen.</p>` : '<p>I denne fordeling er der <strong>ingen</strong> ansøgere med gruppe 33, så runden er hurtig overstået.</p>'}`;
     }
   },
 
@@ -1417,7 +1419,7 @@ function showLearningModal(title, bodyOrFn) {
 
 function closeLearningModal() {
   document.getElementById('learning-modal').style.display = 'none';
-  nextStep();
+  document.getElementById('btn-next').disabled = false;
 }
 
 function onLæringsChange() {
@@ -1916,25 +1918,30 @@ function renderCapBoxRight() {
         </div>`;
         continue;
       }
-      const occupants = placedState[`${stnId}-${grp}`] || [];
+      const occupants = [...(placedState[`${stnId}-${grp}`] || [])].sort((a, b) => {
+        const ag = GARANTERET_SET.has(`${a}-${stnId}-${grp}`) ? 0 : 1;
+        const bg = GARANTERET_SET.has(`${b}-${stnId}-${grp}`) ? 0 : 1;
+        return ag - bg;
+      });
       const overflow = Math.max(0, occupants.length - cap);
       const free = cap - Math.min(occupants.length, cap);
       let bar = '';
       for (let i = 0; i < cap; i++) {
         const filled = i < occupants.length;
+        const isGar = filled && occupants[i] && GARANTERET_SET.has(`${occupants[i]}-${stnId}-${grp}`);
         bar += `<span style="
           display:inline-block;
           width:18px;height:18px;
           border-radius:50%;
           margin-right:2px;
-          background:${filled ? gc.fill : '#f1f5f9'};
-          border:1.5px solid ${filled ? '#aaa' : '#e2e8f0'};
+          background:${filled ? (isGar ? '#fef3c7' : gc.fill) : '#f1f5f9'};
+          border:${isGar ? '2px solid #f59e0b' : `1.5px solid ${filled ? '#aaa' : '#e2e8f0'}`};
           vertical-align:middle;
           font-size:11px;
           line-height:18px;
           text-align:center;
           font-weight:700;
-          color:${gc.text};
+          color:${isGar ? '#92400e' : gc.text};
         ">${filled && occupants[i] ? occupants[i].toUpperCase() : ''}</span>`;
       }
       if (overflow > 0) {
@@ -3445,6 +3452,8 @@ function stepSlutOpsummering() {
     if (learningMode) {
       document.getElementById('status-bar').innerHTML =
         `<span class="step-badge" style="background:#6366f1">Læringsmode</span><span style="color:#e2e8f0">Tryk <strong>Genstart</strong> for at lave dine egne simuleringer</span>`;
+      const sluttxt = LEARNING_TEXTS['slutopsummering'];
+      if (sluttxt) showLearningModal(sluttxt.title, sluttxt.body);
       learningMode = false;
       document.getElementById('lærings-cb').checked = false;
       savePrefs();
@@ -3685,6 +3694,19 @@ function setPauseBtnState(paused) {
 }
 
 function enableNextBtn(autoTrigger = true) {
+  afterStepDone(autoTrigger);
+}
+
+function afterStepDone(autoTrigger = true) {
+  if (learningMode) {
+    const prevKey = steps[step - 1]?._learningKey;
+    const txt = prevKey && LEARNING_TEXTS[prevKey];
+    if (txt) {
+      document.getElementById('btn-next').disabled = true;
+      showLearningModal(txt.title, txt.body);
+      return;
+    }
+  }
   const auto = autoTrigger && document.getElementById('autokør-cb')?.checked;
   if (auto && !autokørPaused) {
     if (autokørTimerId) clearTimeout(autokørTimerId);
@@ -3696,17 +3718,6 @@ function enableNextBtn(autoTrigger = true) {
 
 function nextStep() {
   if (animating) return;
-  // Læringsmode: vis forklaring inden trinnet kører
-  if (learningMode && !learningPending && step < steps.length) {
-    const key = steps[step]._learningKey;
-    const txt = key && LEARNING_TEXTS[key];
-    if (txt) {
-      learningPending = true;
-      showLearningModal(txt.title, txt.body);
-      return;
-    }
-  }
-  learningPending = false;
   document.getElementById('btn-next').disabled = false;
   if (step === 0) {
     ROUND1 = buildRound1(selected);
@@ -3724,15 +3735,10 @@ function nextStep() {
   }
   if (step < steps.length) {
     steps[step++]();
-    // Synkrone trin deaktiverer ikke knappen — autokør håndterer dem her
-    if (document.getElementById('autokør-cb')?.checked &&
-        !document.getElementById('btn-next').disabled) {
-      if (autokørPaused) {
-        // Forbliv aktiv så bruger kan trykke manuelt
-      } else {
-        document.getElementById('btn-next').disabled = true;
-        setTimeout(nextStep, getAutokørDelay());
-      }
+    // Synkrone trin: knappen er stadig aktiv — kør afterStepDone nu
+    // Asynkrone trin: trin-funktionen deaktiverer knappen og kalder enableNextBtn() når de er færdige
+    if (!document.getElementById('btn-next').disabled) {
+      afterStepDone(true);
     }
   }
 }
