@@ -1202,7 +1202,7 @@ ${multi.length ? `<p>F.eks.:</p>
 </ul>
 <p>Disse ansøgere er nu midlertidigt placeret på <em>alle</em> deres ønskede uddannelser på én gang — algoritmen skal kende alle rangeringer inden den fordeler.</p>` : ''}
 ${singleCount ? `<p>${singleCount} ansøger${singleCount > 1 ? 'e har' : ' har'} kun søgt én uddannelse — de kan stadig være indberettet på flere grupper under den og indgår også i clearing.</p>` : ''}
-${garInfo.length ? `<p style="background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;padding:10px 14px;margin-top:10px;">${garInfo.join('<br>')}.</p>` : ''}`;
+${garInfo.length ? `<p style="background:var(--rang-gar-score-bg);border:1px solid var(--rang-gar-score-border);color:var(--rang-gar-color);border-radius:6px;padding:10px 14px;margin-top:10px;">${garInfo.join('<br>')}.</p>` : ''}`;
     }
   },
 
@@ -1235,7 +1235,7 @@ ${garInfo.length ? `<p style="background:#fef3c7;border:1px solid #f59e0b;border
       return `
 <p>Clearingen er gennemført. <strong>${multiEntries.length} ansøger${multiEntries.length === 1 ? '' : 'e'}</strong> var placeret på mere end én uddannelse eller gruppe — hver ansøger har nu kun beholdt pladsen på sin højeste prioritet, og de øvrige pladser er frigivet.</p>
 ${examples.length ? `<p style="margin:10px 0 4px">F.eks.:</p><ul style="margin:0 0 12px;padding-left:22px;display:flex;flex-direction:column;gap:8px;">${examples.map(e => `<li>${e}</li>`).join('')}</ul>` : ''}
-${garPlaced.length ? `<p style="background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;padding:10px 14px;margin-top:10px;">${garPlaced.join(' · ')} — garanteret optagelse sikrer pladsen uanset øvrige ansøgeres rangeringer.</p>` : ''}
+${garPlaced.length ? `<p style="background:var(--rang-gar-score-bg);border:1px solid var(--rang-gar-score-border);color:var(--rang-gar-color);border-radius:6px;padding:10px 14px;margin-top:10px;">${garPlaced.join(' · ')} — garanteret optagelse sikrer pladsen uanset øvrige ansøgeres rangeringer.</p>` : ''}
 <p><strong>${totalPlaced} ansøgere</strong> er tildelt én plads${unplaced > 0 ? ` — <strong>${unplaced}</strong> har endnu ingen plads` : ''}.</p>`;
     }
   },
@@ -1545,7 +1545,7 @@ ${kandPids.length > 0
   ${unplacedCount > 0 ? `<li><strong>${unplacedCount} ikke optaget</strong></li>` : '<li>Alle ansøgere er optaget</li>'}
   ${ledige > 0 ? `<li><strong>${ledige} ledige pladser</strong></li>` : '<li>Alle pladser er fyldt</li>'}
 </ul>
-${garFinal.length ? `<p style="background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;padding:10px 14px;">${garFinal.join(' · ')} — optaget via garanteret optagelse.</p>` : ''}
+${garFinal.length ? `<p style="background:var(--rang-gar-score-bg);border:1px solid var(--rang-gar-score-border);color:var(--rang-gar-color);border-radius:6px;padding:10px 14px;">${garFinal.join(' · ')} — optaget via garanteret optagelse.</p>` : ''}
 ${priLines ? `<p>Prioritetsfordeling: ${priLines}.</p>` : ''}
 <p>Dette er det resultat, ansøgerne ville modtage i deres optagelsesbrev.</p>`;
     }
