@@ -1364,9 +1364,9 @@ function onLæringsChange() {
     applyStationConfig();
     WISH_OVERRIDE = null;
     selected = new Set(Object.keys(PERSONS));
-    savePrefs();
     updateSelCount();
   }
+  savePrefs();
   reset();
 }
 /* ────────────────────────────────────────────────────────────────── */
@@ -2181,6 +2181,7 @@ function savePrefs() {
   try {
     localStorage.setItem('metro_selected', JSON.stringify([...selected]));
     localStorage.setItem('metro_capacity', JSON.stringify(CAPACITY));
+    localStorage.setItem('metro_learning', learningMode ? '1' : '0');
   } catch(e) {}
 }
 
@@ -3234,6 +3235,7 @@ function stepSlutOpsummering() {
         `<span class="step-badge" style="background:#6366f1">Læringsmode</span><span style="color:#e2e8f0">Tryk <strong>Genstart</strong> for at lave dine egne simuleringer</span>`;
       learningMode = false;
       document.getElementById('lærings-cb').checked = false;
+      savePrefs();
     }
     document.querySelectorAll('.model-btn').forEach(b => b.disabled = false);
     document.getElementById('autokør-cb').disabled = false;
@@ -3611,7 +3613,8 @@ renderActiveCards();
 renderCapConfig();
 renderCapBoxRight();
 positionTrain(115);
-document.getElementById('lærings-cb').checked = true;
+const savedLæring = localStorage.getItem('metro_learning');
+document.getElementById('lærings-cb').checked = savedLæring === null ? true : savedLæring === '1';
 onLæringsChange();
 </script>
 </body>
