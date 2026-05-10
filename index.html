@@ -906,6 +906,17 @@ h1 {
           <circle cx="14"  cy="13" r="4.5" fill="#334155"/>
           <text x="0" y="5" text-anchor="middle" font-size="9" fill="white" font-weight="800" font-family="DM Mono, monospace" letter-spacing="1">KOT</text>
         </g>
+
+        <defs>
+          <filter id="tb-shadow" x="-15%" y="-15%" width="130%" height="130%">
+            <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.13"/>
+          </filter>
+        </defs>
+        <g id="train-bubble" style="display:none" pointer-events="none">
+          <rect id="tb-rect" rx="9" ry="9" fill="white" stroke="#e2e8f0" stroke-width="1.5" filter="url(#tb-shadow)"/>
+          <text id="tb-name" font-family="DM Sans, sans-serif" font-size="12" font-weight="700" fill="#1e293b"/>
+          <text id="tb-info" font-family="DM Sans, sans-serif" font-size="10" fill="#64748b"/>
+        </g>
       </svg>
 
       <div class="model-selector" id="model-selector">
@@ -2500,6 +2511,43 @@ function positionTrain(angle) {
     `translate(${x.toFixed(1)},${y.toFixed(1)}) rotate(${(-(angle - 90)).toFixed(1)})`);
 }
 
+function showTrainBubble(stnId, infoText) {
+  const stn = STATIONS[stnId];
+  if (!stn) return;
+  const BW = 178, BH = 52, PAD = 10, GAP = 10;
+  const normAngle = ((stn.angle % 360) + 360) % 360;
+  const rad = normAngle * DEG;
+  const outerX = CX + (R + 30) * Math.cos(rad);
+  const outerY = CY - (R + 30) * Math.sin(rad);
+  let bx, by;
+  if (normAngle > 45 && normAngle <= 135) {
+    bx = outerX - BW / 2; by = outerY - BH - GAP;
+  } else if (normAngle > 135 && normAngle <= 225) {
+    bx = outerX - BW - GAP; by = outerY - BH / 2;
+  } else if (normAngle > 225 && normAngle <= 315) {
+    bx = outerX - BW / 2; by = outerY + GAP;
+  } else {
+    bx = outerX + GAP; by = outerY - BH / 2;
+  }
+  bx = Math.max(4, Math.min(620 - BW - 4, bx));
+  by = Math.max(4, Math.min(520 - BH - 4, by));
+  const r = document.getElementById('tb-rect');
+  r.setAttribute('x', Math.round(bx)); r.setAttribute('y', Math.round(by));
+  r.setAttribute('width', BW); r.setAttribute('height', BH);
+  const t1 = document.getElementById('tb-name');
+  t1.setAttribute('x', Math.round(bx + PAD)); t1.setAttribute('y', Math.round(by + 19));
+  t1.textContent = stn.name;
+  const t2 = document.getElementById('tb-info');
+  t2.setAttribute('x', Math.round(bx + PAD)); t2.setAttribute('y', Math.round(by + 37));
+  t2.textContent = infoText;
+  document.getElementById('train-bubble').style.display = '';
+}
+
+function hideTrainBubble() {
+  const el = document.getElementById('train-bubble');
+  if (el) el.style.display = 'none';
+}
+
 function animateTrain(fromA, totalDeg, ms, waypoints, onDone) {
   animating = true;
   document.getElementById('btn-next').disabled = true;
@@ -2738,6 +2786,12 @@ function buildWaypoints() {
       const names = [...new Set(here.map(p => PERSONS[p.person].name))].join(', ');
       setStatus(`Runde 1 · ${stn.name}`,
         names ? `${names} sættes foreløbigt af her.` : 'Ingen ansøgere til denne station.');
+      const cap = CAPACITY[stnId] || {};
+      const totalSpots = Object.entries(cap).reduce((s, [g, v]) => +g !== 33 ? s + v : s, 0);
+      const info = here.length > 0
+        ? `${here.length} placeret midlertidigt · ${totalSpots} plads${totalSpots !== 1 ? 'er' : ''} i alt`
+        : `Ingen ansøgere · ${totalSpots} plads${totalSpots !== 1 ? 'er' : ''} ledig${totalSpots !== 1 ? 'e' : ''}`;
+      showTrainBubble(stnId, info);
     }
   }));
 }
@@ -2767,6 +2821,13 @@ function buildWaypoints2(rNr) {
       let msg = newHere.length > 0 ? `${newHere.join(', ')} er placeret her.` : 'Ingen placeret her.';
       if (moved.length > 0) msg += ` ${moved.join(', ')} er rykket videre.`;
       setStatus(`Runde ${rNr} · ${stn.name}`, msg);
+      const cap = CAPACITY[stnId] || {};
+      const totalSpots = Object.entries(cap).reduce((s, [g, v]) => +g !== 33 ? s + v : s, 0);
+      const free = Math.max(0, totalSpots - newHere.length);
+      const bubbleInfo = newHere.length > 0
+        ? `${newHere.length} placeret · ${free} ledig${free !== 1 ? 'e' : ''} plads${free !== 1 ? 'er' : ''}`
+        : `Ingen placeret · ${totalSpots} ledig${totalSpots !== 1 ? 'e' : ''} plads${totalSpots !== 1 ? 'er' : ''}`;
+      showTrainBubble(stnId, bubbleInfo);
     }
   }));
 }
@@ -3138,6 +3199,7 @@ function stepKandidatrunde() {
               const names = here.map(o => PERSONS[o.pid]?.name).join(', ');
               setStatus(`Kandidatrunden · ${STATIONS[stnId].name}`,
                 `${names} optages på grp.33`);
+              showTrainBubble(stnId, `${names} optages på grp. 33`);
 
               for (const o of here) {
                 // Fjern fra tidligere SVG-cirkel (fra ROUND1)
@@ -3169,8 +3231,7 @@ function stepKandidatrunde() {
         }));
 
         animateTrain(trainAngle, 360, 6000, waypoints, () => {
-
-
+          hideTrainBubble();
           const fromInfo = optag.map(o => {
             if (!o.fromKey) return `${PERSONS[o.pid]?.name} (uoptaget → grp.33 ${STATIONS[o.stnId].name.split(' ')[0]})`;
             const fparts = o.fromKey.split('-');
@@ -3321,6 +3382,7 @@ function buildSteps() {
       setCenter('Runde 1', 'Midlertidigt optag');
       positionTrain(115);
       animateTrain(115, 360, 6000, buildWaypoints(), () => {
+        hideTrainBubble();
         setStatus('Runde 1 — Midlertidigt optag',
           'Alle ansøgere er midlertidigt placeret på deres ønskede uddannelser. Tryk Næste for at rydde op så hver ansøger kun beholder pladsen på deres højeste prioritet.');
         setCenter('Runde 1', 'Klar til clearing');
@@ -3431,7 +3493,7 @@ function stepTogkørsel(rNr) {
 
     const wps = buildWaypoints2(rNr);
     animateTrain(trainAngle, 360, 6000, wps, () => {
-    
+      hideTrainBubble();
       applyRunde2Changes();
 
       // Sammenlign FINAL_KEYS med forrige runde
@@ -3555,6 +3617,7 @@ function resetSimState() {
   learningPending = false;
   learningModalCount = 0;
   document.getElementById('learning-modal').style.display = 'none';
+  hideTrainBubble();
   step = 0;
   roundNumber = 0;
   ROUND1 = [];
