@@ -751,7 +751,10 @@ h1 {
   display: flex;
   align-items: center;
   gap: 8px;
+  transition: background .15s;
 }
+.right-card-header:hover { background: var(--surface-2); }
+.right-card-header:hover #cap-right-chevron { background: #e2e8f0; border-color: #cbd5e1; color: var(--text-1); }
 
 .right-card-dot {
   width: 7px;
@@ -958,7 +961,7 @@ h1 {
       <div class="right-card-header" id="cap-right-header" onclick="toggleCapRight()" style="cursor:pointer;user-select:none;">
         <div class="right-card-dot" style="background:#4f46e5;"></div>
         <span class="right-card-label">Kapacitet</span>
-        <span id="cap-right-chevron" style="margin-left:auto;font-size:11px;color:var(--text-3);transition:transform .2s;display:inline-block;">▾</span>
+        <span id="cap-right-chevron" style="margin-left:auto;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;font-size:15px;color:var(--text-2);background:var(--surface-2);border:1.5px solid var(--border);border-radius:6px;transition:transform .2s;flex-shrink:0;">▾</span>
       </div>
       <div id="cap-box-right"></div>
     </div>
