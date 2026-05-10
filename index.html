@@ -278,6 +278,12 @@ h1 {
 .rang-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
 .rang-dot-placed { background: #22c55e; }
 .rang-dot-empty { background: #e2e8f0; }
+.rang-gar { background: #fffbeb; border-radius: 3px; }
+.rang-gar-score {
+  font-size: 9px; font-weight: 700; color: #92400e;
+  background: #fef3c7; border: 1px solid #f59e0b;
+  border-radius: 3px; padding: 1px 5px; white-space: nowrap;
+}
 
 /* Ansøgerliste scrollbar */
 #active-cards {
@@ -1048,9 +1054,9 @@ const LEARNING_TEXTS = {
       return `
 <p>Inden KOT-fordelingen starter, har systemet indlæst data fra tre kilder:</p>
 <ul style="margin:12px 0;padding-left:22px;display:flex;flex-direction:column;gap:9px;">
-  <li><strong>Optagelse.dk</strong> — ansøgernes prioriterede ønsker og eksamensresultater</li>
+  <li><strong>Optagelse.dk</strong> — Alle ansøgere og deres prioriterede ønsker</li>
   <li><strong>Uddannelserne</strong> — antal pladser pr. gruppe (kvote 1, kvote 2, standby) og regler for pladsflyt</li>
-  <li><strong>Rangeringslister</strong> — uddannelsernes egne vurderinger af kvote 2-ansøgere</li>
+  <li><strong>Rangeringslister</strong> — Alle kvalificerede ansøgere inkl. karaktergennemsnit, kvote 2-point, standby m.m</li>
 </ul>
 <p>Klar til fordeling: <strong>${n} ansøgere</strong> · <strong>${stnList.length} uddannelser</strong> (${stnList.map(s => s.name).join(', ')}) · <strong>${totalCap} pladser</strong> i alt (ca. ${ratio} plads pr. ansøger).</p>
 ${top ? `<p>Den mest søgte uddannelse er <strong>${STATIONS[top[0]]?.name}</strong> med <strong>${top[1]} ansøgere</strong>.</p>` : ''}
@@ -1068,6 +1074,14 @@ ${multiWish.length ? `<p>${multiWish.map(a => `<strong>${a.name}</strong> har s�
         .filter(a => a.stns.length > 1).slice(0, 3);
       const singleCount = [...selected]
         .filter(pid => new Set(getWishes(pid).map(w => w.stn)).size === 1).length;
+      const garPids = [...new Set([...GARANTERET_SET].map(k => k.split('-')[0]).filter(pid => selected.has(pid)))];
+      const garInfo = garPids.map(pid => {
+        const garKey = [...GARANTERET_SET].find(k => k.startsWith(pid + '-'));
+        if (!garKey) return null;
+        const parts = garKey.split('-');
+        const stnId = parts.slice(1,-1).join('-'), grp = parts[parts.length-1];
+        return `<strong>${PERSONS[pid]?.name}</strong> har <strong>garanteret optagelse</strong> på ${STATIONS[stnId]?.name?.split(' ')[0]} grp.${grp} — ${PERSONS[pid]?.name?.split(' ')[0]} placeres automatisk øverst på rangeringslisten uanset karakterer`;
+      }).filter(Boolean);
       return `
 <p>Fordelingen starter nu med at placere alle <strong>${selected.size} ansøgere midlertidigt</strong> på samtlige uddannelser de har søgt — uanset om der er plads.</p>
 ${multi.length ? `<p>For eksempel:</p>
@@ -1076,6 +1090,7 @@ ${multi.length ? `<p>For eksempel:</p>
 </ul>
 <p>Disse ansøgere tæller med på <em>alle</em> deres ønskede uddannelser på én gang — algoritmen skal se alle præferencer inden den sorterer.</p>` : ''}
 ${singleCount ? `<p>${singleCount} ansøger${singleCount > 1 ? 'e har' : ' har'} kun søgt én uddannelse og placeres direkte.</p>` : ''}
+${garInfo.length ? `<p style="background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;padding:10px 14px;margin-top:10px;">${garInfo.join('<br>')}.</p>` : ''}
 <p>Du vil nu se toget køre rundt og sætte ansøgerne af.</p>`;
     }
   },
@@ -1098,10 +1113,18 @@ ${singleCount ? `<p>${singleCount} ansøger${singleCount > 1 ? 'e har' : ' har'}
       });
       const totalPlaced = new Set([...FINAL_KEYS].map(k => k.split('-')[0])).size;
       const unplaced = selected.size - totalPlaced;
+      const garPlaced = [...GARANTERET_SET]
+        .filter(k => FINAL_KEYS.has(k))
+        .map(k => {
+          const parts = k.split('-');
+          const pid = parts[0], stnId = parts.slice(1,-1).join('-'), grp = parts[parts.length-1];
+          return `<strong>${PERSONS[pid]?.name}</strong> beholder sin garanterede plads på ${STATIONS[stnId]?.name?.split(' ')[0]} grp.${grp}`;
+        });
       return `
 <p>Toget har sat alle ansøgere af. <strong>${multiEntries.length} ansøger${multiEntries.length === 1 ? '' : 'e'}</strong> sidder på mere end én uddannelse på én gang — nu ryddes der op.</p>
 <p><strong>Princippet:</strong> hver ansøger beholder kun pladsen på sin højeste prioritet. De øvrige frigives til andre.</p>
 ${examples.length ? `<ul style="margin:12px 0;padding-left:22px;display:flex;flex-direction:column;gap:8px;">${examples.map(e => `<li>${e}</li>`).join('')}</ul>` : ''}
+${garPlaced.length ? `<p style="background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;padding:10px 14px;margin-top:10px;">${garPlaced.join(' · ')} — garanteret optagelse sikrer pladsen uanset konkurrencen.</p>` : ''}
 <p>Efter clearing vil <strong>${totalPlaced} ansøgere</strong> have én plads${unplaced > 0 ? ` — <strong>${unplaced}</strong> står stadig uden` : ''}.</p>`;
     }
   },
@@ -1349,6 +1372,13 @@ ${kandPids.length > 0 ? `<p>I denne fordeling er der <strong>${kandPids.length} 
       }
       const priLines = Object.entries(priCounts).sort(([a], [b]) => +a - +b)
         .map(([pri, n]) => `<strong>${n}</strong> fik ${pri}. prioritet`).join(', ');
+      const garFinal = [...GARANTERET_SET]
+        .filter(k => FINAL_KEYS.has(k))
+        .map(k => {
+          const parts = k.split('-');
+          const pid = parts[0], stnId = parts.slice(1,-1).join('-'), grp = parts[parts.length-1];
+          return `<strong>${PERSONS[pid]?.name}</strong> (garanteret optagelse — ${STATIONS[stnId]?.name?.split(' ')[0]} grp.${grp})`;
+        });
       return `
 <p>Algoritmen er <strong>stabil</strong> — ingen kan forbedre sig yderligere, og kandidatrunden er gennemført.</p>
 <p>Det endelige resultat:</p>
@@ -1357,6 +1387,7 @@ ${kandPids.length > 0 ? `<p>I denne fordeling er der <strong>${kandPids.length} 
   ${unplacedCount > 0 ? `<li><strong>${unplacedCount} ikke optaget</strong></li>` : '<li>Alle ansøgere er optaget</li>'}
   ${ledige > 0 ? `<li><strong>${ledige} ledige pladser</strong></li>` : '<li>Alle pladser er fyldt</li>'}
 </ul>
+${garFinal.length ? `<p style="background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;padding:10px 14px;">${garFinal.join(' · ')} — optaget via garanteret optagelse.</p>` : ''}
 ${priLines ? `<p>Prioritetsfordeling: ${priLines}.</p>` : ''}
 <p>Dette er det resultat, ansøgerne ville modtage i deres optagelsesbrev.</p>`;
     }
@@ -1582,10 +1613,27 @@ const ALL_WISHES = {
   u: [{stn:'syk',grp:20},{stn:'syk',grp:49},{stn:'med',grp:10},{stn:'med',grp:60},{stn:'med',grp:49},{stn:'lae',grp:10},{stn:'lae',grp:49},{stn:'tiv',grp:20},{stn:'tiv',grp:49},{stn:'bon',grp:10},{stn:'bon',grp:20},{stn:'bon',grp:60},{stn:'bon',grp:70},{stn:'bon',grp:49}],
   v: [{stn:'fin',grp:10},{stn:'fin',grp:49},{stn:'lego',grp:10},{stn:'lego',grp:49},{stn:'med',grp:10},{stn:'med',grp:49},{stn:'lae',grp:10},{stn:'lae',grp:49},{stn:'bon',grp:10},{stn:'bon',grp:20},{stn:'bon',grp:60},{stn:'bon',grp:70},{stn:'bon',grp:49}],
   w: [{stn:'syk',grp:20},{stn:'syk',grp:49},{stn:'bon',grp:20},{stn:'bon',grp:70},{stn:'bon',grp:49},{stn:'lego',grp:10},{stn:'lego',grp:60},{stn:'lego',grp:49},{stn:'tiv',grp:10},{stn:'tiv',grp:20},{stn:'tiv',grp:60},{stn:'tiv',grp:70},{stn:'tiv',grp:49}],
-  x: [{stn:'fin',grp:20},{stn:'fin',grp:49},{stn:'tiv',grp:20},{stn:'tiv',grp:49},{stn:'lego',grp:10},{stn:'lego',grp:60},{stn:'lego',grp:49},{stn:'med',grp:10},{stn:'med',grp:60},{stn:'med',grp:49},{stn:'lae',grp:10},{stn:'lae',grp:20},{stn:'lae',grp:60},{stn:'lae',grp:70},{stn:'lae',grp:49}],
+  x: [{stn:'fin',grp:20},{stn:'fin',grp:49},{stn:'tiv',grp:20},{stn:'tiv',grp:49},{stn:'lego',grp:10},{stn:'lego',grp:60},{stn:'lego',grp:49},{stn:'med',grp:10},{stn:'med',grp:60},{stn:'med',grp:49},{stn:'lae',grp:10,garanteret:true}],
   y: [{stn:'fin',grp:10},{stn:'fin',grp:49},{stn:'lae',grp:10},{stn:'lae',grp:60},{stn:'lae',grp:49},{stn:'bon',grp:20},{stn:'bon',grp:70},{stn:'bon',grp:49},{stn:'med',grp:10},{stn:'med',grp:20},{stn:'med',grp:60},{stn:'med',grp:70},{stn:'med',grp:49}],
   z: [{stn:'med',grp:10},{stn:'med',grp:49},{stn:'syk',grp:10},{stn:'syk',grp:49},{stn:'lae',grp:33},{stn:'lae',grp:49}],
 };
+
+// Opbyg garanteret-optagelse opslag én gang
+const GARANTERET_SET = new Set();
+for (const [pid, wishes] of Object.entries(ALL_WISHES)) {
+  for (const w of wishes) {
+    if (w.garanteret) GARANTERET_SET.add(`${pid}-${w.stn}-${w.grp}`);
+  }
+}
+
+function rebuildGaranteretSet() {
+  GARANTERET_SET.clear();
+  for (const pid of Object.keys(PERSONS)) {
+    for (const w of getWishes(pid)) {
+      if (w.garanteret) GARANTERET_SET.add(`${pid}-${w.stn}-${w.grp}`);
+    }
+  }
+}
 
 let selected = new Set(Object.keys(PERSONS));
 
@@ -1680,6 +1728,39 @@ function shuffleWishes() {
     }
   }
 
+  // ~35% chance: 1 ansøger får garanteret optagelse på én prioritet (ingen lavere prioriteter efter)
+  if (Math.random() < 0.35) {
+    const grp33Pids = new Set(
+      Object.entries(WISH_OVERRIDE)
+        .filter(([, ws]) => ws.some(w => w.grp === 33))
+        .map(([pid]) => pid)
+    );
+    const garPool = [...selected].filter(pid => !grp33Pids.has(pid))
+      .sort(() => Math.random() - 0.5);
+    if (garPool.length > 0) {
+      const pid = garPool[0];
+      const wishes = WISH_OVERRIDE[pid] || [];
+      const seenStns = [];
+      for (const w of wishes) { if (!seenStns.includes(w.stn)) seenStns.push(w.stn); }
+      const eligible = seenStns.filter(s => (CAPACITY[s]?.[10] || 0) > 0 || (CAPACITY[s]?.[20] || 0) > 0);
+      if (eligible.length > 0) {
+        const garStn = eligible[Math.floor(Math.random() * eligible.length)];
+        const garStnIdx = seenStns.indexOf(garStn);
+        const cap = CAPACITY[garStn] || {};
+        const garGrp = ((cap[10] || 0) > 0 && (cap[20] || 0) > 0)
+          ? (Math.random() < 0.6 ? 10 : 20)
+          : ((cap[10] || 0) > 0 ? 10 : 20);
+        const newWishes = [];
+        for (const stn of seenStns.slice(0, garStnIdx)) {
+          newWishes.push(...wishes.filter(w => w.stn === stn));
+        }
+        newWishes.push({ stn: garStn, grp: garGrp, garanteret: true });
+        WISH_OVERRIDE[pid] = newWishes;
+      }
+    }
+  }
+  rebuildGaranteretSet();
+
   renderActiveCards();
   if (!locked) steps = buildSteps();
   document.getElementById('btn-reset-wishes').disabled = false;
@@ -1688,6 +1769,7 @@ function shuffleWishes() {
 function resetWishes() {
   if (animating) return;
   WISH_OVERRIDE = null;
+  rebuildGaranteretSet();
   renderActiveCards();
   if (!locked) steps = buildSteps();
   document.getElementById('btn-reset-wishes').disabled = true;
@@ -1715,7 +1797,10 @@ function buildRound1(selSet) {
 }
 
 function computeFinalKeys(round1) {
-  const getScore = (pid, grp) => (grp == 10 || grp == 60) ? PERSONS[pid].kvotient : PERSONS[pid].point;
+  const getScore = (pid, grp, stn) => {
+    if (GARANTERET_SET.has(`${pid}-${stn}-${grp}`)) return Infinity;
+    return (grp == 10 || grp == 60) ? PERSONS[pid].kvotient : PERSONS[pid].point;
+  };
   const allPersons = [...new Set(round1.map(p => p.person))];
   const round1Set = new Set(round1.map(p => `${p.person}-${p.stn}-${p.grp}`));
   const prefList = {};
@@ -1737,7 +1822,7 @@ function computeFinalKeys(round1) {
       const key = `${stnId}-${grp}`;
       appsByKey[key] = round1
         .filter(p => p.stn === stnId && p.grp == grp)
-        .map(p => ({ person: p.person, score: getScore(p.person, p.grp) }))
+        .map(p => ({ person: p.person, score: getScore(p.person, p.grp, p.stn) }))
         .sort((a, b) => b.score - a.score);
     }
   }
@@ -1915,10 +2000,25 @@ function renderActiveCards() {
       stnName.textContent = stnObj ? stnObj.name.split(' ')[0] : stn;
       row.appendChild(stnName);
       for (const g of grps) {
-        const tag = document.createElement('span');
-        tag.className = `gtag g${g}`;
-        tag.textContent = g;
-        row.appendChild(tag);
+        const isGar = GARANTERET_SET.has(`${pid}-${stn}-${g}`);
+        if (isGar) {
+          const wrap = document.createElement('span');
+          wrap.style.cssText = 'display:inline-flex;align-items:center;gap:3px;';
+          const tag = document.createElement('span');
+          tag.className = `gtag g${g}`;
+          tag.textContent = g;
+          wrap.appendChild(tag);
+          const badge = document.createElement('span');
+          badge.style.cssText = 'font-size:8px;font-weight:700;color:#92400e;background:#fef3c7;border:1px solid #f59e0b;border-radius:3px;padding:1px 4px;white-space:nowrap;';
+          badge.textContent = 'Garanteret';
+          wrap.appendChild(badge);
+          row.appendChild(wrap);
+        } else {
+          const tag = document.createElement('span');
+          tag.className = `gtag g${g}`;
+          tag.textContent = g;
+          row.appendChild(tag);
+        }
       }
       wishDiv.appendChild(row);
     }
@@ -2073,13 +2173,20 @@ function renderRangeringslister() {
         return getWishes(pid).some(w => w.stn === stnId && w.grp === grp);
       });
 
-      // sort
+      // sort — garanteret altid øverst, derefter score
+      const isGar = pid => GARANTERET_SET.has(`${pid}-${stnId}-${grp}`);
       if (grp === 10 || grp === 60) {
-        applicants.sort((a, b) => (PERSONS[b]?.kvotient || 0) - (PERSONS[a]?.kvotient || 0));
+        applicants.sort((a, b) => {
+          if (isGar(a) !== isGar(b)) return isGar(a) ? -1 : 1;
+          return (PERSONS[b]?.kvotient || 0) - (PERSONS[a]?.kvotient || 0);
+        });
       } else if (grp === 20 || grp === 70) {
-        applicants.sort((a, b) => (PERSONS[b]?.point || 0) - (PERSONS[a]?.point || 0));
+        applicants.sort((a, b) => {
+          if (isGar(a) !== isGar(b)) return isGar(a) ? -1 : 1;
+          return (PERSONS[b]?.point || 0) - (PERSONS[a]?.point || 0);
+        });
       }
-      // grp 49: leave in natural order (effectively random from Set iteration)
+      // grp 49: leave in natural order
 
       const grpDiv = document.createElement('div');
       grpDiv.className = 'rang-grp';
@@ -2111,10 +2218,13 @@ function renderRangeringslister() {
           }
 
           const isPlaced = simActive && FINAL_KEYS.has(`${pid}-${stnId}-${grp}`);
+          const gar = isGar(pid);
           const row = document.createElement('div');
-          row.className = 'rang-row' + (isPlaced ? ' rang-placed' : '');
+          row.className = 'rang-row' + (isPlaced ? ' rang-placed' : '') + (gar ? ' rang-gar' : '');
           let scoreHtml = '';
-          if (grp === 10 || grp === 60) {
+          if (gar) {
+            scoreHtml = `<span class="rang-gar-score">Garanteret optagelse</span>`;
+          } else if (grp === 10 || grp === 60) {
             scoreHtml = `<span class="rang-score">Gns: ${p.kvotient.toFixed(1)}</span>`;
           } else if (grp === 20 || grp === 70) {
             scoreHtml = `<span class="rang-score">Kval: ${p.point}</span>`;
@@ -2789,8 +2899,10 @@ function buildWaypoints() {
       const stn = STATIONS[stnId];
       const here = ROUND1.filter(p => p.stn === stnId);
       const names = [...new Set(here.map(p => PERSONS[p.person].name))].join(', ');
+      const garHere = here.filter(p => GARANTERET_SET.has(`${p.person}-${stnId}-${p.grp}`));
+      const garNote = garHere.map(p => `${PERSONS[p.person].name}: garanteret optagelse`).join(' · ');
       setStatus(`Runde 1 · ${stn.name}`,
-        names ? `${names} sættes foreløbigt af her.` : 'Ingen ansøgere til denne station.');
+        names ? `${names} sættes foreløbigt af her.${garNote ? ` ${garNote}.` : ''}` : 'Ingen ansøgere til denne station.');
       const cap = CAPACITY[stnId] || {};
       const totalSpots = Object.entries(cap).reduce((s, [g, v]) => +g !== 33 ? s + v : s, 0);
       const info = here.length > 0
@@ -2825,6 +2937,10 @@ function buildWaypoints2(rNr) {
         .map(p => PERSONS[p.person]?.name);
       let msg = newHere.length > 0 ? `${newHere.join(', ')} er placeret her.` : 'Ingen placeret her.';
       if (moved.length > 0) msg += ` ${moved.join(', ')} er rykket videre.`;
+      const garAtStn = [...GARANTERET_SET]
+        .filter(k => { const p = k.split('-'); return p.slice(1,-1).join('-') === stnId && FINAL_KEYS.has(k); })
+        .map(k => PERSONS[k.split('-')[0]]?.name).filter(Boolean);
+      if (garAtStn.length > 0) msg += ` (${garAtStn.join(', ')}: garanteret optagelse)`;
       setStatus(`Runde ${rNr} · ${stn.name}`, msg);
       const cap = CAPACITY[stnId] || {};
       const totalSpots = Object.entries(cap).reduce((s, [g, v]) => +g !== 33 ? s + v : s, 0);
