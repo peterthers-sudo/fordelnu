@@ -513,16 +513,6 @@ h1 {
   gap: 12px;
   font-weight: 500;
 }
-.status-bar::before {
-  content: "Status";
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #64748b;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
 
 .step-badge.kandidat {
   background: #5b21b6;
@@ -1149,7 +1139,7 @@ ${garPlaced.length ? `<p style="background:#fef3c7;border:1px solid #f59e0b;bord
 <p>Clearingen er færdig. <strong>${placed.size} ansøgere</strong> har nu en plads${unplacedPids.length > 0 ? ` — <strong>${unplacedPids.length}</strong> har endnu ingen plads` : ' — alle er optaget'}.</p>
 ${unplacedPids.length ? `<p>Uden plads: <strong>${unplacedNames.join(', ')}${unplacedPids.length > 4 ? ` og ${unplacedPids.length - 4} andre` : ''}</strong>.</p>` : ''}
 <p>KOT har tjekket om der var ledige pladser i grupper som kunne flyttes til en anden gruppe på samme uddannelse — fx om ledige pladser i kvote 2 kunne flyttes til kvote 1, hvis den var fyldt.</p>
-<p>Pladsflyt kan åbne for optag af ansøgere der ventede på kvote 1, selvom kvote 1 var fyldt efter clearing. Se resultatet i statusbaren.</p>`;
+<p>Pladsflyt kan åbne for optag af ansøgere der ventede på kvote 1, selvom kvote 1 var fyldt efter clearing.</p>`;
     }
   },
 
@@ -1302,7 +1292,7 @@ ${candidates.length ? `<p><strong>${candidates.length} ansøger${candidates.leng
       const unplacedPids = [...selected].filter(pid => !placed.has(pid));
       return `
 <p><strong>${placed.size} ansøgere</strong> er tildelt en plads${unplacedPids.length ? ` — <strong>${unplacedPids.length}</strong> har endnu ingen plads` : ' — alle er optaget'}.</p>
-<p>KOT har kørt pladsflyt for tredje gang. Der var nu langt færre ledige pladser at flytte end i de første runder. Se resultatet i statusbaren.</p>`;
+<p>KOT har kørt pladsflyt for tredje gang. Der var nu langt færre ledige pladser at flytte end i de første runder.</p>`;
     }
   },
 
@@ -1342,7 +1332,7 @@ ${candidates.length ? `<p><strong>${candidates.length} ansøger${candidates.leng
       return `
 <p>KOT har nu kørt <strong>runde 4</strong> som stabilitetscheck — en ekstra runde for at bekræfte at ingen ansøgere kan flyttes til en højere prioritet.</p>
 ${notFirst.length ? `<p><strong>${notFirst.length} ansøger${notFirst.length === 1 ? '' : 'e'}</strong> er endnu ikke placeret på deres højeste prioritet.</p>` : '<p>Alle ansøgere er nu placeret på den bedst mulige prioritet.</p>'}
-<p>Se statusbaren — hvis ingen ændrede plads i denne runde er <strong>fordelingen stabil</strong>.</p>`;
+<p>Hvis ingen ændrede plads i denne runde er <strong>fordelingen stabil</strong>.</p>`;
     }
   },
 
