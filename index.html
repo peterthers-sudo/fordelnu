@@ -253,6 +253,7 @@ h1 {
 .rang-stn-body { display: none; padding: 4px 0 2px 6px; }
 .rang-stn-body.open { display: block; }
 .rang-grp { margin-bottom: 6px; }
+.rang-grp + .rang-grp { border-top: 1px solid var(--border); padding-top: 6px; margin-top: 2px; }
 .rang-grp-header {
   font-size: 11px; font-weight: 700; color: var(--text-2);
   padding: 2px 6px; margin-bottom: 2px; border-radius: 4px;
@@ -838,6 +839,12 @@ h1 {
       <div class="coll-body open" id="active-cards"></div>
     </div>
 
+    <!-- Shuffle grupper -->
+    <div style="display:flex;gap:8px;padding:4px 2px;">
+      <button class="btn-sel" onclick="shuffleWishes()" style="flex:1;font-weight:700;">Shuffle grupper</button>
+      <button class="btn-sel" id="btn-reset-wishes" onclick="resetWishes()" disabled style="flex:1;">Nulstil grupper</button>
+    </div>
+
     <!-- Vælg ansøgere -->
     <div class="collapsible">
       <div class="coll-header" id="app-header" onclick="toggleAppList()">
@@ -856,12 +863,6 @@ h1 {
       </div>
     </div>
 
-    <!-- Shuffle-knap -->
-    <div style="display:flex;gap:8px;padding:4px 2px;">
-      <button class="btn-sel" onclick="shuffleWishes()" style="flex:1;font-weight:700;">Shuffle grupper</button>
-      <button class="btn-sel" id="btn-reset-wishes" onclick="resetWishes()" disabled style="flex:1;">Nulstil grupper</button>
-    </div>
-
     <!-- Pladskonfiguration -->
     <div class="collapsible">
       <div class="coll-header" id="cfg-header" onclick="toggleCfgList()">
@@ -873,6 +874,10 @@ h1 {
         <div class="sel-actions">
           <button class="btn-sel" onclick="selectAllGrps()">Alle</button>
           <button class="btn-sel" onclick="selectNoneGrps()">Ingen</button>
+        </div>
+        <div style="display:flex;gap:8px;padding:4px 2px;">
+          <button class="btn-sel" onclick="shufflePladser()" style="flex:1;font-weight:700;">Shuffle pladser</button>
+          <button class="btn-sel" onclick="nulstilPladser()" style="flex:1;">Nulstil pladser</button>
         </div>
       </div>
     </div>
@@ -2263,14 +2268,6 @@ function renderRangeringslister() {
           const p = PERSONS[pid];
           if (!p) return;
 
-          // Cutoff line only before simulation runs
-          if (!simActive && idx === limit) {
-            const cutDiv = document.createElement('div');
-            cutDiv.className = 'rang-cutoff';
-            cutDiv.innerHTML = `<span class="rang-cutoff-label">ingen plads</span>`;
-            grpDiv.appendChild(cutDiv);
-          }
-
           const isPlaced = simActive && FINAL_KEYS.has(`${pid}-${stnId}-${grp}`);
           const gar = isGar(pid);
           const row = document.createElement('div');
@@ -2370,6 +2367,36 @@ function renderCapConfig() {
     row.appendChild(grpWrap);
     list.appendChild(row);
   }
+  renderRangeringslister();
+}
+
+function shufflePladser() {
+  if (animating || locked || learningMode) return;
+  const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+  for (const stnId of Object.keys(CAPACITY)) {
+    const cap = CAPACITY[stnId];
+    if ((cap[49] || 0) > 0) continue;
+    for (const grp of [10, 20]) {
+      if ((cap[grp] || 0) > 0) cap[grp] = randInt(2, 4);
+    }
+    for (const grp of [60, 70]) {
+      if ((cap[grp] || 0) > 0) cap[grp] = randInt(1, 2);
+    }
+  }
+  CAPACITY_ORIGINAL = JSON.parse(JSON.stringify(CAPACITY));
+  savePrefs();
+  renderCapConfig();
+  renderCapBoxRight();
+  renderRangeringslister();
+}
+
+function nulstilPladser() {
+  if (animating || locked || learningMode) return;
+  CAPACITY = JSON.parse(JSON.stringify(CAPACITY_DEFAULTS));
+  CAPACITY_ORIGINAL = JSON.parse(JSON.stringify(CAPACITY_DEFAULTS));
+  savePrefs();
+  renderCapConfig();
+  renderCapBoxRight();
   renderRangeringslister();
 }
 
@@ -3351,19 +3378,7 @@ function stepKandidatrunde() {
         // Find hvem der kan optages
         const optag = computeKandidatOptag();
 
-        if (optag.length === 0) {
-          const pladsInfo = pladsMoves.length > 0
-            ? `${pladsMoves.map(m => `${STATIONS[m.stnId].name.split(' ')[0]}: +${m.antal} til grp.33`).join(', ')} — `
-            : '';
-          setStatus('Kandidatrunden — ingen optagelse',
-            `${pladsInfo}Ingen ansøgere kan optages på kandidatuddannelser med bedre prioritet.`);
-          setCenter('Kandidat', 'Ingen ændringer');
-          steps.push(stepAfslut());
-          enableNextBtn();
-          return;
-        }
-
-        // Kør toget en runde og optag ved relevante stationer
+        // Byg waypoints — toget kører altid
         const stnProgress = { lego: 25, med: 97, tiv: 169, lae: 241, bon: 313 };
         const kandidatByStn = {};
         for (const o of optag) {
@@ -3377,66 +3392,62 @@ function stepKandidatrunde() {
             const here = kandidatByStn[stnId] || [];
             if (here.length > 0) {
               const names = here.map(o => PERSONS[o.pid]?.name).join(', ');
-              setStatus(`Kandidatrunden · ${STATIONS[stnId].name}`,
-                `${names} optages på grp.33`);
+              setStatus(`Kandidatrunden · ${STATIONS[stnId]?.name}`, `${names} optages på grp.33`);
               showTrainBubble(stnId, `${names} optages på grp. 33`);
-
               for (const o of here) {
-                // Fjern fra tidligere SVG-cirkel (fra ROUND1)
                 if (o.fromKey) {
                   FINAL_KEYS.delete(o.fromKey);
                   const fparts = o.fromKey.split('-');
                   const fStn = fparts.slice(1,-1).join('-');
                   const fGrp = fparts[fparts.length-1];
-                  // Fjern SVG-cirkel fra tidligere plads
                   const oldPav = ROUND1.find(p => p.person === o.pid && p.stn === fStn && p.grp == fGrp);
                   if (oldPav) clearPav(pKey(oldPav));
-                  // Opdater placedState
                   const fStateKey = `${fStn}-${fGrp}`;
                   if (placedState[fStateKey])
                     placedState[fStateKey] = placedState[fStateKey].filter(p => p !== o.pid);
                 }
-                // Tilføj til grp.33 i data
                 const newKey = `${o.pid}-${o.stnId}-33`;
                 FINAL_KEYS.add(newKey);
                 if (!placedState[`${o.stnId}-33`]) placedState[`${o.stnId}-33`] = [];
                 placedState[`${o.stnId}-33`].push(o.pid);
-                // Tegn ny cirkel på SVG
                 addKandidatCircle(o.pid, o.stnId);
               }
               updateCardResults();
               renderCapBoxRight();
+            } else {
+              setStatus(`Kandidatrunden · ${STATIONS[stnId]?.name}`, 'Ingen grp.33-ansøgere ved denne station.');
+              showTrainBubble(stnId, 'Ingen grp.33-ansøgere');
             }
           }
         }));
 
         animateTrain(trainAngle, 360, 6000, waypoints, () => {
           hideTrainBubble();
-          const fromInfo = optag.map(o => {
-            if (!o.fromKey) return `${PERSONS[o.pid]?.name} (uoptaget → grp.33 ${STATIONS[o.stnId].name.split(' ')[0]})`;
-            const fparts = o.fromKey.split('-');
-            const fStn = fparts.slice(1,-1).join('-');
-            const fGrp = fparts[fparts.length-1];
-            return `${PERSONS[o.pid]?.name}: grp.${fGrp} ${STATIONS[fStn]?.name.split(' ')[0]} → grp.33 ${STATIONS[o.stnId].name.split(' ')[0]}`;
-          }).join(' · ');
-
-          setStatus('Kandidatrunden — optagelse udført', fromInfo);
-          setCenter('Kandidat', `${optag.length} optaget`);
-
-          // Kør normale runder igen hvis nogen er frigivet fra en plads
-          const anyFreed = optag.some(o => o.fromKey);
-          if (anyFreed) {
-            // Genberegn fordeling med de nye kapaciteter
-            FINAL_KEYS = computeFinalKeys(ROUND1);
-            renderRangeringslister();
-            // Kør runder til stabilitet, derefter ny kandidatrunde
-            pendingKandidatRunde = true;
-            steps.push(() => doClearing(roundNumber, () => {
-              steps.push(stepPladsflyt());
-            }));
-          } else {
-            // Ingen pladser frigivet — direkte til afslutning
+          if (optag.length === 0) {
+            setStatus('Kandidatrunden — ingen optagelse', 'Ingen ansøgere kan optages på kandidatuddannelser med bedre prioritet.');
+            setCenter('Kandidat', 'Ingen ændringer');
             steps.push(stepAfslut());
+          } else {
+            const fromInfo = optag.map(o => {
+              if (!o.fromKey) return `${PERSONS[o.pid]?.name} (uoptaget → grp.33 ${STATIONS[o.stnId].name.split(' ')[0]})`;
+              const fparts = o.fromKey.split('-');
+              const fStn = fparts.slice(1,-1).join('-');
+              const fGrp = fparts[fparts.length-1];
+              return `${PERSONS[o.pid]?.name}: grp.${fGrp} ${STATIONS[fStn]?.name.split(' ')[0]} → grp.33 ${STATIONS[o.stnId].name.split(' ')[0]}`;
+            }).join(' · ');
+            setStatus('Kandidatrunden — optagelse udført', fromInfo);
+            setCenter('Kandidat', `${optag.length} optaget`);
+            const anyFreed = optag.some(o => o.fromKey);
+            if (anyFreed) {
+              FINAL_KEYS = computeFinalKeys(ROUND1);
+              renderRangeringslister();
+              pendingKandidatRunde = true;
+              steps.push(() => doClearing(roundNumber, () => {
+                steps.push(stepPladsflyt());
+              }));
+            } else {
+              steps.push(stepAfslut());
+            }
           }
         });
 
