@@ -1084,15 +1084,14 @@ const LEARNING_TEXTS = {
         return `<strong>${PERSONS[pid]?.name}</strong> har <strong>garanteret optagelse</strong> på ${stnShort} grp.${grp} — det betyder at ${firstName} altid er øverst på rangeringslisten der. Men i runde 1 placeres ${firstName} <em>på alle sine ønskede uddannelser</em> — også de højere prioriteter. Garanteret optagelse er et sikkerhedsnet: efter clearing beholder ${firstName} kun den bedst opnåelige plads, og ender kun på ${stnShort} grp.${grp} hvis ingen af de højere prioriteter kunne opfyldes.`;
       }).filter(Boolean);
       return `
-<p>Fordelingen starter med at placere alle <strong>${selected.size} ansøgere midlertidigt</strong> på samtlige uddannelser og grupper de er indberettet på — i dette trin tages ikke hensyn til om der er plads.</p>
+<p>KOT har nu placeret alle <strong>${selected.size} ansøgere midlertidigt</strong> på samtlige uddannelser og grupper de er indberettet på — uden hensyn til om der er plads.</p>
 ${multi.length ? `<p>For eksempel:</p>
 <ul style="margin:10px 0;padding-left:22px;display:flex;flex-direction:column;gap:7px;">
   ${multi.map(a => `<li><strong>${a.name}</strong> har søgt ${a.stns.length} uddannelser med ${a.grpCount} grupper i alt: ${a.stns.map(s => STATIONS[s]?.name?.split(' ')[0]).join(', ')}</li>`).join('')}
 </ul>
-<p>Disse ansøgere tæller med på <em>alle</em> deres ønskede uddannelser på én gang — algoritmen skal se alle præferencer inden den sorterer.</p>` : ''}
+<p>Disse ansøgere sidder nu midlertidigt på <em>alle</em> deres ønskede uddannelser på én gang — algoritmen skal se alle præferencer inden den sorterer.</p>` : ''}
 ${singleCount ? `<p>${singleCount} ansøger${singleCount > 1 ? 'e har' : ' har'} kun søgt én uddannelse — de kan stadig være indberettet på flere grupper under den og indgår også i clearing.</p>` : ''}
-${garInfo.length ? `<p style="background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;padding:10px 14px;margin-top:10px;">${garInfo.join('<br>')}.</p>` : ''}
-<p>Du vil nu se KOT fordelingen køre rundt og placere ansøgerne på uddannelserne.</p>`;
+${garInfo.length ? `<p style="background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;padding:10px 14px;margin-top:10px;">${garInfo.join('<br>')}.</p>` : ''}`;
     }
   },
 
@@ -1110,7 +1109,7 @@ ${garInfo.length ? `<p style="background:#fef3c7;border:1px solid #f59e0b;border
         const allNames = [...stns].map(s => STATIONS[s]?.name?.split(' ')[0]).join(' og ');
         const keptName = keptStn ? STATIONS[keptStn]?.name?.split(' ')[0] : '?';
         const droppedNames = [...stns].filter(s => s !== keptStn).map(s => STATIONS[s]?.name?.split(' ')[0]).join(', ');
-        return `<strong>${PERSONS[pid]?.name}</strong> sidder på ${allNames} — beholder <strong>${keptName}</strong>, frigiver ${droppedNames}`;
+        return `<strong>${PERSONS[pid]?.name}</strong> er placeret på ${allNames} — beholder <strong>${keptName}</strong>, frigiver ${droppedNames}`;
       });
       const totalPlaced = new Set([...FINAL_KEYS].map(k => k.split('-')[0])).size;
       const unplaced = selected.size - totalPlaced;
@@ -1170,7 +1169,7 @@ ${unplacedPids.length ? `<p>Uden plads: <strong>${unplacedNames.join(', ')}${unp
   <li><strong>${unplacedCount} afvist</strong> — ingen plads endnu</li>
   <li><strong>${ledige} ledige pladser</strong> tilbage</li>
 </ul>
-${notFirst.length ? `<p><strong>${notFirst.length} ansøger${notFirst.length === 1 ? '' : 'e'}</strong> har ikke fået deres 1. prioritet — fx sidder <strong>${notFirst[0].name}</strong> på ${notFirst[0].got} frem for ${notFirst[0].want}.</p><p>KOT kører en ny runde for at se om de kan rykke op.</p>` : '<p>Alle optagne sidder på deres højest mulige prioritet. KOT kører en ekstra runde for at bekræfte stabiliteten.</p>'}`;
+${notFirst.length ? `<p><strong>${notFirst.length} ansøger${notFirst.length === 1 ? '' : 'e'}</strong> er placeret på en lavere prioritet end deres øverste ønske — KOT kører endnu en runde for at undersøge om de kan flyttes op.</p>` : '<p>Alle optagne er placeret på den højest mulige prioritet. KOT kører en ekstra runde for at bekræfte stabiliteten.</p>'}`;
     }
   },
 
@@ -1185,11 +1184,11 @@ ${notFirst.length ? `<p><strong>${notFirst.length} ansøger${notFirst.length ===
         else { const stn = k.split('-').slice(1, -1).join('-'); if (w.length > 1 && w[0] !== stn) acc.push({ name: PERSONS[pid]?.name, want: STATIONS[w[0]]?.name?.split(' ')[0], got: STATIONS[stn]?.name?.split(' ')[0], type: 'lower' }); }
         return acc;
       }, []);
-      const ex = candidates.slice(0, 3).map(a => a.type === 'unplaced' ? `<strong>${a.name}</strong> har ingen plads og ønsker ${a.want}` : `<strong>${a.name}</strong> sidder på ${a.got} men ønsker ${a.want}`);
+      const ex = candidates.slice(0, 3).map(a => a.type === 'unplaced' ? `<strong>${a.name}</strong> har ingen plads og ønsker ${a.want}` : `<strong>${a.name}</strong> er placeret på ${a.got}, men har ${a.want} som højere prioritet`);
       return `
 <p>KOT har nu kørt <strong>runde 2</strong> for at tjekke om nogen kunne flyttes til en højere prioritet efter pladsflyttet i runde 1.</p>
-${candidates.length ? `<p><strong>${candidates.length} ansøger${candidates.length === 1 ? '' : 'e'}</strong> sidder stadig ikke på sin bedste mulige plads:</p>
-<ul style="margin:10px 0;padding-left:22px;display:flex;flex-direction:column;gap:6px;">${ex.map(e => `<li>${e}</li>`).join('')}${candidates.length > 3 ? `<li>... og ${candidates.length - 3} andre</li>` : ''}</ul>` : '<p>Alle ansøgere har nu fået deres højest mulige prioritet.</p>'}`;
+${candidates.length ? `<p><strong>${candidates.length} ansøger${candidates.length === 1 ? '' : 'e'}</strong> kan muligvis flyttes til en højere prioritet:</p>
+<ul style="margin:10px 0;padding-left:22px;display:flex;flex-direction:column;gap:6px;">${ex.map(e => `<li>${e}</li>`).join('')}${candidates.length > 3 ? `<li>... og ${candidates.length - 3} andre</li>` : ''}</ul>` : '<p>Alle ansøgere er nu placeret på den højest mulige prioritet.</p>'}`;
     }
   },
 
@@ -1252,7 +1251,7 @@ ${examples.length ? `<ul style="margin:10px 0;padding-left:22px;display:flex;fle
   <li><strong>${unplacedCount} afvist</strong></li>
   <li><strong>${ledige} ledige pladser</strong></li>
 </ul>
-${notFirst.length ? `<p>${notFirst.length} ansøger${notFirst.length === 1 ? '' : 'e'} har stadig ikke fået deres 1. prioritet${notFirst.length <= 3 ? ` (${notFirst.join(', ')})` : ''}. KOT kører runde 3.</p>` : '<p>Fordelingen er ved at stabilisere sig. KOT kører runde 3 for at bekræfte.</p>'}`;
+${notFirst.length ? `<p>KOT undersøger om <strong>${notFirst.length} ansøger${notFirst.length === 1 ? '' : 'e'}</strong> kan flyttes til en højere prioritet — runde 3 kører.</p>` : '<p>Fordelingen er ved at stabilisere sig. KOT kører runde 3 for at bekræfte.</p>'}`;
     }
   },
 
@@ -1269,7 +1268,7 @@ ${notFirst.length ? `<p>${notFirst.length} ansøger${notFirst.length === 1 ? '' 
       }, []);
       return `
 <p>KOT har nu kørt <strong>runde 3</strong>. Algoritmen gentager sig selv for at sikre at alle ansøgere har fået deres højest mulige prioritet.</p>
-${candidates.length ? `<p>Ansøgere der stadig ikke sidder optimalt: ${candidates.slice(0, 4).join(', ')}${candidates.length > 4 ? ` og ${candidates.length - 4} andre` : ''}.</p>` : '<p>Ingen kan forbedres yderligere — algoritmen er næsten stabil.</p>'}`;
+${candidates.length ? `<p><strong>${candidates.length} ansøger${candidates.length === 1 ? '' : 'e'}</strong> kan muligvis opnå en højere prioritet.</p>` : '<p>Ingen kan forbedres yderligere — algoritmen er næsten stabil.</p>'}`;
     }
   },
 
@@ -1333,7 +1332,7 @@ ${candidates.length ? `<p>Ansøgere der stadig ikke sidder optimalt: ${candidate
       }, []);
       return `
 <p>KOT har nu kørt <strong>runde 4</strong> som stabilitetscheck — en ekstra runde for at bekræfte at ingen ansøgere kan flyttes til en højere prioritet.</p>
-${notFirst.length ? `<p>Endnu ${notFirst.length} ansøger${notFirst.length === 1 ? '' : 'e'} sidder ikke på sin 1. prioritet: <strong>${notFirst.slice(0, 3).join(', ')}${notFirst.length > 3 ? '...' : ''}</strong>.</p>` : '<p>Alle ansøgere sidder nu på deres bedst mulige prioritet.</p>'}
+${notFirst.length ? `<p><strong>${notFirst.length} ansøger${notFirst.length === 1 ? '' : 'e'}</strong> kan muligvis opnå en højere prioritet.</p>` : '<p>Alle ansøgere er nu placeret på den bedst mulige prioritet.</p>'}
 <p>Se statusbaren — hvis ingen ændrede plads i denne runde er <strong>fordelingen stabil</strong>.</p>`;
     }
   },
@@ -3502,14 +3501,9 @@ function buildSteps() {
       renderStatistik({ antalAnsøgere, antalUdd, antalGrp, totalPladser, ratio });
       document.getElementById('btn-next').textContent = '▶ Næste';
     }),
-    // Step 1: Klar
+    // Step 1: Runde 1 togkørsel — modal vises når toget er kørt færdigt
     withLearning('runde1-klar', () => {
       clearStatistik();
-      setStatus('Runde 1 — Klar', 'Tryk på næste for at fordele alle ansøgere midlertidigt på de grupper de har søgt.');
-      setCenter('Runde 1', 'Klar');
-    }),
-    // Step 2: Runde 1 togkørsel (ingen modal — lad dem se det med det samme)
-    () => {
       roundNumber = 1;
       setStatus('Runde 1', 'KOT-fordelingen kører og sætter alle af på de grupper de har søgt.');
       setCenter('Runde 1', 'Midlertidigt optag');
@@ -3520,7 +3514,7 @@ function buildSteps() {
           'Alle ansøgere er midlertidigt placeret på deres ønskede uddannelser. Tryk Næste for at rydde op så hver ansøger kun beholder pladsen på deres højeste prioritet.');
         setCenter('Runde 1', 'Klar til clearing');
       });
-    },
+    }),
     // Step 3: Clearing efter runde 1
     withLearning('clearing-1', () => {
       doClearing(1, () => {
