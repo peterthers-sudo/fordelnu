@@ -244,6 +244,17 @@ h1 {
 .rang-rank { min-width: 18px; color: var(--text-3); font-size: 10px; text-align: right; }
 .rang-name { flex: 1; }
 .rang-score { font-size: 10px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.rang-cutoff {
+  display: flex; align-items: center; gap: 6px; margin: 4px 6px;
+}
+.rang-cutoff::before, .rang-cutoff::after {
+  content: ''; flex: 1; border-top: 1.5px dashed #f87171;
+}
+.rang-cutoff-label { font-size: 9px; color: #f87171; white-space: nowrap; font-weight: 600; letter-spacing: .03em; }
+.rang-placed { background: #f0fdf4; border-radius: 3px; }
+.rang-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.rang-dot-placed { background: #22c55e; }
+.rang-dot-empty { background: #e2e8f0; }
 
 /* Ansøgerliste scrollbar */
 #active-cards {
@@ -2041,6 +2052,9 @@ function renderRangeringslister() {
       ghdr.innerHTML = `<span class="${GRP_CLASS[grp]}" style="padding:1px 5px;border-radius:3px;font-size:10px;">${grp}</span><span>${GRP_LABEL[grp]}</span><span style="color:var(--text-3);font-weight:400">${applicants.length} ansøger${applicants.length !== 1 ? 'e' : ''} · ${cap[grp]} plads${cap[grp] !== 1 ? 'er' : ''}</span>`;
       grpDiv.appendChild(ghdr);
 
+      const limit = cap[grp] || 0;
+      const simActive = step > 0 && FINAL_KEYS.size > 0;
+
       if (applicants.length === 0) {
         const empty = document.createElement('div');
         empty.style.cssText = 'font-size:11px;color:var(--text-3);padding:2px 6px;';
@@ -2050,15 +2064,28 @@ function renderRangeringslister() {
         applicants.forEach((pid, idx) => {
           const p = PERSONS[pid];
           if (!p) return;
+
+          // Cutoff line between last spot and first without spot
+          if (idx === limit) {
+            const cutDiv = document.createElement('div');
+            cutDiv.className = 'rang-cutoff';
+            cutDiv.innerHTML = `<span class="rang-cutoff-label">ingen plads</span>`;
+            grpDiv.appendChild(cutDiv);
+          }
+
+          const isPlaced = simActive && FINAL_KEYS.has(`${pid}-${stnId}-${grp}`);
           const row = document.createElement('div');
-          row.className = 'rang-row';
+          row.className = 'rang-row' + (isPlaced ? ' rang-placed' : '');
           let scoreHtml = '';
           if (grp === 10 || grp === 60) {
             scoreHtml = `<span class="rang-score">Gns: ${p.kvotient.toFixed(1)}</span>`;
           } else if (grp === 20 || grp === 70) {
             scoreHtml = `<span class="rang-score">Kval: ${p.point}</span>`;
           }
-          row.innerHTML = `<span class="rang-rank">${idx + 1}.</span><span class="rang-name">${p.name}</span>${scoreHtml}`;
+          const placedDot = simActive
+            ? `<span class="rang-dot ${isPlaced ? 'rang-dot-placed' : 'rang-dot-empty'}"></span>`
+            : '';
+          row.innerHTML = `<span class="rang-rank">${idx + 1}.</span>${placedDot}<span class="rang-name">${p.name}</span>${scoreHtml}`;
           grpDiv.appendChild(row);
         });
       }
@@ -3133,6 +3160,7 @@ function stepKandidatrunde() {
           if (anyFreed) {
             // Genberegn fordeling med de nye kapaciteter
             FINAL_KEYS = computeFinalKeys(ROUND1);
+            renderRangeringslister();
             // Kør runder til stabilitet, derefter ny kandidatrunde
             pendingKandidatRunde = true;
             steps.push(() => doClearing(roundNumber, () => {
@@ -3332,6 +3360,7 @@ function stepPladsflyt() {
         FINAL_KEYS = computeFinalKeys(ROUND1);
         renderPladsflyt(moves, roundNumber);
         renderCapBoxRight();
+        renderRangeringslister();
 
         if (moves.length === 0) {
           setStatus('Pladsflyt — ingen flytning',
@@ -3493,6 +3522,8 @@ function resetSimState() {
   document.getElementById('learning-modal').style.display = 'none';
   step = 0;
   roundNumber = 0;
+  ROUND1 = [];
+  FINAL_KEYS = new Set();
   prevFinalKeys = null;
   pendingKandidatRunde = false;
   steps = buildSteps();
