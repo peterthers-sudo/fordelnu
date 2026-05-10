@@ -33,6 +33,78 @@
   --font-sm:  13px;
   --font-md:  15px;
   --font-lg:  17px;
+
+  /* Tema-tokens */
+  --status-bar-bg: #0f172a;
+  --rang-placed-bg: #f0fdf4;
+  --rang-gar-bg: #fffbeb;
+  --rang-gar-color: #92400e;
+  --rang-gar-score-bg: #fef3c7;
+  --rang-gar-score-border: #f59e0b;
+  --stn-fill: #ffffff;
+  --stn-stroke: #cbd5e1;
+  --stn-label: #1e293b;
+  --stn-name: #94a3b8;
+  --ctr-text: #64748b;
+  --ctr-sub: #94a3b8;
+  --train-body: #0f172a;
+  --train-wheel: #334155;
+  --bubble-bg: #ffffff;
+  --bubble-border: #e2e8f0;
+  --bubble-name: #1e293b;
+  --bubble-sub: #64748b;
+  --modal-backdrop: rgba(15,23,42,0.72);
+  --modal-bg: #ffffff;
+  --modal-text: #1e293b;
+  --modal-body-text: #334155;
+  --modal-footer-border: #e2e8f0;
+  --result-panel-border: #c7d2fe;
+  --res-standby-border: #fed7aa;
+  --res-standby-bg: #fff7ed;
+}
+
+html.dark {
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --surface-2: #263347;
+  --border: #334155;
+  --text: #f1f5f9;
+  --text-2: #94a3b8;
+  --text-3: #64748b;
+  --indigo: #818cf8;
+  --indigo-light: rgba(99,102,241,0.12);
+  --red: #e05252;
+  --red-light: rgba(224,82,82,0.12);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.25);
+  --shadow: 0 4px 16px rgba(0,0,0,0.35), 0 2px 8px rgba(0,0,0,0.25);
+  --shadow-lg: 0 10px 40px rgba(0,0,0,0.5);
+
+  --status-bar-bg: #040c18;
+  --rang-placed-bg: rgba(34,197,94,0.1);
+  --rang-gar-bg: rgba(245,158,11,0.1);
+  --rang-gar-color: #fbbf24;
+  --rang-gar-score-bg: rgba(245,158,11,0.15);
+  --rang-gar-score-border: rgba(245,158,11,0.4);
+  --stn-fill: #1e293b;
+  --stn-stroke: #475569;
+  --stn-label: #f1f5f9;
+  --stn-name: #94a3b8;
+  --ctr-text: #94a3b8;
+  --ctr-sub: #64748b;
+  --train-body: #334155;
+  --train-wheel: #64748b;
+  --bubble-bg: #1e293b;
+  --bubble-border: #334155;
+  --bubble-name: #f1f5f9;
+  --bubble-sub: #94a3b8;
+  --modal-backdrop: rgba(2,6,23,0.80);
+  --modal-bg: #1e293b;
+  --modal-text: #f1f5f9;
+  --modal-body-text: #cbd5e1;
+  --modal-footer-border: #334155;
+  --result-panel-border: rgba(99,102,241,0.3);
+  --res-standby-border: rgba(251,191,36,0.35);
+  --res-standby-bg: rgba(251,191,36,0.08);
 }
 
 html, body {
@@ -109,7 +181,7 @@ h1 {
 }
 .intro-toggle {
   background: none;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border);
   border-radius: 5px;
   cursor: pointer;
   font-size: 13px;
@@ -122,7 +194,7 @@ h1 {
   display: inline-block;
   transform-origin: center 55%;
 }
-.intro-toggle:hover { background: #f1f5f9; }
+.intro-toggle:hover { background: var(--surface-2); }
 .intro-toggle.collapsed { transform: rotate(-90deg); }
 
 /* ── Main layout ── */
@@ -233,7 +305,7 @@ h1 {
   cursor: pointer; font-size: 12px; font-weight: 700; color: var(--text-1);
   user-select: none;
 }
-.rang-stn-header:hover { background: #e2e8f0; }
+.rang-stn-header:hover { background: var(--border); }
 .rang-stn-header .rang-stn-icon {
   display: inline-flex;
   align-items: center;
@@ -275,14 +347,14 @@ h1 {
   content: ''; flex: 1; border-top: 1.5px dashed #f87171;
 }
 .rang-cutoff-label { font-size: 9px; color: #f87171; white-space: nowrap; font-weight: 600; letter-spacing: .03em; }
-.rang-placed { background: #f0fdf4; border-radius: 3px; }
+.rang-placed { background: var(--rang-placed-bg); border-radius: 3px; }
 .rang-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
 .rang-dot-placed { background: #22c55e; }
-.rang-dot-empty { background: #e2e8f0; }
-.rang-gar { background: #fffbeb; border-radius: 3px; }
+.rang-dot-empty { background: var(--border); }
+.rang-gar { background: var(--rang-gar-bg); border-radius: 3px; }
 .rang-gar-score {
-  font-size: 9px; font-weight: 700; color: #92400e;
-  background: #fef3c7; border: 1px solid #f59e0b;
+  font-size: 9px; font-weight: 700; color: var(--rang-gar-color);
+  background: var(--rang-gar-score-bg); border: 1px solid var(--rang-gar-score-border);
   border-radius: 3px; padding: 1px 5px; white-space: nowrap;
 }
 
@@ -503,7 +575,7 @@ h1 {
 
 /* Status bar */
 .status-bar {
-  background: #0f172a;
+  background: var(--status-bar-bg);
   color: white;
   padding: 14px 20px;
   font-size: 14px;
@@ -619,7 +691,7 @@ h1 {
 .result-panel-header {
   padding: 14px 18px;
   background: var(--indigo-light);
-  border-bottom: 1.5px solid #c7d2fe;
+  border-bottom: 1.5px solid var(--result-panel-border);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -648,7 +720,7 @@ h1 {
 }
 
 .res-card.direct { border-color: #a5b4fc; background: var(--indigo-light); }
-.res-card.standby { border-color: #fed7aa; background: #fff7ed; }
+.res-card.standby { border-color: var(--res-standby-border); background: var(--res-standby-bg); }
 .res-card.ledig { border-color: var(--border); background: var(--surface-2); }
 
 .result-note {
@@ -682,7 +754,7 @@ h1 {
   user-select: none;
   transition: background .12s;
 }
-.pladsflyt-round-header:hover { background: #e8ecf0; }
+.pladsflyt-round-header:hover { background: var(--surface-2); }
 .pladsflyt-round-header .pf-chevron {
   font-size: 10px;
   color: var(--text-3);
@@ -807,11 +879,25 @@ h1 {
   stroke-width: 4.5px !important;
 }
 
-.model-selector { display:flex; align-items:center; gap:5px; padding:7px 14px 6px; border-bottom:1px solid #e2e8f0; }
-.model-selector-label { font-size:var(--font-sm); color:#64748b; font-weight:600; margin-right:2px; }
-.model-btn { padding:3px 14px; border:1.5px solid #cbd5e1; border-radius:6px; background:white; font-size:var(--font-sm); font-weight:700; color:#475569; cursor:pointer; }
-.model-btn.active { background:#1e293b; border-color:#1e293b; color:white; }
+.model-selector { display:flex; align-items:center; gap:5px; padding:7px 14px 6px; border-bottom:1px solid var(--border); background:var(--surface); }
+.model-selector-label { font-size:var(--font-sm); color:var(--text-2); font-weight:600; margin-right:2px; }
+.model-btn { padding:3px 14px; border:1.5px solid var(--border); border-radius:6px; background:var(--surface); font-size:var(--font-sm); font-weight:700; color:var(--text-2); cursor:pointer; transition:background .12s; }
+.model-btn.active { background:var(--text); border-color:var(--text); color:var(--surface); }
 .model-btn:disabled { opacity:0.4; cursor:not-allowed; }
+
+/* ── Dark mode overrides ── */
+html.dark .g10 { background: rgba(10,61,138,0.55); color: #93c5fd; }
+html.dark .g20 { background: rgba(10,90,90,0.55); color: #67e8f9; }
+html.dark .g60 { background: rgba(107,68,0,0.55); color: #fde68a; }
+html.dark .g70 { background: rgba(122,46,0,0.55); color: #fdba74; }
+html.dark .g33 { background: rgba(91,33,182,0.45); color: #d8b4fe; }
+html.dark .g49 { background: rgba(6,95,70,0.45); color: #86efac; }
+html.dark .coll-header:hover .coll-icon { background: var(--border); border-color: var(--border); }
+html.dark .rang-stn-header:hover .rang-stn-icon { background: var(--surface-2); }
+html.dark #lærings-label { background: rgba(99,102,241,0.12); border-color: rgba(99,102,241,0.35); }
+html.dark .res-card.direct { border-color: rgba(99,102,241,0.35); }
+html.dark .dot-empty { border-color: var(--border); }
+html.dark .person-card.done { background: rgba(99,102,241,0.1); border-color: var(--indigo); }
 </style>
 </head>
 <body>
@@ -823,6 +909,7 @@ h1 {
       <p class="subtitle" id="intro-text">Fordelingen kører indtil alle ansøgere er placeret på den højest mulige prioriterede uddannelse, hvor de kan få en plads. I hver runde undersøges det om de kan optages på de uddannelser og grupper, de har søgt ved at placerer dem på grupper. Efter hver omgang ryddes der op, så hver ansøger kun er placeret på deres højest prioriterede uddannelse, hvor de har fået en plads. Ansøgere vil blive afvist, hvis pladserne er optaget af mere kvalificerede ansøgere. Derefter flyttes ledige pladser mellem grupper, og en ny runde køres. Processen fortsætter, indtil alle ansøgere enten er optaget på deres højest mulige prioritet, eller afvist på alle ønsker.</p>
     </div>
   </div>
+  <button id="theme-toggle" onclick="toggleTheme()" title="Skift tema" style="background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:8px 14px;font-size:16px;cursor:pointer;color:var(--text-2);box-shadow:var(--shadow-sm);transition:background .15s,border-color .15s;flex-shrink:0;">☀</button>
 </div>
 
 <div class="bento">
@@ -901,20 +988,20 @@ h1 {
     <div class="simulation-card">
       <svg id="metro-svg" viewBox="0 0 620 520">
         <!-- Metro ring -->
-        <circle cx="300" cy="260" r="190" fill="none" stroke="#c0392b" stroke-width="14"/>
-        <circle cx="300" cy="260" r="190" fill="none" stroke="#e74c3c" stroke-width="8"/>
+        <circle cx="300" cy="260" r="190" fill="none" stroke="var(--red)" stroke-width="14" opacity="0.6"/>
+        <circle cx="300" cy="260" r="190" fill="none" stroke="var(--red)" stroke-width="8"/>
 
         <g id="stations-layer"></g>
 
-        <text id="ctr1" x="300" y="254" text-anchor="middle" font-size="15" font-weight="700" fill="#64748b" font-family="DM Sans, sans-serif"></text>
-        <text id="ctr2" x="300" y="274" text-anchor="middle" font-size="12" fill="#94a3b8" font-family="DM Sans, sans-serif"></text>
+        <text id="ctr1" x="300" y="254" text-anchor="middle" font-size="15" font-weight="700" fill="var(--ctr-text)" font-family="DM Sans, sans-serif"></text>
+        <text id="ctr2" x="300" y="274" text-anchor="middle" font-size="12" fill="var(--ctr-sub)" font-family="DM Sans, sans-serif"></text>
 
         <g id="train">
-          <rect x="-26" y="-12" width="52" height="24" rx="7" fill="#0f172a"/>
+          <rect x="-26" y="-12" width="52" height="24" rx="7" fill="var(--train-body)"/>
           <rect x="-23" y="-9" width="18" height="12" rx="2" fill="#87CEEB" opacity="0.75"/>
           <rect x="-1"  y="-9" width="18" height="12" rx="2" fill="#87CEEB" opacity="0.75"/>
-          <circle cx="-14" cy="13" r="4.5" fill="#334155"/>
-          <circle cx="14"  cy="13" r="4.5" fill="#334155"/>
+          <circle cx="-14" cy="13" r="4.5" fill="var(--train-wheel)"/>
+          <circle cx="14"  cy="13" r="4.5" fill="var(--train-wheel)"/>
           <text x="0" y="5" text-anchor="middle" font-size="9" fill="white" font-weight="800" font-family="DM Mono, monospace" letter-spacing="1">KOT</text>
         </g>
 
@@ -924,9 +1011,9 @@ h1 {
           </filter>
         </defs>
         <g id="train-bubble" style="display:none" pointer-events="none">
-          <rect id="tb-rect" rx="9" ry="9" fill="white" stroke="#e2e8f0" stroke-width="1.5" filter="url(#tb-shadow)"/>
-          <text id="tb-name" font-family="DM Sans, sans-serif" font-size="12" font-weight="700" fill="#1e293b"/>
-          <text id="tb-info" font-family="DM Sans, sans-serif" font-size="10" fill="#64748b"/>
+          <rect id="tb-rect" rx="9" ry="9" fill="var(--bubble-bg)" stroke="var(--bubble-border)" stroke-width="1.5" filter="url(#tb-shadow)"/>
+          <text id="tb-name" font-family="DM Sans, sans-serif" font-size="12" font-weight="700" fill="var(--bubble-name)"/>
+          <text id="tb-info" font-family="DM Sans, sans-serif" font-size="10" fill="var(--bubble-sub)"/>
         </g>
       </svg>
 
@@ -1004,18 +1091,18 @@ h1 {
 </div><!-- end .bento -->
 
 <!-- Læringsmode modal -->
-<div id="learning-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(15,23,42,0.72);align-items:center;justify-content:center;padding:20px;">
-  <div style="background:#fff;border-radius:20px;width:700px;max-width:96vw;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 32px 80px rgba(0,0,0,0.38);overflow:hidden;">
+<div id="learning-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:var(--modal-backdrop);align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--modal-bg);border-radius:20px;width:700px;max-width:96vw;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 32px 80px rgba(0,0,0,0.38);overflow:hidden;">
     <div style="padding:18px 28px;background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%);display:flex;align-items:center;gap:12px;flex-shrink:0;">
       <span style="font-size:18px;">📚</span>
       <span style="color:white;font-size:13px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;">Læringsmode</span>
       <span id="learn-step-counter" style="margin-left:auto;color:rgba(255,255,255,0.78);font-size:13px;font-weight:600;"></span>
     </div>
     <div style="padding:18px 28px 14px;overflow-y:auto;flex:1;">
-      <h2 id="learn-title" style="font-size:20px;font-weight:800;color:#1e293b;margin:0 0 10px;line-height:1.3;"></h2>
-      <div id="learn-body" style="font-size:15px;line-height:1.65;color:#334155;"></div>
+      <h2 id="learn-title" style="font-size:20px;font-weight:800;color:var(--modal-text);margin:0 0 10px;line-height:1.3;"></h2>
+      <div id="learn-body" style="font-size:15px;line-height:1.65;color:var(--modal-body-text);"></div>
     </div>
-    <div style="padding:18px 32px 24px;border-top:1px solid #e2e8f0;display:flex;justify-content:flex-end;flex-shrink:0;">
+    <div style="padding:18px 32px 24px;border-top:1px solid var(--modal-footer-border);display:flex;justify-content:flex-end;flex-shrink:0;">
       <button onclick="closeLearningModal()" style="background:linear-gradient(135deg,#4f46e5,#7c3aed);color:white;border:none;border-radius:12px;padding:13px 32px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(79,70,229,0.3);">
         Forstået
       </button>
@@ -1025,6 +1112,25 @@ h1 {
 
 <script>
 const CX = 300, CY = 260, R = 190, DEG = Math.PI / 180;
+
+function toggleTheme() {
+  const isDark = document.documentElement.classList.toggle('dark');
+  document.getElementById('theme-toggle').textContent = isDark ? '🌙' : '☀';
+  try { localStorage.setItem('kot_theme', isDark ? 'dark' : 'light'); } catch(e) {}
+  renderSVGStations();
+}
+
+(function() {
+  try {
+    if (localStorage.getItem('kot_theme') === 'dark') {
+      document.documentElement.classList.add('dark');
+      document.addEventListener('DOMContentLoaded', () => {
+        const btn = document.getElementById('theme-toggle');
+        if (btn) btn.textContent = '🌙';
+      });
+    }
+  } catch(e) {}
+})();
 
 /* ── Læringsmode ─────────────────────────────────────────────────── */
 let learningMode = false;
@@ -1540,19 +1646,22 @@ function renderSVGStations() {
     g.id = `stn-${stnId}`;
     const circ = document.createElementNS(NS, 'circle');
     circ.setAttribute('cx', stn.x); circ.setAttribute('cy', stn.y);
-    circ.setAttribute('r', '36'); circ.setAttribute('fill', 'white');
-    circ.setAttribute('stroke', '#cbd5e1'); circ.setAttribute('stroke-width', '4');
+    circ.setAttribute('r', '36');
+    const cs = getComputedStyle(document.documentElement);
+    circ.setAttribute('fill', cs.getPropertyValue('--stn-fill').trim() || '#ffffff');
+    circ.setAttribute('stroke', cs.getPropertyValue('--stn-stroke').trim() || '#cbd5e1');
+    circ.setAttribute('stroke-width', '4');
     const lbl = document.createElementNS(NS, 'text');
     lbl.setAttribute('x', stn.x); lbl.setAttribute('y', stn.y - 6);
     lbl.setAttribute('text-anchor', 'middle');
     lbl.setAttribute('font-size', stn.label.length > 1 ? '14' : '16');
-    lbl.setAttribute('font-weight', '800'); lbl.setAttribute('fill', '#1e293b');
+    lbl.setAttribute('font-weight', '800'); lbl.setAttribute('fill', cs.getPropertyValue('--stn-label').trim() || '#1e293b');
     lbl.setAttribute('font-family', 'DM Sans, sans-serif');
     lbl.textContent = stn.label;
     const nm = document.createElementNS(NS, 'text');
     nm.setAttribute('x', stn.x); nm.setAttribute('y', stn.y + 11);
     nm.setAttribute('text-anchor', 'middle'); nm.setAttribute('font-size', '12');
-    nm.setAttribute('fill', '#94a3b8'); nm.setAttribute('font-family', 'DM Sans, sans-serif');
+    nm.setAttribute('fill', cs.getPropertyValue('--stn-name').trim() || '#94a3b8'); nm.setAttribute('font-family', 'DM Sans, sans-serif');
     const dispName = stn.name.split(' ')[0];
     nm.textContent = dispName.length > 9 ? dispName.slice(0, 8) + '.' : dispName;
     g.appendChild(circ); g.appendChild(lbl); g.appendChild(nm);
