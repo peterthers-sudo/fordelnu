@@ -2304,7 +2304,7 @@ function renderCapConfig() {
       const cb = document.createElement('input');
       cb.type = 'checkbox';
       cb.checked = (cap[grp] || 0) > 0 && !isDisabled;
-      cb.disabled = isDisabled || locked;
+      cb.disabled = isDisabled || locked || learningMode;
       cb.onchange = () => toggleGrpCfg(stnId, grp, cb.checked);
       const tag = document.createElement('span');
       tag.className = GRP_COLORS[grp];
@@ -3790,10 +3790,10 @@ function reset() {
   if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
   animating = false;
   locked = false;
-  document.querySelectorAll('.btn-sel').forEach(b => b.disabled = false);
+  document.querySelectorAll('.btn-sel').forEach(b => b.disabled = learningMode);
   document.getElementById('autokør-cb').disabled = false;
   document.getElementById('autokør-delay').disabled = false;
-  document.querySelectorAll('.model-btn').forEach(b => b.disabled = false);
+  document.querySelectorAll('.model-btn').forEach(b => b.disabled = learningMode);
   // Gendan originale kapaciteter (applyPladsflyt og toggleGrpCfg muterer disse)
   for (const stnId of Object.keys(CAPACITY)) {
     CAPACITY[stnId] = JSON.parse(JSON.stringify(CAPACITY_ORIGINAL[stnId]));
