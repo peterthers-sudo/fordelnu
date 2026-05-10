@@ -1581,16 +1581,9 @@ function closeLearningModal() {
 
 function onLæringsChange() {
   learningMode = document.getElementById('lærings-cb').checked;
-
-  const autoCb = document.getElementById('autokør-cb');
-
-  // disable autokør når læringsmode er aktiv
-  autoCb.disabled = learningMode;
-
   if (learningMode) {
-    autoCb.checked = false;
+    document.getElementById('autokør-cb').checked = false;
     onAutokørChange();
-
     if (activeModel !== 5) applyModel(5);
     CAPACITY = JSON.parse(JSON.stringify(CAPACITY_DEFAULTS));
     CAPACITY_ORIGINAL = JSON.parse(JSON.stringify(CAPACITY_DEFAULTS));
@@ -1599,12 +1592,9 @@ function onLæringsChange() {
     selected = new Set(Object.keys(PERSONS));
     updateSelCount();
   }
-
   savePrefs();
   reset();
 }
-	
-
 /* ────────────────────────────────────────────────────────────────── */
 
 const ALL_STATIONS_DEFS = {
@@ -3617,7 +3607,7 @@ function stepSlutOpsummering() {
     pb.style.flexWrap = 'wrap';
     pb.innerHTML = '<span style="font-size:13px;font-weight:700;color:var(--text-2);margin-right:4px;">Prioritet:</span>' +
       Object.entries(priCounts).sort(([a],[b]) => +a - +b).map(([pri, n]) =>
-        `<span style="background:#f1f5f9;border:1.5px solid var(--border);border-radius:20px;padding:3px 12px;font-size:13px;font-weight:700;color:var(--text);">${pri}. prioritet: <span style="color:#4f46e5">${n}</span></span>`
+        `<span style="background:#f1f5f9;border:1.5px solid var(--border);border-radius:20px;padding:3px 12px;font-size:13px;font-weight:700;color:var(--text-3);">${pri}. prioritet: <span style="color:#4f46e5">${n}</span></span>`
       ).join('');
 
     setCenter('Færdig', 'Endelig fordeling');
@@ -3636,7 +3626,7 @@ function stepSlutOpsummering() {
       savePrefs();
     }
     document.querySelectorAll('.model-btn').forEach(b => b.disabled = false);
-    document.getElementById('autokør-cb').disabled = learningMode;
+    document.getElementById('autokør-cb').disabled = false;
     document.getElementById('autokør-delay').disabled = false;
     document.querySelectorAll('.btn-sel').forEach(b => {
       if (b.id !== 'btn-reset-wishes' || WISH_OVERRIDE) b.disabled = false;
@@ -4010,7 +4000,7 @@ function reset() {
   animating = false;
   locked = false;
   document.querySelectorAll('.btn-sel').forEach(b => b.disabled = learningMode);
-  document.getElementById('autokør-cb').disabled = learningMode;
+  document.getElementById('autokør-cb').disabled = false;
   document.getElementById('autokør-delay').disabled = false;
   document.querySelectorAll('.model-btn').forEach(b => b.disabled = learningMode);
   // Gendan originale kapaciteter (applyPladsflyt og toggleGrpCfg muterer disse)
