@@ -2503,7 +2503,7 @@ function animateTrain(fromA, totalDeg, ms, waypoints, onDone) {
 function setStatus(badge, msg) {
   if (learningMode) {
     document.getElementById('status-bar').innerHTML =
-      `<span class="step-badge" style="background:#6366f1">Læringsmode</span><span style="color:#e2e8f0">Tryk <strong>Næste ▶</strong> for at gå videre til næste trin</span>`;
+      `<span class="step-badge" style="background:#6366f1">Læringsmode</span><span style="color:#e2e8f0">Tryk <strong>Genstart</strong> for at lave dine egne simuleringer</span>`;
     return;
   }
   document.getElementById('status-bar').innerHTML =
@@ -3077,7 +3077,7 @@ function stepKandidatrunde() {
   return withLearning('kandidatrunde', () => {
     if (learningMode) {
       document.getElementById('status-bar').innerHTML =
-        `<span class="step-badge" style="background:#6366f1">Læringsmode</span><span style="color:#e2e8f0">Tryk <strong>Næste ▶</strong> for at gå videre til næste trin</span>`;
+        `<span class="step-badge" style="background:#6366f1">Læringsmode</span><span style="color:#e2e8f0">Tryk <strong>Genstart</strong> for at lave dine egne simuleringer</span>`;
     } else {
       document.getElementById('status-bar').innerHTML = '<span class="step-badge kandidat">Kandidatrunden</span><span style="color:#e2e8f0">Tjekker for ansøgere som søger med kandidatreglen</span>';
     }
@@ -3239,8 +3239,13 @@ function stepSlutOpsummering() {
     document.getElementById('btn-next').disabled = true;
     // Lås op igen så man kan ændre ansøgere og grupper uden at genstarte
     locked = false;
-    if (!learningMode) document.querySelectorAll('.model-btn').forEach(b => b.disabled = false);
-    if (!learningMode) { document.getElementById('autokør-cb').disabled = false; document.getElementById('autokør-delay').disabled = false; }
+    if (learningMode) {
+      learningMode = false;
+      document.getElementById('lærings-cb').checked = false;
+    }
+    document.querySelectorAll('.model-btn').forEach(b => b.disabled = false);
+    document.getElementById('autokør-cb').disabled = false;
+    document.getElementById('autokør-delay').disabled = false;
     document.querySelectorAll('.btn-sel').forEach(b => {
       if (b.id !== 'btn-reset-wishes' || WISH_OVERRIDE) b.disabled = false;
     });
@@ -3614,6 +3619,8 @@ renderActiveCards();
 renderCapConfig();
 renderCapBoxRight();
 positionTrain(115);
+document.getElementById('lærings-cb').checked = true;
+onLæringsChange();
 </script>
 </body>
 </html>
