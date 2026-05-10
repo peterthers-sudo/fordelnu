@@ -909,7 +909,7 @@ html.dark .person-card.done { background: rgba(99,102,241,0.1); border-color: va
       <p class="subtitle" id="intro-text">Fordelingen kører indtil alle ansøgere er placeret på den højest mulige prioriterede uddannelse, hvor de kan få en plads. I hver runde undersøges det om de kan optages på de uddannelser og grupper, de har søgt ved at placerer dem på grupper. Efter hver omgang ryddes der op, så hver ansøger kun er placeret på deres højest prioriterede uddannelse, hvor de har fået en plads. Ansøgere vil blive afvist, hvis pladserne er optaget af mere kvalificerede ansøgere. Derefter flyttes ledige pladser mellem grupper, og en ny runde køres. Processen fortsætter, indtil alle ansøgere enten er optaget på deres højest mulige prioritet, eller afvist på alle ønsker.</p>
     </div>
   </div>
-  <button id="theme-toggle" onclick="toggleTheme()" title="Skift tema" style="background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:8px 14px;font-size:16px;cursor:pointer;color:var(--text-2);box-shadow:var(--shadow-sm);transition:background .15s,border-color .15s;flex-shrink:0;">☀</button>
+  <button id="theme-toggle" onclick="toggleTheme()" title="Skift tema" style="background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:8px 16px;font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;color:var(--text-2);box-shadow:var(--shadow-sm);transition:background .15s,border-color .15s;flex-shrink:0;display:flex;align-items:center;gap:7px;letter-spacing:.01em;">☀ Lys</button>
 </div>
 
 <div class="bento">
@@ -1115,7 +1115,7 @@ const CX = 300, CY = 260, R = 190, DEG = Math.PI / 180;
 
 function toggleTheme() {
   const isDark = document.documentElement.classList.toggle('dark');
-  document.getElementById('theme-toggle').textContent = isDark ? '🌙' : '☀';
+  document.getElementById('theme-toggle').textContent = isDark ? '🌙 Mørk' : '☀ Lys';
   try { localStorage.setItem('kot_theme', isDark ? 'dark' : 'light'); } catch(e) {}
   renderSVGStations();
 }
@@ -1126,7 +1126,7 @@ function toggleTheme() {
       document.documentElement.classList.add('dark');
       document.addEventListener('DOMContentLoaded', () => {
         const btn = document.getElementById('theme-toggle');
-        if (btn) btn.textContent = '🌙';
+        if (btn) btn.textContent = '🌙 Mørk';
       });
     }
   } catch(e) {}
