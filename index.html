@@ -2576,6 +2576,11 @@ function animateTrain(fromA, totalDeg, ms, waypoints, onDone) {
 }
 
 function setStatus(badge, msg) {
+  if (learningMode) {
+    document.getElementById('status-bar').innerHTML =
+      `<span class="step-badge" style="background:#6366f1">Læringsmode</span><span style="color:#e2e8f0">Tryk <strong>Næste ▶</strong> for at gå videre til næste trin</span>`;
+    return;
+  }
   document.getElementById('status-bar').innerHTML =
     `<span class="step-badge">${badge}</span><span style="color:#e2e8f0">${msg}</span>`;
 }
@@ -3158,7 +3163,12 @@ function addKandidatCircle(pid, stnId) {
 
 function stepKandidatrunde() {
   return withLearning('kandidatrunde', () => {
-    document.getElementById('status-bar').innerHTML = '<span class="step-badge kandidat">Kandidatrunden</span><span style="color:#e2e8f0">Tjekker for ansøgere som søger med kandidatreglen</span>';
+    if (learningMode) {
+      document.getElementById('status-bar').innerHTML =
+        `<span class="step-badge" style="background:#6366f1">Læringsmode</span><span style="color:#e2e8f0">Tryk <strong>Næste ▶</strong> for at gå videre til næste trin</span>`;
+    } else {
+      document.getElementById('status-bar').innerHTML = '<span class="step-badge kandidat">Kandidatrunden</span><span style="color:#e2e8f0">Tjekker for ansøgere som søger med kandidatreglen</span>';
+    }
     setCenter('Kandidat', 'Grp. 33');
     document.getElementById('btn-next').disabled = true;
 
