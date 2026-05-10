@@ -927,7 +927,7 @@ h1 {
       </div>
 
       <div class="status-bar" id="status-bar">
-        <span style="color:#94a3b8;">Vælg hvilke ansøgere og grupper der skal med i fordelingen. Derefter tryk Start</span>
+        <span style="color:#e2e8f0;">Vælg hvilke ansøgere, uddannelser og grupper der skal med i fordelingen. Derefter tryk Start</span>
       </div>
 
       <div class="controls">
@@ -3658,8 +3658,9 @@ function resetSimState() {
     if (circ) { circ.setAttribute('stroke', '#cbd5e1'); circ.setAttribute('stroke-width', '3.5'); }
   }
   setCenter('', '');
-  document.getElementById('status-bar').innerHTML =
-    '<span style="color:#94a3b8;">Vælg hvilke ansøgere og grupper der skal med i fordelingen. Derefter tryk Start</span>';
+  document.getElementById('status-bar').innerHTML = learningMode
+    ? '<span style="color:#e2e8f0;">Ansøgere, uddannelser og grupper er allerede valgt. Tryk på <strong>Start</strong>.</span>'
+    : '<span style="color:#e2e8f0;">Vælg hvilke ansøgere, uddannelser og grupper der skal med i fordelingen. Derefter tryk <strong>Start</strong>.</span>';
   document.getElementById('result-panel').classList.remove('show');
   const pb = document.getElementById('priority-breakdown');
   if (pb) { pb.style.display = 'none'; pb.innerHTML = ''; }
