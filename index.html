@@ -2067,7 +2067,7 @@ function renderAppList() {
     const cb = document.createElement('input');
     cb.type = 'checkbox';
     cb.checked = selected.has(pid);
-    cb.disabled = locked;
+    cb.disabled = locked || learningMode;
     cb.onchange = () => { togglePerson(pid, cb.checked); };
     const av = document.createElement('div');
     av.className = 'app-avatar';
