@@ -214,6 +214,37 @@ h1 {
 
 .coll-body.open { display: block !important; }
 
+/* Rangeringslister */
+#rang-body { padding: 6px 10px 10px; }
+.rang-stn { margin-bottom: 6px; }
+.rang-stn-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 5px 10px; border-radius: 6px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  cursor: pointer; font-size: 12px; font-weight: 700; color: var(--text-1);
+  user-select: none;
+}
+.rang-stn-header:hover { background: #e2e8f0; }
+.rang-stn-header .rang-stn-icon { font-size: 10px; color: var(--text-3); transition: transform .2s; }
+.rang-stn-header.open .rang-stn-icon { transform: rotate(180deg); }
+.rang-stn-body { display: none; padding: 4px 0 2px 6px; }
+.rang-stn-body.open { display: block; }
+.rang-grp { margin-bottom: 6px; }
+.rang-grp-header {
+  font-size: 11px; font-weight: 700; color: var(--text-2);
+  padding: 2px 6px; margin-bottom: 2px; border-radius: 4px;
+  display: flex; align-items: center; gap: 6px;
+}
+.rang-row {
+  display: flex; align-items: center; gap: 6px;
+  padding: 2px 6px; font-size: 11px; color: var(--text-1);
+  border-radius: 3px;
+}
+.rang-row:hover { background: var(--surface-2); }
+.rang-rank { min-width: 18px; color: var(--text-3); font-size: 10px; text-align: right; }
+.rang-name { flex: 1; }
+.rang-score { font-size: 10px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+
 /* Ansøgerliste scrollbar */
 #active-cards {
   max-height: 320px;
@@ -800,6 +831,17 @@ h1 {
           <button class="btn-sel" onclick="selectAllGrps()">Alle</button>
           <button class="btn-sel" onclick="selectNoneGrps()">Ingen</button>
         </div>
+      </div>
+    </div>
+
+    <!-- Rangeringslister -->
+    <div class="collapsible">
+      <div class="coll-header" id="rang-header" onclick="toggleRangList()">
+        <span class="coll-label">Rangeringslister</span>
+        <span class="coll-icon">▾</span>
+      </div>
+      <div class="coll-body" id="rang-body">
+        <!-- filled by renderRangeringslister() -->
       </div>
     </div>
 
@@ -1905,6 +1947,7 @@ function togglePerson(pid, on) {
   savePrefs();
   updateSelCount();
   renderActiveCards();
+  renderRangeringslister();
 }
 
 function toggleCapRight() {
@@ -1933,6 +1976,99 @@ function toggleCfgList() {
   document.getElementById('cfg-body').classList.toggle('open');
 }
 
+function toggleRangList() {
+  document.getElementById('rang-header').classList.toggle('open');
+  document.getElementById('rang-body').classList.toggle('open');
+}
+
+function toggleRangStn(stnId) {
+  document.getElementById('rang-stn-hdr-' + stnId).classList.toggle('open');
+  document.getElementById('rang-stn-bdy-' + stnId).classList.toggle('open');
+}
+
+function renderRangeringslister() {
+  const body = document.getElementById('rang-body');
+  if (!body) return;
+  const GRP_LABEL = { 10: 'Gruppe 10', 20: 'Gruppe 20', 60: 'Gruppe 60', 70: 'Gruppe 70', 49: 'Gruppe 49' };
+  const GRP_CLASS = { 10: 'g10', 20: 'g20', 60: 'g60', 70: 'g70', 49: 'g49' };
+
+  // preserve which stations are open
+  const openStns = new Set();
+  for (const stnId of Object.keys(STATIONS)) {
+    const el = document.getElementById('rang-stn-hdr-' + stnId);
+    if (el && el.classList.contains('open')) openStns.add(stnId);
+  }
+
+  body.innerHTML = '';
+  for (const [stnId, stn] of Object.entries(STATIONS)) {
+    const cap = CAPACITY[stnId] || {};
+    const activeGrps = [10, 20, 60, 70, 49].filter(g => (cap[g] || 0) > 0);
+    if (!activeGrps.length) continue;
+
+    const wasOpen = openStns.has(stnId);
+    const stnDiv = document.createElement('div');
+    stnDiv.className = 'rang-stn';
+
+    const hdr = document.createElement('div');
+    hdr.className = 'rang-stn-header' + (wasOpen ? ' open' : '');
+    hdr.id = 'rang-stn-hdr-' + stnId;
+    hdr.setAttribute('onclick', `toggleRangStn('${stnId}')`);
+    hdr.innerHTML = `<span>${stn.name}</span><span class="rang-stn-icon">▾</span>`;
+
+    const bdy = document.createElement('div');
+    bdy.className = 'rang-stn-body' + (wasOpen ? ' open' : '');
+    bdy.id = 'rang-stn-bdy-' + stnId;
+
+    for (const grp of activeGrps) {
+      // collect applicants who wish this station+group and are selected
+      let applicants = [...selected].filter(pid => {
+        return getWishes(pid).some(w => w.stn === stnId && w.grp === grp);
+      });
+
+      // sort
+      if (grp === 10 || grp === 60) {
+        applicants.sort((a, b) => (PERSONS[b]?.kvotient || 0) - (PERSONS[a]?.kvotient || 0));
+      } else if (grp === 20 || grp === 70) {
+        applicants.sort((a, b) => (PERSONS[b]?.point || 0) - (PERSONS[a]?.point || 0));
+      }
+      // grp 49: leave in natural order (effectively random from Set iteration)
+
+      const grpDiv = document.createElement('div');
+      grpDiv.className = 'rang-grp';
+
+      const ghdr = document.createElement('div');
+      ghdr.className = 'rang-grp-header';
+      ghdr.innerHTML = `<span class="${GRP_CLASS[grp]}" style="padding:1px 5px;border-radius:3px;font-size:10px;">${grp}</span><span>${GRP_LABEL[grp]}</span><span style="color:var(--text-3);font-weight:400">${applicants.length} ansøger${applicants.length !== 1 ? 'e' : ''} · ${cap[grp]} plads${cap[grp] !== 1 ? 'er' : ''}</span>`;
+      grpDiv.appendChild(ghdr);
+
+      if (applicants.length === 0) {
+        const empty = document.createElement('div');
+        empty.style.cssText = 'font-size:11px;color:var(--text-3);padding:2px 6px;';
+        empty.textContent = 'Ingen ansøgere';
+        grpDiv.appendChild(empty);
+      } else {
+        applicants.forEach((pid, idx) => {
+          const p = PERSONS[pid];
+          if (!p) return;
+          const row = document.createElement('div');
+          row.className = 'rang-row';
+          let scoreHtml = '';
+          if (grp === 10 || grp === 60) {
+            scoreHtml = `<span class="rang-score">Gns: ${p.kvotient.toFixed(1)}</span>`;
+          } else if (grp === 20 || grp === 70) {
+            scoreHtml = `<span class="rang-score">Kval: ${p.point}</span>`;
+          }
+          row.innerHTML = `<span class="rang-rank">${idx + 1}.</span><span class="rang-name">${p.name}</span>${scoreHtml}`;
+          grpDiv.appendChild(row);
+        });
+      }
+      bdy.appendChild(grpDiv);
+    }
+    stnDiv.appendChild(hdr);
+    stnDiv.appendChild(bdy);
+    body.appendChild(stnDiv);
+  }
+}
 
 function toggleGrpCfg(stnId, grp, checked) {
   if (animating) return;
@@ -2006,6 +2142,7 @@ function renderCapConfig() {
     row.appendChild(grpWrap);
     list.appendChild(row);
   }
+  renderRangeringslister();
 }
 
 function toggleAppList() {
@@ -2026,6 +2163,7 @@ function selectAll() {
   savePrefs();
   renderAppList();
   renderActiveCards();
+  renderRangeringslister();
 }
 
 function selectNone() {
@@ -2034,6 +2172,7 @@ function selectNone() {
   savePrefs();
   renderAppList();
   renderActiveCards();
+  renderRangeringslister();
 }
 
 function selectRandom(n) {
@@ -2044,6 +2183,7 @@ function selectRandom(n) {
   renderAppList();
   renderActiveCards();
   updateSelCount();
+  renderRangeringslister();
 }
 
 function selectAllGrps() {
