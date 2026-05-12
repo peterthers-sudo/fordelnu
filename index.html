@@ -906,7 +906,7 @@ html.dark .person-card.done { background: rgba(99,102,241,0.1); border-color: va
   <div class="header-title">
     <div>
       <h1>KOT — Fordelingsalgoritmen <button class="intro-toggle" id="intro-toggle" onclick="toggleIntro()" title="Skjul/vis beskrivelse">▾</button></h1>
-      <p class="subtitle" id="intro-text">Fordelingen kører indtil alle ansøgere er placeret på den højest mulige prioriterede uddannelse, hvor de kan få en plads. I hver runde undersøges det om de kan optages på de uddannelser og grupper, de har søgt ved at placerer dem på grupper. Efter hver omgang ryddes der op, så hver ansøger kun er placeret på deres højest prioriterede uddannelse, hvor de har fået en plads. Ansøgere vil blive afvist, hvis pladserne er optaget af højere rangerede ansøgere. Derefter flyttes ledige pladser mellem grupper, og en ny runde køres. Processen fortsætter, indtil alle ansøgere enten er optaget på deres højest mulige prioritet, eller afvist på alle ønsker.</p>
+      <p class="subtitle" id="intro-text">KOT-fordelingen gennemføres i en række fordelingsrunder, hvor ansøgerne løbende vurderes på de uddannelser og grupper, de har søgt. I hver runde placeres ansøgerne dér, hvor de aktuelt kan få en plads ud fra deres prioriteringer, karakterer og de ledige pladser.<br><br>Når en runde er afsluttet, ryddes der op i placeringerne, så hver ansøger kun står på den højest prioriterede uddannelse, hvor vedkommende har fået en plads. Ansøgere kan miste en plads, hvis højere rangerede ansøgere senere får forrang, mens ledige pladser samtidig flyttes mellem grupper for at sikre den bedst mulige udnyttelse af kapaciteten.<br><br>Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, hvordan grupper fyldes op, og hvordan fordelingen gradvist finder frem til det endelige resultat. Processen fortsætter automatisk, indtil alle ansøgere enten er optaget på deres højest mulige prioritet eller har fået afslag på alle ønsker.</p>
     </div>
   </div>
   <button id="theme-toggle" onclick="toggleTheme()" title="Skift tema" style="background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:8px 16px;font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;color:var(--text-2);box-shadow:var(--shadow-sm);transition:background .15s,border-color .15s;flex-shrink:0;display:flex;align-items:center;gap:7px;letter-spacing:.01em;">☀ Lys</button>
@@ -1030,7 +1030,7 @@ html.dark .person-card.done { background: rgba(99,102,241,0.1); border-color: va
 
       <div class="controls">
         <button class="btn btn-go" id="btn-next" onclick="nextStep()">&#9654; Start</button>
-        <button class="btn btn-reset" onclick="reset()">&#8635; Genstart</button>
+        <button class="btn btn-reset" onclick="reset()">&#8635; Ny fordeling</button>
         <label class="autokør-label">
           <input type="checkbox" id="autokør-cb" onchange="onAutokørChange()">
           Autokør
@@ -1575,8 +1575,12 @@ function showLearningModal(title, bodyOrFn) {
 }
 
 function closeLearningModal() {
+  if (autokørTimerId) { clearTimeout(autokørTimerId); autokørTimerId = null; }
   document.getElementById('learning-modal').style.display = 'none';
   document.getElementById('btn-next').disabled = false;
+  if (document.getElementById('autokør-cb')?.checked && !autokørPaused) {
+    autokørTimerId = setTimeout(nextStep, getAutokørDelay());
+  }
 }
 
 function onLæringsChange() {
@@ -3618,7 +3622,7 @@ function stepSlutOpsummering() {
     locked = false;
     if (learningMode) {
       document.getElementById('status-bar').innerHTML =
-        `<span class="step-badge" style="background:#6366f1">Læringsmode</span><span style="color:#e2e8f0">Tryk <strong>Genstart</strong> for at lave dine egne simuleringer</span>`;
+        `<span class="step-badge" style="background:#6366f1">Læringsmode</span><span style="color:#e2e8f0">Tryk <strong>Ny fordeling</strong> for at lave dine egne simuleringer</span>`;
       const sluttxt = LEARNING_TEXTS['slutopsummering'];
       if (sluttxt) showLearningModal(sluttxt.title, sluttxt.body);
       learningMode = false;
@@ -3908,6 +3912,14 @@ function afterStepDone(autoTrigger = true) {
     if (txt) {
       document.getElementById('btn-next').disabled = true;
       showLearningModal(txt.title, txt.body);
+      if (autoTrigger && document.getElementById('autokør-cb')?.checked && !autokørPaused) {
+        if (autokørTimerId) clearTimeout(autokørTimerId);
+        autokørTimerId = setTimeout(() => {
+          document.getElementById('learning-modal').style.display = 'none';
+          document.getElementById('btn-next').disabled = false;
+          nextStep();
+        }, getAutokørDelay());
+      }
       return;
     }
   }
@@ -3982,7 +3994,7 @@ function resetSimState() {
     const circ = document.querySelector(`#stn-${stnId} circle`);
     if (circ) { circ.setAttribute('stroke', '#cbd5e1'); circ.setAttribute('stroke-width', '3.5'); }
   }
-  setCenter(learningMode ? 'Læringsmode' : 'Simulationsmode', '');
+  setCenter(learningMode ? 'Læringsmode' : 'Simulationsmode', learningMode ? 'Øvrige knapper deaktiveret' : 'Frit valg på alle hylder');
   document.getElementById('status-bar').innerHTML = learningMode
     ? '<span style="color:#e2e8f0;">Ansøgere, uddannelser og grupper er allerede valgt. Tryk på <strong>Start</strong>.</span>'
     : '<span style="color:#e2e8f0;">Vælg hvilke ansøgere, uddannelser og grupper der skal med i fordelingen. Derefter tryk <strong>Start</strong>.</span>';
