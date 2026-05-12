@@ -379,6 +379,8 @@ h1 {
 
 .person-card:last-child { margin-bottom: 0; }
 .person-card.done { border-color: var(--indigo); background: var(--indigo-light); }
+.person-card.followed { border-color: #f59e0b; background: rgba(245,158,11,0.06); }
+html.dark .person-card.followed { background: rgba(245,158,11,0.08); }
 
 .person-header { display: flex; align-items: center; gap: 7px; margin-bottom: 4px; }
 
@@ -454,6 +456,36 @@ h1 {
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
 }
+
+/* Følg-ansøger tracker */
+#followed-card {
+  background: var(--surface); border-radius: var(--radius-sm);
+  box-shadow: var(--shadow); overflow: hidden;
+  border: 1.5px solid var(--indigo);
+}
+#followed-card-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 12px; background: var(--indigo-light);
+}
+.followed-star-icon { font-size: 14px; color: var(--indigo); }
+.followed-name { flex: 1; font-size: 13px; font-weight: 700; color: var(--text); }
+.followed-close {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-3); font-size: 18px; line-height: 1; padding: 0;
+}
+.followed-close:hover { color: var(--text); }
+#followed-status {
+  padding: 9px 12px; font-size: 12px; color: var(--text-2); line-height: 1.6;
+}
+.app-star {
+  background: none; border: none; cursor: pointer;
+  font-size: 14px; color: var(--text-3); padding: 0 2px;
+  margin-left: auto; flex-shrink: 0; transition: color .15s;
+  line-height: 1;
+}
+.app-star:hover { color: #f59e0b; }
+.app-star.starred { color: #f59e0b; }
+.app-star.card-star { font-size: 22px; padding: 0 4px; }
 
 .app-row {
   display: flex;
@@ -918,6 +950,16 @@ Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, 
 
   <!-- ── Venstre panel ── -->
   <div class="left-panel">
+
+    <!-- Følg ansøger -->
+    <div id="followed-card">
+      <div id="followed-card-header">
+        <span class="followed-star-icon">★</span>
+        <span class="followed-name" id="followed-name">Følger ingen</span>
+        <button class="followed-close" id="followed-close-btn" onclick="setFollowed(null)" title="Stop med at følge" style="display:none">×</button>
+      </div>
+      <div id="followed-status">Vælg en favorit i ansøgerlisten.</div>
+    </div>
 
     <!-- Ansøgerkort (selected persons) -->
     <div class="collapsible">
@@ -2036,6 +2078,8 @@ let ROUND1 = [];
 let FINAL_KEYS = new Set();
 let pavEls = {};
 let lastRundeMoved = [];
+let followedPid = null;
+let followedPrevKey = null;
 let lastPladsflytMoves = [];
 const MAX_VISIBLE = 6;
 let overflowEls = {};
@@ -2142,7 +2186,7 @@ function renderActiveCards() {
     for (const w of wishes) { if (!seenStns.includes(w.stn)) seenStns.push(w.stn); }
 
     const card = document.createElement('div');
-    card.className = 'person-card';
+    card.className = 'person-card' + (followedPid === pid ? ' followed' : '');
     card.id = `card-${pid}`;
 
     const hdr = document.createElement('div');
@@ -2160,7 +2204,12 @@ function renderActiveCards() {
     const scores = document.createElement('span');
     scores.style.cssText = 'font-size:11px;color:#94a3b8;margin-left:auto;font-weight:600;text-align:right;line-height:1.4;white-space:nowrap;font-family:DM Mono,monospace;';
     scores.innerHTML = `Gns: ${person.kvotient.toFixed(1)}<br><span style="color:#b08800">Kval: ${person.point}</span>`;
-    hdr.appendChild(av); hdr.appendChild(nm); hdr.appendChild(scores);
+    const cardStar = document.createElement('button');
+    cardStar.className = 'app-star card-star' + (followedPid === pid ? ' starred' : '');
+    cardStar.textContent = followedPid === pid ? '★' : '☆';
+    cardStar.title = followedPid === pid ? 'Stop med at følge' : 'Følg ansøger';
+    cardStar.onclick = e => { e.stopPropagation(); setFollowed(followedPid === pid ? null : pid); };
+    hdr.appendChild(av); hdr.appendChild(nm); hdr.appendChild(scores); hdr.appendChild(cardStar);
     card.appendChild(hdr);
 
     const wishDiv = document.createElement('div');
@@ -2257,7 +2306,12 @@ function renderAppList() {
     const nm = document.createElement('span');
     nm.className = 'app-name';
     nm.textContent = person.name;
-    row.appendChild(cb); row.appendChild(av); row.appendChild(nm);
+    const star = document.createElement('button');
+    star.className = 'app-star' + (followedPid === pid ? ' starred' : '');
+    star.textContent = followedPid === pid ? '★' : '☆';
+    star.title = followedPid === pid ? 'Stop med at følge' : 'Følg ansøger';
+    star.onclick = e => { e.preventDefault(); e.stopPropagation(); setFollowed(followedPid === pid ? null : pid); };
+    row.appendChild(cb); row.appendChild(av); row.appendChild(nm); row.appendChild(star);
     list.appendChild(row);
   }
   updateSelCount();
@@ -2266,6 +2320,93 @@ function renderAppList() {
 function updateSelCount() {
   document.getElementById('sel-count').textContent = `${selected.size} valgt`;
   document.getElementById('pass-count').textContent = `(${selected.size})`;
+}
+
+function setFollowed(pid) {
+  followedPid = pid;
+  followedPrevKey = null;
+  renderAppList();
+  renderActiveCards();
+  document.getElementById('followed-name').textContent = pid ? PERSONS[pid]?.name || pid : 'Følger ingen';
+  document.getElementById('followed-status').textContent = pid
+    ? (step === 0 ? 'Fordeling ikke startet endnu.' : getFollowedStatusText(null))
+    : 'Vælg en favorit i ansøgerlisten.';
+  document.getElementById('followed-close-btn').style.display = pid ? 'inline' : 'none';
+}
+
+function getFollowedStatusText(stepKey) {
+  if (!followedPid) return '';
+  const currentKey = [...FINAL_KEYS].find(k => k.startsWith(followedPid + '-'));
+  const prevKey = followedPrevKey;
+
+  const stnPrioMap = (() => {
+    const map = {};
+    let pos = 1;
+    for (const w of getWishes(followedPid)) {
+      if (!(w.stn in map)) map[w.stn] = pos++;
+    }
+    return map;
+  })();
+
+  const fmt = (key, withPrio = false) => {
+    if (!key) return null;
+    const parts = key.split('-');
+    const grp = parts[parts.length - 1];
+    const stnId = parts.slice(1, -1).join('-');
+    const stnName = STATIONS[stnId]?.name?.split(' ')[0] || stnId;
+    const prio = stnPrioMap[stnId];
+    const prioStr = withPrio && prio ? `${prio}. prio — ` : '';
+    return `${prioStr}${stnName} · grp ${grp}`;
+  };
+
+  const cur = fmt(currentKey, true), prev = fmt(prevKey, true);
+
+  if (stepKey === 'statistik') {
+    const ws = getWishes(followedPid);
+    const nStns = new Set(ws.map(w => w.stn)).size;
+    return `Klar til fordeling — ${ws.length} ønsker på ${nStns} uddannelse${nStns !== 1 ? 'r' : ''}.`;
+  }
+  if (stepKey === 'runde1-klar') {
+    const r1 = (ROUND1 || []).filter(e => e.person === followedPid);
+    if (!r1.length) return 'Ingen midlertidige placeringer.';
+    return `Midlertidigt placeret på ${r1.length} gruppe${r1.length !== 1 ? 'r' : ''}.`;
+  }
+  if (stepKey?.startsWith('clearing')) {
+    if (!cur) return 'Ingen plads efter clearing.';
+    if (!prev || currentKey === prevKey) return `Beholder pladsen på sin ${cur}.`;
+    return `Beholder sin ${cur} — frigivet fra ${fmt(prevKey)}.`;
+  }
+  if (stepKey?.startsWith('pladsflyt')) {
+    if (!cur) return 'Ingen plads.';
+    if (!prev || currentKey === prevKey) return `Ingen pladsflyt — ${cur}.`;
+    return `Pladsflyt: ${fmt(prevKey)} → ${cur}.`;
+  }
+  if (stepKey?.startsWith('togkørsel')) {
+    if (!cur && !prev) return 'Ingen plads.';
+    if (cur && !prev) return `Fik plads — ${cur}.`;
+    if (!cur && prev) return `Mistet plads fra ${fmt(prevKey)}.`;
+    if (currentKey !== prevKey) return `Rykket op til sin ${cur} (fra ${fmt(prevKey)}).`;
+    return `Ingen ændring — ${cur}.`;
+  }
+  if (stepKey?.startsWith('opsummering')) {
+    return cur ? `Placeret på sin ${cur}.` : 'Ingen plads endnu.';
+  }
+  if (stepKey === 'kandidatrunde') {
+    const hasGrp33 = getWishes(followedPid).some(w => w.grp === 33);
+    if (!hasGrp33) return 'Ikke søgt i grp. 33.';
+    if (currentKey?.endsWith('-33')) return `Optaget via gruppe 33 — ${fmt(currentKey)}.`;
+    return cur ? `Ikke optaget via grp 33 — ${cur}.` : 'Ikke optaget.';
+  }
+  if (stepKey === 'slutopsummering') {
+    return cur ? `🥇 Tillykke! Endeligt optaget på sin ${cur}.` : '😔 Ikke optaget.';
+  }
+  return cur ? cur : 'Ingen plads.';
+}
+
+function updateFollowedCard(stepKey) {
+  if (!followedPid) return;
+  const el = document.getElementById('followed-status');
+  if (el) el.textContent = getFollowedStatusText(stepKey);
 }
 
 function togglePerson(pid, on) {
@@ -3652,6 +3793,7 @@ function stepSlutOpsummering() {
     });
     renderAppList();
     renderCapConfig();
+    updateFollowedCard('slutopsummering');
   });
 }
 
@@ -3921,8 +4063,10 @@ function enableNextBtn(autoTrigger = true) {
 }
 
 function afterStepDone(autoTrigger = true) {
+  const stepKey = steps[step - 1]?._learningKey;
+  if (followedPid) updateFollowedCard(stepKey);
   if (learningMode) {
-    const prevKey = steps[step - 1]?._learningKey;
+    const prevKey = stepKey;
     const txt = prevKey && LEARNING_TEXTS[prevKey];
     if (txt) {
       document.getElementById('btn-next').disabled = true;
@@ -3949,6 +4093,7 @@ function afterStepDone(autoTrigger = true) {
 
 function nextStep() {
   if (animating) return;
+  if (followedPid) followedPrevKey = [...FINAL_KEYS].find(k => k.startsWith(followedPid + '-')) || null;
   document.getElementById('btn-next').disabled = false;
   if (step === 0) {
     ROUND1 = buildRound1(selected);
@@ -4036,6 +4181,10 @@ function reset() {
   }
   applyStationConfig();
   resetSimState();
+  followedPrevKey = null;
+  document.getElementById('followed-status').textContent = followedPid
+    ? 'Fordeling ikke startet endnu.'
+    : 'Vælg en favorit i ansøgerlisten.';
 }
 
 /* Init */
