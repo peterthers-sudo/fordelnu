@@ -906,7 +906,7 @@ html.dark .person-card.done { background: rgba(99,102,241,0.1); border-color: va
   <div class="header-title">
     <div>
       <h1>KOT — Fordelingsalgoritmen <button class="intro-toggle" id="intro-toggle" onclick="toggleIntro()" title="Skjul/vis beskrivelse">▾</button></h1>
-      <p class="subtitle" id="intro-text">KOT-fordelingen gennemføres i en række fordelingsrunder, hvor ansøgerne løbende vurderes på de uddannelser og grupper, de har søgt. I hver runde placeres ansøgerne dér, hvor de aktuelt kan få en plads ud fra deres prioriteringer, karakterer og de ledige pladser.<br>
+      <p class="subtitle" id="intro-text">KOT-fordelingen gennemføres i en række fordelingsrunder, hvor ansøgerne løbende vurderes på de uddannelser og grupper, de har søgt. I hver runde placeres ansøgerne dér, hvor de kan få en plads ud fra institutionernes rangeinger, deres egen prioriteringer, karakterer eller kvalifikationsspoint.<br>
 Når en runde er afsluttet, ryddes der op i placeringerne, så hver ansøger kun står på den højest prioriterede uddannelse, hvor vedkommende har fået en plads. Ansøgere kan miste en plads, hvis højere rangerede ansøgere senere får forrang, mens ledige pladser samtidig flyttes mellem grupper for at sikre den bedst mulige udnyttelse af kapaciteten.<br>
 Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, hvordan grupper fyldes op, og hvordan fordelingen gradvist finder frem til det endelige resultat. Processen fortsætter automatisk, indtil alle ansøgere enten er optaget på deres højest mulige prioritet eller har fået afslag på alle ønsker.</p>
     </div>
@@ -3996,7 +3996,7 @@ function resetSimState() {
     const circ = document.querySelector(`#stn-${stnId} circle`);
     if (circ) { circ.setAttribute('stroke', '#cbd5e1'); circ.setAttribute('stroke-width', '3.5'); }
   }
-  setCenter(learningMode ? 'Læringsmode' : 'Simulationsmode', learningMode ? 'Alle indstillinger kan ændres' : 'Alle indstillinger kan ændres');
+  setCenter(learningMode ? 'Læringsmode' : 'Simulationsmode', learningMode ? 'Indstillinger kan ikke ændres' : 'Alle indstillinger kan ændres');
   document.getElementById('status-bar').innerHTML = learningMode
     ? '<span style="color:#e2e8f0;">Ansøgere, uddannelser og grupper er allerede valgt. Tryk på <strong>Start</strong>.</span>'
     : '<span style="color:#e2e8f0;">Vælg hvilke ansøgere, uddannelser og grupper der skal med i fordelingen. Derefter tryk <strong>Start</strong>.</span>';
