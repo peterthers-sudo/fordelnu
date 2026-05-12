@@ -2325,6 +2325,7 @@ function updateSelCount() {
 function setFollowed(pid) {
   followedPid = pid;
   followedPrevKey = null;
+  try { if (pid) localStorage.setItem('kot_followed', pid); else localStorage.removeItem('kot_followed'); } catch(e) {}
   renderAppList();
   renderActiveCards();
   document.getElementById('followed-name').textContent = pid ? PERSONS[pid]?.name || pid : 'Følger ingen';
@@ -4197,6 +4198,10 @@ let CAPACITY_ORIGINAL = {};
       if (arr.length > 0) selected = new Set(arr);
     }
   } catch(e) {}
+  try {
+    const savedFollowed = localStorage.getItem('kot_followed');
+    if (savedFollowed && savedFollowed in PERSONS) followedPid = savedFollowed;
+  } catch(e) {}
 })();
 const savedModel = (() => { try { return parseInt(localStorage.getItem('metro_model') || '5'); } catch(e) { return 5; } })();
 applyModel(savedModel in MODEL_CONFIGS ? savedModel : 5);
@@ -4211,6 +4216,7 @@ if (localStorage.getItem('introCollapsed') === '1') {
 steps = buildSteps();
 renderAppList();
 renderActiveCards();
+if (followedPid) setFollowed(followedPid);
 renderCapConfig();
 renderCapBoxRight();
 positionTrain(115);
