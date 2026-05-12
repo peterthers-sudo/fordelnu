@@ -995,8 +995,8 @@ Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, 
 
         <g id="stations-layer"></g>
 
-        <text id="ctr1" x="300" y="254" text-anchor="middle" font-size="15" font-weight="700" fill="var(--ctr-text)" font-family="DM Sans, sans-serif"></text>
-        <text id="ctr2" x="300" y="274" text-anchor="middle" font-size="12" fill="var(--ctr-sub)" font-family="DM Sans, sans-serif"></text>
+        <text id="ctr1" x="300" y="250" text-anchor="middle" font-size="16" font-weight="700" fill="var(--ctr-text)" font-family="DM Sans, sans-serif"></text>
+        <text id="ctr2" x="300" y="273" text-anchor="middle" font-size="18" font-weight="700" fill="var(--indigo)" font-family="DM Sans, sans-serif"></text>
 
         <g id="train">
           <rect x="-26" y="-12" width="52" height="24" rx="7" fill="var(--train-body)"/>
@@ -1120,6 +1120,10 @@ function toggleTheme() {
   document.getElementById('theme-toggle').textContent = isDark ? '🌙 Mørk' : '☀ Lys';
   try { localStorage.setItem('kot_theme', isDark ? 'dark' : 'light'); } catch(e) {}
   renderSVGStations();
+  if (lastStatistikState) {
+    if (lastStatistikState.type === 'start') renderStatistik(lastStatistikState.args);
+    else renderRunde1Statistik(lastStatistikState.args);
+  }
 }
 
 (function() {
@@ -1589,6 +1593,7 @@ function onLæringsChange() {
   learningMode = document.getElementById('lærings-cb').checked;
   if (learningMode) {
     document.getElementById('autokør-cb').checked = false;
+    document.getElementById('autokør-delay').value = 5;
     onAutokørChange();
     if (activeModel !== 5) applyModel(5);
     CAPACITY = JSON.parse(JSON.stringify(CAPACITY_DEFAULTS));
@@ -2897,30 +2902,34 @@ function setCenter(t1, t2) {
 }
 
 let statistikEl = null;
+let lastStatistikState = null;
 
 function renderStatistik({ antalAnsøgere, antalUdd, antalGrp, totalPladser, ratio }) {
   clearStatistik();
+  lastStatistikState = { type: 'start', args: { antalAnsøgere, antalUdd, antalGrp, totalPladser, ratio } };
+  const cs = getComputedStyle(document.documentElement);
+  const col = k => cs.getPropertyValue(k).trim();
   const g = document.createElementNS(NS, 'g');
   g.setAttribute('id', 'statistik-overlay');
   const cx = 300, cy = 260;
-  const cardW = 200, cardH = 156;
+  const cardW = 200, cardH = 176;
   const cardX = cx - cardW / 2, cardY = cy - cardH / 2;
   const bg = document.createElementNS(NS, 'rect');
   bg.setAttribute('x', cardX); bg.setAttribute('y', cardY);
   bg.setAttribute('width', cardW); bg.setAttribute('height', cardH);
-  bg.setAttribute('rx', 14); bg.setAttribute('fill', 'white');
-  bg.setAttribute('stroke', '#e2e8f0'); bg.setAttribute('stroke-width', '1.5');
+  bg.setAttribute('rx', 14); bg.setAttribute('fill', col('--surface'));
+  bg.setAttribute('stroke', col('--border')); bg.setAttribute('stroke-width', '1.5');
   bg.setAttribute('filter', 'drop-shadow(0 4px 12px rgba(0,0,0,0.07))');
   g.appendChild(bg);
   const divider = document.createElementNS(NS, 'line');
   divider.setAttribute('x1', cardX + 14); divider.setAttribute('y1', cardY + 30);
   divider.setAttribute('x2', cardX + cardW - 14); divider.setAttribute('y2', cardY + 30);
-  divider.setAttribute('stroke', '#f1f5f9'); divider.setAttribute('stroke-width', '1');
+  divider.setAttribute('stroke', col('--border')); divider.setAttribute('stroke-width', '1');
   g.appendChild(divider);
   const title = document.createElementNS(NS, 'text');
   title.setAttribute('x', cx); title.setAttribute('y', cardY + 20);
   title.setAttribute('text-anchor', 'middle'); title.setAttribute('font-size', '10');
-  title.setAttribute('font-weight', '700'); title.setAttribute('fill', '#94a3b8');
+  title.setAttribute('font-weight', '700'); title.setAttribute('fill', col('--text-3'));
   title.setAttribute('font-family', 'DM Sans, sans-serif');
   title.setAttribute('letter-spacing', '0.08em'); title.textContent = 'DER FORDELES PÅ';
   g.appendChild(title);
@@ -2941,7 +2950,7 @@ function renderStatistik({ antalAnsøgere, antalUdd, antalGrp, totalPladser, rat
     g.appendChild(bar);
     const lbl = document.createElementNS(NS, 'text');
     lbl.setAttribute('x', cardX + 24); lbl.setAttribute('y', y + 3);
-    lbl.setAttribute('font-size', '11'); lbl.setAttribute('fill', '#64748b');
+    lbl.setAttribute('font-size', '11'); lbl.setAttribute('fill', col('--text-2'));
     lbl.setAttribute('font-family', 'DM Sans, sans-serif');
     lbl.textContent = row.label;
     g.appendChild(lbl);
@@ -2957,12 +2966,12 @@ function renderStatistik({ antalAnsøgere, antalUdd, antalGrp, totalPladser, rat
   const noteBg = document.createElementNS(NS, 'rect');
   noteBg.setAttribute('x', cardX + 12); noteBg.setAttribute('y', noteY - 10);
   noteBg.setAttribute('width', cardW - 24); noteBg.setAttribute('height', 18);
-  noteBg.setAttribute('rx', 5); noteBg.setAttribute('fill', '#f8fafc');
+  noteBg.setAttribute('rx', 5); noteBg.setAttribute('fill', col('--surface-2'));
   g.appendChild(noteBg);
   const note = document.createElementNS(NS, 'text');
   note.setAttribute('x', cx); note.setAttribute('y', noteY + 3);
   note.setAttribute('text-anchor', 'middle'); note.setAttribute('font-size', '9.5');
-  note.setAttribute('fill', '#94a3b8'); note.setAttribute('font-family', 'DM Sans, sans-serif');
+  note.setAttribute('fill', col('--text-3')); note.setAttribute('font-family', 'DM Sans, sans-serif');
   note.textContent = `${ratio} pladser pr. ansøger`;
   g.appendChild(note);
   svgEl.insertBefore(g, document.getElementById('train'));
@@ -2970,6 +2979,7 @@ function renderStatistik({ antalAnsøgere, antalUdd, antalGrp, totalPladser, rat
 }
 
 function clearStatistik() {
+  lastStatistikState = null;
   if (statistikEl) { statistikEl.remove(); statistikEl = null; }
   const old = document.getElementById('statistik-overlay');
   if (old) old.remove();
@@ -2977,6 +2987,9 @@ function clearStatistik() {
 
 function renderRunde1Statistik({ rNr, optaget, afvist, ledige, pladserFlyttet, titel }) {
   clearStatistik();
+  lastStatistikState = { type: 'runde', args: { rNr, optaget, afvist, ledige, pladserFlyttet, titel } };
+  const cs = getComputedStyle(document.documentElement);
+  const col = k => cs.getPropertyValue(k).trim();
   const g = document.createElementNS(NS, 'g');
   g.setAttribute('id', 'statistik-overlay');
   const cx = 300, cy = 260;
@@ -2985,26 +2998,26 @@ function renderRunde1Statistik({ rNr, optaget, afvist, ledige, pladserFlyttet, t
   const bg = document.createElementNS(NS, 'rect');
   bg.setAttribute('x', cardX); bg.setAttribute('y', cardY);
   bg.setAttribute('width', cardW); bg.setAttribute('height', cardH);
-  bg.setAttribute('rx', 14); bg.setAttribute('fill', 'white');
-  bg.setAttribute('stroke', '#e2e8f0'); bg.setAttribute('stroke-width', '1.5');
+  bg.setAttribute('rx', 14); bg.setAttribute('fill', col('--surface'));
+  bg.setAttribute('stroke', col('--border')); bg.setAttribute('stroke-width', '1.5');
   bg.setAttribute('filter', 'drop-shadow(0 4px 12px rgba(0,0,0,0.07))');
   g.appendChild(bg);
   const divider = document.createElementNS(NS, 'line');
   divider.setAttribute('x1', cardX + 14); divider.setAttribute('y1', cardY + 30);
   divider.setAttribute('x2', cardX + cardW - 14); divider.setAttribute('y2', cardY + 30);
-  divider.setAttribute('stroke', '#f1f5f9'); divider.setAttribute('stroke-width', '1');
+  divider.setAttribute('stroke', col('--border')); divider.setAttribute('stroke-width', '1');
   g.appendChild(divider);
   const title = document.createElementNS(NS, 'text');
   title.setAttribute('x', cx); title.setAttribute('y', cardY + 20);
   title.setAttribute('text-anchor', 'middle'); title.setAttribute('font-size', '10');
-  title.setAttribute('font-weight', '700'); title.setAttribute('fill', '#94a3b8');
+  title.setAttribute('font-weight', '700'); title.setAttribute('fill', col('--text-3'));
   title.setAttribute('font-family', 'DM Sans, sans-serif');
   title.setAttribute('letter-spacing', '0.08em'); title.textContent = titel ?? `RUNDE ${rNr} — AFSLUTTET`;
   g.appendChild(title);
   const rows = [
     { label: 'Optaget',           value: String(optaget),        color: '#10b981' },
     { label: 'Afvist',            value: String(afvist),         color: '#ef4444' },
-    { label: 'Ledige pladser',    value: String(ledige),         color: '#94a3b8' },
+    { label: 'Ledige pladser',    value: String(ledige),         color: col('--text-3') },
     { label: 'Pladser omfordelt', value: String(pladserFlyttet), color: '#f59e0b' },
   ];
   const startY = cardY + 50;
@@ -3018,7 +3031,7 @@ function renderRunde1Statistik({ rNr, optaget, afvist, ledige, pladserFlyttet, t
     g.appendChild(bar);
     const lbl = document.createElementNS(NS, 'text');
     lbl.setAttribute('x', cardX + 24); lbl.setAttribute('y', y + 3);
-    lbl.setAttribute('font-size', '11'); lbl.setAttribute('fill', '#64748b');
+    lbl.setAttribute('font-size', '11'); lbl.setAttribute('fill', col('--text-2'));
     lbl.setAttribute('font-family', 'DM Sans, sans-serif');
     lbl.textContent = row.label;
     g.appendChild(lbl);
