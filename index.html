@@ -2,7 +2,7 @@
 <html lang="da">
 <head>
 <meta charset="utf-8">
-<title>KOT — Fordeling</title>
+<title>KOT — Fordelingsalgoritmen</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -736,15 +736,13 @@ html.dark .person-card.followed { background: rgba(245,158,11,0.08); }
 }
 
 .res-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 10px;
-  flex-wrap: wrap;
-  padding: 14px 16px;
+  padding: 14px 16px 10px;
 }
 
 .res-card {
-  flex: 1;
-  min-width: 90px;
   border-radius: 10px;
   padding: 10px 11px;
   background: var(--surface-2);
@@ -937,8 +935,8 @@ html.dark .person-card.done { background: rgba(99,102,241,0.1); border-color: va
 <div class="page-header">
   <div class="header-title">
     <div>
-      <h1>KOT — Fordeling <button class="intro-toggle" id="intro-toggle" onclick="toggleIntro()" title="Skjul/vis beskrivelse">▾</button></h1>
-      <p class="subtitle" id="intro-text">KOT-fordelingen gennemføres i en række fordelingsrunder, hvor ansøgerne løbende vurderes på de uddannelser og grupper, de har søgt. I hver runde placeres ansøgerne dér, hvor de kan få en plads ud fra institutionernes rangeringer, deres egen prioriteringer, karakterer eller kvalifikationsspoint.<br>
+      <h1>KOT — Fordelingsalgoritmen <button class="intro-toggle" id="intro-toggle" onclick="toggleIntro()" title="Skjul/vis beskrivelse">▾</button></h1>
+      <p class="subtitle" id="intro-text">KOT-fordelingen gennemføres i en række fordelingsrunder, hvor ansøgerne løbende vurderes på de uddannelser og grupper, de har søgt. I hver runde placeres ansøgerne dér, hvor de kan få en plads ud fra institutionernes rangeinger, deres egen prioriteringer, karakterer eller kvalifikationsspoint.<br>
 Når en runde er afsluttet, ryddes der op i placeringerne, så hver ansøger kun står på den højest prioriterede uddannelse, hvor vedkommende har fået en plads. Ansøgere kan miste en plads, hvis højere rangerede ansøgere senere får forrang, mens ledige pladser samtidig flyttes mellem grupper for at sikre den bedst mulige udnyttelse af kapaciteten.<br>
 Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, hvordan grupper fyldes op, og hvordan fordelingen gradvist finder frem til det endelige resultat. Processen fortsætter automatisk, indtil alle ansøgere enten er optaget på deres højest mulige prioritet eller har fået afslag på alle ønsker.</p>
     </div>
@@ -1038,7 +1036,7 @@ Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, 
         <g id="stations-layer"></g>
 
         <text id="ctr1" x="300" y="250" text-anchor="middle" font-size="16" font-weight="700" fill="var(--ctr-text)" font-family="DM Sans, sans-serif"></text>
-        <text id="ctr2" x="300" y="273" text-anchor="middle" font-size="14" font-weight="700" fill="var(--indigo)" font-family="DM Sans, sans-serif"></text>
+        <text id="ctr2" x="300" y="273" text-anchor="middle" font-size="18" font-weight="700" fill="var(--indigo)" font-family="DM Sans, sans-serif"></text>
 
         <g id="train">
           <rect x="-26" y="-12" width="52" height="24" rx="7" fill="var(--train-body)"/>
@@ -1091,6 +1089,18 @@ Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, 
       </div>
     </div>
 
+    <!-- Hovedtal panel -->
+    <div class="result-panel" id="hovedtal-panel" style="display:none;">
+      <div class="result-panel-header" style="background:rgba(16,185,129,0.08);border-color:rgba(16,185,129,0.3);">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="7" stroke="#10b981" stroke-width="1.5"/>
+          <path d="M4 8h8M8 4v8" stroke="#10b981" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <span class="result-panel-title" style="color:#059669;">Hovedtal</span>
+      </div>
+      <div id="hovedtal-body" style="padding:14px 18px 10px;overflow-x:auto;"></div>
+    </div>
+
     <!-- Result panel -->
     <div class="result-panel" id="result-panel">
       <div class="result-panel-header">
@@ -1102,6 +1112,10 @@ Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, 
       </div>
       <div id="priority-breakdown" style="display:none;padding:10px 16px 8px;flex-wrap:wrap;gap:8px;align-items:center;border-bottom:1px solid var(--border);"></div>
       <div class="res-row" id="result-row"></div>
+      <div id="res-ledige-section" style="display:none;border-top:1px solid var(--border);padding:8px 16px 4px;">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3);margin-bottom:6px;">Ubesatte pladser</div>
+        <div class="res-row" id="result-row-ledige" style="padding:0 0 10px;"></div>
+      </div>
       <div class="result-note" id="result-note"></div>
     </div>
 
@@ -1129,6 +1143,7 @@ Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, 
         Vises efter clearing
       </div>
     </div>
+
 
   </div>
 
@@ -1681,6 +1696,7 @@ let activeModel = 5;
 let STATIONS = {};
 let CAPACITY = {};
 let CAPACITY_DEFAULTS = {};
+let CAPACITY_PRE_GRP33 = null; // snapshot taget inden applyKandidatPladsflyt muterer CAPACITY
 
 function applyStationConfig() {
   for (const [stnId, cap] of Object.entries(CAPACITY)) {
@@ -2082,6 +2098,7 @@ let lastRundeMoved = [];
 let followedPid = null;
 let followedPrevKey = null;
 let lastPladsflytMoves = [];
+let grænsekvotientMap = null;
 const MAX_VISIBLE = 6;
 let overflowEls = {};
 
@@ -2175,6 +2192,117 @@ function renderCapBoxRight() {
     }
   }
   document.getElementById('cap-box-right').innerHTML = html;
+}
+
+function computeGrænsekvotient() {
+  const capSrc = CAPACITY_PRE_GRP33 || CAPACITY;
+  const map = {};
+  for (const stnId of Object.keys(STATIONS)) {
+    map[stnId] = {};
+    for (const grp of [10, 60]) {
+      const cap = capSrc[stnId]?.[grp];
+      if (!cap) continue;
+      const placedPids = [...FINAL_KEYS]
+        .filter(k => {
+          const parts = k.split('-');
+          return parseInt(parts[parts.length - 1]) === grp &&
+                 parts.slice(1, -1).join('-') === stnId;
+        })
+        .map(k => k.split('-')[0]);
+      if (placedPids.length < cap) {
+        map[stnId][grp] = 'ledige';
+      } else {
+        const minKv = Math.min(...placedPids.map(pid => PERSONS[pid]?.kvotient ?? Infinity));
+        map[stnId][grp] = isFinite(minKv) ? minKv : null;
+      }
+    }
+  }
+  return map;
+}
+
+function renderGrænsekvotienter() {
+  const panel = document.getElementById('hovedtal-panel');
+  const body  = document.getElementById('hovedtal-body');
+  if (!grænsekvotientMap) { panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+
+  const capSrc = CAPACITY_PRE_GRP33 || CAPACITY;
+
+  // Returnerer HTML-streng for en GK-celle (grp 10 eller 60)
+  function gkCellContent(stnId, grp) {
+    const val = grænsekvotientMap[stnId]?.[grp];
+    if (val === undefined || val === null) return '<span style="color:var(--text-3);">—</span>';
+    if (val === 'ledige') return '<span style="font-weight:700;color:#059669;">AOLP</span>';
+    const cap = capSrc[stnId]?.[grp] || 0;
+    const ans = ROUND1.filter(e => e.stn === stnId && e.grp === grp).length;
+    if (ans <= cap) return '<span style="font-weight:700;color:var(--text-2);">AO</span>';
+    const gc10 = { text: '#0a3d8a' }, gc60 = { text: '#6b4400' };
+    const gc = grp === 10 ? gc10 : gc60;
+    return `<span style="font-weight:700;color:${gc.text};font-family:'DM Mono',monospace;">${val.toFixed(1)}</span>`;
+  }
+
+  const TH_GRP = (label, colspan=1, align='center', extra='') =>
+    `<th colspan="${colspan}" style="padding:6px 10px;font-size:11px;font-weight:700;color:var(--text-3);text-align:${align};white-space:nowrap;border-bottom:1px solid var(--border);background:var(--surface-2);${extra}">${label}</th>`;
+  const TD_N = `padding:5px 10px;font-size:13px;font-weight:600;color:var(--text);text-align:right;font-family:'DM Mono',monospace;`;
+  const TD_L = `padding:5px 10px;font-size:13px;color:var(--text);text-align:left;`;
+  const TD_C = `padding:5px 10px;font-size:13px;text-align:center;`;
+  const sep  = 'border-top:1px solid var(--border);';
+
+  let rows = '';
+  let isFirst = true;
+  for (const [stnId, stn] of Object.entries(STATIONS)) {
+    const b = !isFirst ? sep : '';
+
+    // Antal optagne: direkte (grp < 60, excl 33/49) og standby (grp 60-99)
+    const optagneDirekte = [...FINAL_KEYS].filter(k => {
+      const parts = k.split('-'); const g = +parts[parts.length-1];
+      return parts.slice(1,-1).join('-') === stnId && g < 60 && g !== 33 && g !== 49;
+    }).length;
+    const optagneStandby = [...FINAL_KEYS].filter(k => {
+      const parts = k.split('-'); const g = +parts[parts.length-1];
+      return parts.slice(1,-1).join('-') === stnId && g >= 60 && g < 100;
+    }).length;
+
+    // Antal ansøgere: unikke personer i ROUND1 for denne station
+    const stnEntries = ROUND1.filter(e => e.stn === stnId);
+    const totalAns = new Set(stnEntries.map(e => e.person)).size;
+    const pri1Ans  = new Set(stnEntries.filter(e => e.priority === 1).map(e => e.person)).size;
+
+    const hasGk10 = 10 in (grænsekvotientMap[stnId] || {});
+    const hasGk60 = 60 in (grænsekvotientMap[stnId] || {});
+
+    rows += `<tr>
+      <td style="${TD_L}${b}font-weight:600;">${stn.name}</td>
+      <td style="${TD_N}${b}">${optagneDirekte}</td>
+      <td style="${TD_N}${b}">${optagneStandby || '—'}</td>
+      <td style="${TD_N}${b}">${totalAns}</td>
+      <td style="${TD_N}${b}">${pri1Ans}</td>
+      <td style="${TD_C}${b}">${hasGk10 ? gkCellContent(stnId, 10) : '<span style="color:var(--text-3);">—</span>'}</td>
+      <td style="${TD_C}${b}">${hasGk60 ? gkCellContent(stnId, 60) : '<span style="color:var(--text-3);">—</span>'}</td>
+    </tr>`;
+    isFirst = false;
+  }
+
+  body.innerHTML = `<table style="width:100%;border-collapse:collapse;">
+    <thead>
+      <tr>
+        ${TH_GRP('Uddannelse', 1, 'left', 'border-bottom:1.5px solid var(--border);')}
+        ${TH_GRP('Antal optagne', 2, 'center', 'border-left:1px solid var(--border);border-bottom:1px solid var(--border);')}
+        ${TH_GRP('Antal ansøgere', 2, 'center', 'border-left:1px solid var(--border);border-bottom:1px solid var(--border);')}
+        ${TH_GRP('Adgangskvotient', 2, 'center', 'border-left:1px solid var(--border);border-bottom:1px solid var(--border);')}
+      </tr>
+      <tr>
+        ${TH_GRP('', 1, 'left', 'border-bottom:1.5px solid var(--border);')}
+        ${TH_GRP('direkte', 1, 'right', 'border-left:1px solid var(--border);border-bottom:1.5px solid var(--border);')}
+        ${TH_GRP('standby', 1, 'right', 'border-bottom:1.5px solid var(--border);')}
+        ${TH_GRP('total', 1, 'right', 'border-left:1px solid var(--border);border-bottom:1.5px solid var(--border);')}
+        ${TH_GRP('1. prioritet', 1, 'right', 'border-bottom:1.5px solid var(--border);')}
+        ${TH_GRP('kvote 1', 1, 'center', 'border-left:1px solid var(--border);border-bottom:1.5px solid var(--border);')}
+        ${TH_GRP('standby', 1, 'center', 'border-bottom:1.5px solid var(--border);')}
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  </table>`;
 }
 
 function renderActiveCards() {
@@ -3218,25 +3346,37 @@ function renderResultPanel() {
       card.className = 'res-card ledig';
       card.innerHTML = `
         <div style="font-size:13px;font-weight:700;color:${person.textColor}">${person.name}</div>
-        <div style="font-size:12px;color:#94a3b8;margin-top:2px">Ikke placeret</div>`;
+        <div style="margin-top:4px;background:#fee2e2;color:#991b1b;font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;display:inline-block;">Afvist</div>`;
     }
     row.appendChild(card);
   }
+  const ledigeSection = document.getElementById('res-ledige-section');
+  const ledigeRow = document.getElementById('result-row-ledige');
+  ledigeRow.innerHTML = '';
+  let anyLedig = false;
   for (const [stnId, stn] of Object.entries(STATIONS)) {
-    for (const [grp, cap] of Object.entries(stn.capacity)) {
-      const occupants = placedState[`${stnId}-${grp}`] || [];
-      const ledig = cap - occupants.length;
-      if (ledig > 0) {
-        const card = document.createElement('div');
-        card.className = 'res-card ledig';
-        card.innerHTML = `
-          <div style="font-size:13px;font-weight:700;color:#64748b">${stn.name}</div>
-          <div style="font-size:12px;color:#94a3b8;margin-top:2px">Ledig plads</div>
-          <div style="margin-top:4px;background:#f1f5f9;color:#64748b;font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;display:inline-block;font-family:'DM Mono',monospace">grp.${grp} — ingen søger</div>`;
-        row.appendChild(card);
-      }
+    const capRef = (CAPACITY_PRE_GRP33 || CAPACITY_DEFAULTS)[stnId] || {};
+    const capEntries = Object.entries(capRef)
+      .filter(([g]) => +g !== 33 && +g !== 49)
+      .sort(([a], [b]) => +a - +b);
+    for (const [grp, cap] of capEntries) {
+      const grpNum = +grp;
+      if (!cap) continue;
+      const free = cap - (placedState[`${stnId}-${grpNum}`] || []).length;
+      if (free <= 0) continue;
+      anyLedig = true;
+      const isStandby = grpNum >= 60;
+      const gc = GROUP_COLORS[grpNum] || { fill: '#f1f5f9', text: '#64748b' };
+      const card = document.createElement('div');
+      card.className = 'res-card ledig';
+      card.innerHTML = `
+        <div style="font-size:13px;font-weight:700;color:#64748b">${stn.name}</div>
+        <div style="font-size:12px;color:#94a3b8;margin-top:2px">${isStandby ? 'Ledige standbypladser' : 'Ledige pladser'}</div>
+        <div style="margin-top:4px;background:${gc.fill};color:${gc.text};font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;display:inline-block;font-family:'DM Mono',monospace;">grp.${grpNum} · ${free} ${free === 1 ? 'plads' : 'pladser'}</div>`;
+      ledigeRow.appendChild(card);
     }
   }
+  ledigeSection.style.display = anyLedig ? '' : 'none';
 }
 
 /* Waypoints */
@@ -3484,6 +3624,7 @@ function keysEqual(a, b) {
 /* ── Kandidatrunden ── */
 // Trin 1: Flyt alle ledige pladser på grp.33-uddannelser til grp.33
 function applyKandidatPladsflyt() {
+  CAPACITY_PRE_GRP33 = JSON.parse(JSON.stringify(CAPACITY));
   const moves = [];
   for (const [stnId, stn] of Object.entries(STATIONS)) {
     // Denne uddannelse har grp.33 hvis CAPACITY[stnId][33] eksisterer (selv om den er 0)
@@ -3773,6 +3914,8 @@ function stepSlutOpsummering() {
         `<span style="background:#f1f5f9;border:1.5px solid var(--border);border-radius:20px;padding:3px 12px;font-size:13px;font-weight:700;color:var(--text-3);">${pri}. prioritet: <span style="color:#4f46e5">${n}</span></span>`
       ).join('');
 
+    grænsekvotientMap = computeGrænsekvotient();
+    renderGrænsekvotienter();
     setCenter('Færdig', 'Endelig fordeling');
     setStatus('Endelig fordeling',
       `${optaget} optaget (heraf ${kandidat} på grp.33 kandidat) · ${afvist} afvist · ${ledige} ledige pladser.`);
@@ -4148,6 +4291,9 @@ function resetSimState() {
   renderAppList();
   renderActiveCards();
   renderPladsflytClear();
+  grænsekvotientMap = null;
+  CAPACITY_PRE_GRP33 = null;
+  renderGrænsekvotienter();
   for (const pid of Object.keys(PERSONS)) {
     document.getElementById(`card-${pid}`)?.classList.remove('done');
     const rd = document.getElementById(`result-${pid}`);
@@ -4157,13 +4303,15 @@ function resetSimState() {
     const circ = document.querySelector(`#stn-${stnId} circle`);
     if (circ) { circ.setAttribute('stroke', '#cbd5e1'); circ.setAttribute('stroke-width', '3.5'); }
   }
-  setCenter(learningMode ? '[Læringsmode]' : '[Simulationsmode]', learningMode ? 'Indstillinger kan ikke ændres' : 'Alle indstillinger kan ændres');
+  setCenter(learningMode ? 'Læringsmode' : 'Simulationsmode', learningMode ? 'Indstillinger kan ikke ændres' : 'Alle indstillinger kan ændres');
   document.getElementById('status-bar').innerHTML = learningMode
     ? '<span style="color:#e2e8f0;">Ansøgere, uddannelser og grupper er allerede valgt. Tryk på <strong>Start</strong>.</span>'
     : '<span style="color:#e2e8f0;">Vælg hvilke ansøgere, uddannelser og grupper der skal med i fordelingen. Derefter tryk <strong>Start</strong>.</span>';
   document.getElementById('result-panel').classList.remove('show');
   const pb = document.getElementById('priority-breakdown');
   if (pb) { pb.style.display = 'none'; pb.innerHTML = ''; }
+  const ls = document.getElementById('res-ledige-section');
+  if (ls) { ls.style.display = 'none'; document.getElementById('result-row-ledige').innerHTML = ''; }
   autokørPaused = false;
   setPauseBtnState(false);
   enableNextBtn(false);
@@ -4221,6 +4369,7 @@ renderActiveCards();
 if (followedPid) setFollowed(followedPid);
 renderCapConfig();
 renderCapBoxRight();
+renderGrænsekvotienter();
 positionTrain(115);
 const savedLæring = localStorage.getItem('metro_learning');
 document.getElementById('lærings-cb').checked = savedLæring === null ? true : savedLæring === '1';
