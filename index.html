@@ -1170,7 +1170,8 @@ function toggleTheme() {
 
 (function() {
   try {
-    if (localStorage.getItem('kot_theme') === 'dark') {
+    const saved = localStorage.getItem('kot_theme');
+    if (saved !== 'light') {
       document.documentElement.classList.add('dark');
       document.addEventListener('DOMContentLoaded', () => {
         const btn = document.getElementById('theme-toggle');
@@ -2330,13 +2331,14 @@ function setFollowed(pid) {
   renderActiveCards();
   document.getElementById('followed-name').textContent = pid ? PERSONS[pid]?.name || pid : 'Følger ingen';
   document.getElementById('followed-status').textContent = pid
-    ? (step === 0 ? 'Fordeling ikke startet endnu.' : getFollowedStatusText(null))
+    ? (!selected.has(pid) ? 'Ikke aktiv i denne fordeling.' : step === 0 ? 'Fordeling ikke startet endnu.' : getFollowedStatusText(null))
     : 'Vælg en favorit i ansøgerlisten.';
   document.getElementById('followed-close-btn').style.display = pid ? 'inline' : 'none';
 }
 
 function getFollowedStatusText(stepKey) {
   if (!followedPid) return '';
+  if (!selected.has(followedPid)) return 'Ikke aktiv i denne fordeling.';
   const currentKey = [...FINAL_KEYS].find(k => k.startsWith(followedPid + '-'));
   const prevKey = followedPrevKey;
 
@@ -4184,7 +4186,7 @@ function reset() {
   resetSimState();
   followedPrevKey = null;
   document.getElementById('followed-status').textContent = followedPid
-    ? 'Fordeling ikke startet endnu.'
+    ? (!selected.has(followedPid) ? 'Ikke aktiv i denne fordeling.' : 'Fordeling ikke startet endnu.')
     : 'Vælg en favorit i ansøgerlisten.';
 }
 
