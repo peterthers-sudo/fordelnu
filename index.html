@@ -1767,6 +1767,7 @@ let CAPACITY = {};
 let CAPACITY_DEFAULTS = {};
 let CAPACITY_PRE_GRP33 = null; // snapshot taget inden applyKandidatPladsflyt muterer CAPACITY
 let IMPORT_MODE = false;
+let STATION_INST = {}; // stnId → instId
 
 function applyStationConfig() {
   for (const [stnId, cap] of Object.entries(CAPACITY)) {
@@ -1853,6 +1854,7 @@ function onModelSelect(n) {
   if (locked) return;
   WISH_OVERRIDE = null;
   IMPORT_MODE = false;
+  STATION_INST = {};
   const metroSvg = document.getElementById('metro-svg');
   const modelSel = document.getElementById('model-selector');
   const importMsg = document.getElementById('import-metro-msg');
@@ -1947,6 +1949,19 @@ function rebuildGaranteretSet() {
       if (w.garanteret) GARANTERET_SET.add(`${pid}-${w.stn}-${w.grp}`);
     }
   }
+}
+
+function getInstGroups() {
+  if (!Object.keys(STATION_INST).length) {
+    return [{ instId: null, stnIds: Object.keys(STATIONS) }];
+  }
+  const order = [], groups = {};
+  for (const stnId of Object.keys(STATIONS)) {
+    const inst = STATION_INST[stnId] || '?';
+    if (!groups[inst]) { groups[inst] = []; order.push(inst); }
+    groups[inst].push(stnId);
+  }
+  return order.map(instId => ({ instId, stnIds: groups[instId] }));
 }
 
 let selected = new Set(Object.keys(PERSONS));
@@ -2212,7 +2227,10 @@ function setStateFromKeys(keys) {
 /* renderCapBoxRight — højre panel (altid synlig) */
 function renderCapBoxRight() {
   let html = '';
-  for (const [stnId, stn] of Object.entries(STATIONS)) {
+  for (const { instId, stnIds } of getInstGroups()) {
+    if (instId) html += `<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);margin:10px 0 4px;padding-top:8px;border-top:1px solid var(--border);">Inst. ${instId}</div>`;
+  for (const stnId of stnIds) {
+    const stn = STATIONS[stnId];
     html += `<strong>${stn.name}</strong>`;
     const capEntries = Object.entries(CAPACITY[stnId] || {})
       .sort(([a], [b]) => { const k = g => g==33?999:g==49?998:+g; return k(a)-k(b); });
@@ -2271,7 +2289,7 @@ function renderCapBoxRight() {
         ${bar}${freeLabel}
       </div>`;
     }
-  }
+  } }
   document.getElementById('cap-box-right').innerHTML = html;
 }
 
@@ -2333,7 +2351,15 @@ function renderGrænsekvotienter() {
 
   let rows = '';
   let isFirst = true;
-  for (const [stnId, stn] of Object.entries(STATIONS)) {
+  const INST_SEP = `border-top:2px solid var(--indigo);`;
+  for (const { instId, stnIds } of getInstGroups()) {
+    if (instId) {
+      const b2 = !isFirst ? INST_SEP : '';
+      rows += `<tr><td colspan="7" style="padding:6px 10px 2px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);${b2}">Inst. ${instId}</td></tr>`;
+      isFirst = false;
+    }
+  for (const stnId of stnIds) {
+    const stn = STATIONS[stnId];
     const b = !isFirst ? sep : '';
 
     // Antal optagne: direkte (grp < 60, excl 33/49) og standby (grp 60-99)
@@ -2364,7 +2390,7 @@ function renderGrænsekvotienter() {
       <td style="${TD_C}${b}">${hasGk60 ? gkCellContent(stnId, 60) : '<span style="color:var(--text-3);">—</span>'}</td>
     </tr>`;
     isFirst = false;
-  }
+  } }
 
   body.innerHTML = `<table style="width:100%;border-collapse:collapse;">
     <thead>
@@ -2682,7 +2708,15 @@ function renderRangeringslister() {
   }
 
   body.innerHTML = '';
-  for (const [stnId, stn] of Object.entries(STATIONS)) {
+  for (const { instId, stnIds } of getInstGroups()) {
+    if (instId) {
+      const instHdr = document.createElement('div');
+      instHdr.style.cssText = 'font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);margin:10px 2px 4px;padding-top:8px;border-top:1px solid var(--border);';
+      instHdr.textContent = `Inst. ${instId}`;
+      body.appendChild(instHdr);
+    }
+  for (const stnId of stnIds) {
+    const stn = STATIONS[stnId];
     const cap = CAPACITY[stnId] || {};
     const activeGrps = [10, 20, 60, 70, 49].filter(g => (cap[g] || 0) > 0);
     if (!activeGrps.length) continue;
@@ -2767,7 +2801,7 @@ function renderRangeringslister() {
     stnDiv.appendChild(hdr);
     stnDiv.appendChild(bdy);
     body.appendChild(stnDiv);
-  }
+  } }
 }
 
 function toggleGrpCfg(stnId, grp, checked) {
@@ -2803,7 +2837,15 @@ function renderCapConfig() {
   const GRP_PAIRS  = { 60: 10, 70: 20 }; // parent dependency
   const list = document.getElementById('cfg-list');
   list.innerHTML = '';
-  for (const [stnId, stn] of Object.entries(STATIONS)) {
+  for (const { instId, stnIds } of getInstGroups()) {
+    if (instId) {
+      const instHdr = document.createElement('div');
+      instHdr.style.cssText = 'font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);margin:8px 2px 2px;padding-top:6px;border-top:1px solid var(--border);';
+      instHdr.textContent = `Inst. ${instId}`;
+      list.appendChild(instHdr);
+    }
+  for (const stnId of stnIds) {
+    const stn = STATIONS[stnId];
     const cap = CAPACITY[stnId];
     const has49 = (cap[49] || 0) > 0;
     const hasRegular = [10, 20, 60, 70].some(g => (cap[g] || 0) > 0);
@@ -2841,7 +2883,7 @@ function renderCapConfig() {
     }
     row.appendChild(grpWrap);
     list.appendChild(row);
-  }
+  } }
   renderRangeringslister();
 }
 
@@ -4507,8 +4549,10 @@ function applyImportedData(uRows, pRows, aRows, rRows) {
   const n = uRows.length;
   const spacing = 360 / Math.max(n, 1);
   const newStations = {};
+  const newStationInst = {};
   uRows.forEach((row, i) => {
     const stnId = String(row.udbud).trim();
+    newStationInst[stnId] = String(row.inst || '').trim();
     const angle = +((90 - i * spacing + 3600) % 360).toFixed(2);
     const x = +(CX + R * Math.cos(angle * DEG)).toFixed(1);
     const y = +(CY - R * Math.sin(angle * DEG)).toFixed(1);
@@ -4516,6 +4560,7 @@ function applyImportedData(uRows, pRows, aRows, rRows) {
     newStations[stnId] = { name, label: name.slice(0, 3), angle, x, y, capacity: {} };
   });
   STATIONS = newStations;
+  STATION_INST = newStationInst;
 
   // 2. CAPACITY from pladser.csv
   const newCap = {};
@@ -4571,7 +4616,11 @@ function applyImportedData(uRows, pRows, aRows, rRows) {
     const udbud = String(row.udbud).trim();
     const key   = `${pid}|${udbud}`;
     if (!rangByKey[key]) rangByKey[key] = [];
-    rangByKey[key].push({ grp: parseInt(row.gruppe), standby: row.standby === 'x' });
+    rangByKey[key].push({
+      grp:       parseInt(row.gruppe),
+      standby:   row.standby === 'x',
+      garanteret: row.rang_nr === '0',
+    });
   }
 
   const newWishes = {};
@@ -4581,8 +4630,8 @@ function applyImportedData(uRows, pRows, aRows, rRows) {
     for (const { udbud } of udbuds) {
       if (!(udbud in STATIONS)) continue;
       const groups = (rangByKey[`${pid}|${udbud}`] || []).sort((a, b) => a.grp - b.grp);
-      for (const { grp, standby } of groups) {
-        wishList.push({ stn: udbud, grp });
+      for (const { grp, standby, garanteret } of groups) {
+        wishList.push({ stn: udbud, grp, ...(garanteret ? { garanteret: true } : {}) });
         if (standby && grp < 60 && (CAPACITY[udbud]?.[grp + 50] || 0) > 0) {
           wishList.push({ stn: udbud, grp: grp + 50 });
         }
@@ -4591,7 +4640,7 @@ function applyImportedData(uRows, pRows, aRows, rRows) {
     if (wishList.length > 0) newWishes[pid] = wishList;
   }
   WISH_OVERRIDE = newWishes;
-  GARANTERET_SET.clear();
+  rebuildGaranteretSet();
   selected = new Set(Object.keys(newPersons));
 
   IMPORT_MODE = true;
