@@ -1177,6 +1177,7 @@ function toggleTheme() {
   document.getElementById('theme-toggle').textContent = isDark ? '🌙 Mørk' : '☀ Lys';
   try { localStorage.setItem('kot_theme', isDark ? 'dark' : 'light'); } catch(e) {}
   renderSVGStations();
+  if (grænsekvotientMap) renderGrænsekvotienter();
   if (lastStatistikState) {
     if (lastStatistikState.type === 'start') renderStatistik(lastStatistikState.args);
     else renderRunde1Statistik(lastStatistikState.args);
@@ -2236,7 +2237,9 @@ function renderGrænsekvotienter() {
     const cap = capSrc[stnId]?.[grp] || 0;
     const ans = ROUND1.filter(e => e.stn === stnId && e.grp === grp).length;
     if (ans <= cap) return '<span style="font-weight:700;color:var(--text-2);">AO</span>';
-    const gc10 = { text: '#0a3d8a' }, gc60 = { text: '#6b4400' };
+    const isDark = document.documentElement.classList.contains('dark');
+    const gc10 = { text: isDark ? '#93c5fd' : '#0a3d8a' };
+    const gc60 = { text: isDark ? '#fcd34d' : '#6b4400' };
     const gc = grp === 10 ? gc10 : gc60;
     return `<span style="font-weight:700;color:${gc.text};font-family:'DM Mono',monospace;">${val.toFixed(1)}</span>`;
   }
