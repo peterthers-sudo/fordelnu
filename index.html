@@ -295,6 +295,26 @@ h1 {
 
 .coll-body.open { display: block !important; }
 
+/* Import CSV */
+.import-file-list { display: flex; flex-direction: column; gap: 0; padding: 4px 0 0; }
+.import-file-row {
+  display: flex; align-items: center; gap: 8px; padding: 7px 2px;
+  border-bottom: 1px solid var(--border); cursor: pointer;
+}
+.import-file-row:last-child { border-bottom: none; }
+.import-file-row input[type="file"] { display: none; }
+.import-file-name { font-size: 12px; font-family: 'DM Mono', monospace; color: var(--text-2); flex: 1; }
+.import-file-status { font-size: 11px; color: var(--text-3); font-family: 'DM Mono', monospace; }
+.import-file-status.ok { color: #059669; font-weight: 700; }
+.import-file-btn {
+  font-size: 11px; font-weight: 600; color: var(--indigo);
+  border: 1px solid var(--indigo); border-radius: 5px;
+  padding: 2px 8px; white-space: nowrap; flex-shrink: 0;
+  transition: background .12s;
+}
+.import-file-row:hover .import-file-btn { background: var(--indigo-light); }
+#import-body { padding: 6px 10px 10px; }
+
 /* Rangeringslister */
 #rang-body { padding: 6px 10px 10px; }
 .rang-stn { margin-bottom: 6px; }
@@ -1022,6 +1042,47 @@ Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, 
       </div>
     </div>
 
+    <!-- Importer data -->
+    <div class="collapsible">
+      <div class="coll-header" id="import-header" onclick="toggleImportPanel()">
+        <span class="coll-label">Importer CSV-data</span>
+        <span class="coll-icon">▾</span>
+      </div>
+      <div class="coll-body" id="import-body">
+        <div class="import-file-list">
+          <label class="import-file-row">
+            <span class="import-file-name">udbud.csv</span>
+            <span class="import-file-status" id="st-udbud">ikke valgt</span>
+            <input type="file" id="f-udbud" accept=".csv" onchange="markImportFile('udbud')">
+            <span class="import-file-btn">Vælg</span>
+          </label>
+          <label class="import-file-row">
+            <span class="import-file-name">pladser.csv</span>
+            <span class="import-file-status" id="st-pladser">ikke valgt</span>
+            <input type="file" id="f-pladser" accept=".csv" onchange="markImportFile('pladser')">
+            <span class="import-file-btn">Vælg</span>
+          </label>
+          <label class="import-file-row">
+            <span class="import-file-name">ansøgere.csv</span>
+            <span class="import-file-status" id="st-ansoeg">ikke valgt</span>
+            <input type="file" id="f-ansoeg" accept=".csv" onchange="markImportFile('ansoeg')">
+            <span class="import-file-btn">Vælg</span>
+          </label>
+          <label class="import-file-row">
+            <span class="import-file-name">rangeringer.csv</span>
+            <span class="import-file-status" id="st-rang">ikke valgt</span>
+            <input type="file" id="f-rang" accept=".csv" onchange="markImportFile('rang')">
+            <span class="import-file-btn">Vælg</span>
+          </label>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button class="btn-sel" id="btn-import-load" onclick="loadImport()" style="flex:1;font-weight:700;" disabled>Indlæs</button>
+          <button class="btn-sel" id="btn-import-clear" onclick="clearImportMode()" style="flex:1;" disabled>Ryd import</button>
+        </div>
+        <div id="import-status" style="font-size:11px;color:var(--text-3);margin-top:6px;min-height:14px;"></div>
+      </div>
+    </div>
+
   </div>
 
   <!-- ── Center panel ── -->
@@ -1087,6 +1148,12 @@ Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, 
         </label>
         <button class="btn btn-pause" id="pause-btn" style="display:none;" onclick="togglePause()">⏸ Pause</button>
       </div>
+    </div>
+
+    <div id="import-metro-msg" style="display:none;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:24px 20px;text-align:center;color:var(--text-2);font-size:14px;line-height:1.6;">
+      <div style="font-size:28px;margin-bottom:8px;">📊</div>
+      <div style="font-weight:700;color:var(--text);margin-bottom:4px;">Metro-visning skjult</div>
+      <div id="import-metro-sub">For mange uddannelser til metro-visualisering. Kør fordelingen — resultaterne vises i Hoofdtal-sektionen nedenfor.</div>
     </div>
 
     <!-- Hovedtal panel -->
@@ -1698,6 +1765,7 @@ let STATIONS = {};
 let CAPACITY = {};
 let CAPACITY_DEFAULTS = {};
 let CAPACITY_PRE_GRP33 = null; // snapshot taget inden applyKandidatPladsflyt muterer CAPACITY
+let IMPORT_MODE = false;
 
 function applyStationConfig() {
   for (const [stnId, cap] of Object.entries(CAPACITY)) {
@@ -1712,29 +1780,35 @@ function renderSVGStations() {
   const layer = document.getElementById('stations-layer');
   if (!layer) return;
   layer.innerHTML = '';
+  const nStn = Object.keys(STATIONS).length;
+  const stnR = nStn <= 7 ? 36 : nStn <= 12 ? 26 : 18;
+  const lblSize = nStn <= 7 ? (s => s.length > 1 ? 14 : 16) : () => 11;
+  const nmSize = nStn <= 12 ? 12 : 9;
   for (const [stnId, stn] of Object.entries(STATIONS)) {
     const g = document.createElementNS(NS, 'g');
     g.id = `stn-${stnId}`;
     const circ = document.createElementNS(NS, 'circle');
     circ.setAttribute('cx', stn.x); circ.setAttribute('cy', stn.y);
-    circ.setAttribute('r', '36');
+    circ.setAttribute('r', String(stnR));
     const cs = getComputedStyle(document.documentElement);
     circ.setAttribute('fill', cs.getPropertyValue('--stn-fill').trim() || '#ffffff');
     circ.setAttribute('stroke', cs.getPropertyValue('--stn-stroke').trim() || '#cbd5e1');
-    circ.setAttribute('stroke-width', '4');
+    circ.setAttribute('stroke-width', nStn <= 7 ? '4' : '2.5');
     const lbl = document.createElementNS(NS, 'text');
-    lbl.setAttribute('x', stn.x); lbl.setAttribute('y', stn.y - 6);
+    lbl.setAttribute('x', stn.x); lbl.setAttribute('y', stn.y - (stnR <= 18 ? 2 : 6));
     lbl.setAttribute('text-anchor', 'middle');
-    lbl.setAttribute('font-size', stn.label.length > 1 ? '14' : '16');
+    lbl.setAttribute('font-size', String(lblSize(stn.label)));
     lbl.setAttribute('font-weight', '800'); lbl.setAttribute('fill', cs.getPropertyValue('--stn-label').trim() || '#1e293b');
     lbl.setAttribute('font-family', 'DM Sans, sans-serif');
-    lbl.textContent = stn.label;
+    lbl.textContent = nStn > 12 ? stn.label.slice(0,2) : stn.label;
     const nm = document.createElementNS(NS, 'text');
-    nm.setAttribute('x', stn.x); nm.setAttribute('y', stn.y + 11);
-    nm.setAttribute('text-anchor', 'middle'); nm.setAttribute('font-size', '12');
+    nm.setAttribute('x', stn.x); nm.setAttribute('y', stn.y + (stnR <= 18 ? 8 : 11));
+    nm.setAttribute('text-anchor', 'middle'); nm.setAttribute('font-size', String(nmSize));
     nm.setAttribute('fill', cs.getPropertyValue('--stn-name').trim() || '#94a3b8'); nm.setAttribute('font-family', 'DM Sans, sans-serif');
-    const dispName = stn.name.split(' ')[0];
-    nm.textContent = dispName.length > 9 ? dispName.slice(0, 8) + '.' : dispName;
+    if (nStn <= 12) {
+      const dispName = stn.name.split(' ')[0];
+      nm.textContent = dispName.length > 9 ? dispName.slice(0, 8) + '.' : dispName;
+    }
     g.appendChild(circ); g.appendChild(lbl); g.appendChild(nm);
     layer.appendChild(g);
   }
@@ -1777,6 +1851,11 @@ function applyModel(n) {
 function onModelSelect(n) {
   if (locked) return;
   WISH_OVERRIDE = null;
+  IMPORT_MODE = false;
+  const metroCard = document.querySelector('.simulation-card');
+  const importMsg = document.getElementById('import-metro-msg');
+  if (metroCard) metroCard.style.display = '';
+  if (importMsg) importMsg.style.display = 'none';
   const rb = document.getElementById('btn-reset-wishes');
   if (rb) rb.disabled = true;
   applyModel(n);
@@ -1792,7 +1871,7 @@ const GROUP_COLORS = {
   49: { fill: '#d1fae5', text: '#065f46' },
 };
 
-const PERSONS = {
+let PERSONS = {
   a: { name: 'Anders',    kvotient: 12.0, point: 14, fill: '#d4edda', stroke: '#5cb874', textColor: '#1e6b3a' },
   b: { name: 'Bente',     kvotient: 11.8, point:  3, fill: '#d0e4f7', stroke: '#4a90d9', textColor: '#1a4f7a' },
   c: { name: 'Casper',    kvotient: 11.6, point: 21, fill: '#ede4fb', stroke: '#9b6ed4', textColor: '#4a2880' },
@@ -2328,7 +2407,7 @@ function renderActiveCards() {
     av.style.background = person.fill;
     av.style.color = person.textColor;
     av.style.borderColor = person.stroke;
-    av.textContent = pid.toUpperCase();
+    av.textContent = (person.label ?? pid.slice(0,2)).toUpperCase();
     const nm = document.createElement('span');
     nm.className = 'person-name';
     nm.style.color = person.textColor;
@@ -2434,7 +2513,7 @@ function renderAppList() {
     av.style.background = person.fill;
     av.style.borderColor = person.stroke;
     av.style.color = person.textColor;
-    av.textContent = pid.toUpperCase();
+    av.textContent = (person.label ?? pid.slice(0,2)).toUpperCase();
     const nm = document.createElement('span');
     nm.className = 'app-name';
     nm.textContent = person.name;
@@ -2926,7 +3005,7 @@ function buildAvatars() {
       letter.setAttribute('font-size', '11');
       letter.setAttribute('font-weight', '800');
       letter.setAttribute('fill', grpCol.text);
-      letter.textContent = p.person.toUpperCase();
+      letter.textContent = (PERSONS[p.person]?.label ?? p.person.slice(0,2)).toUpperCase();
       g.appendChild(letter);
       svgEl.insertBefore(g, document.getElementById('train'));
       pavEls[key] = g;
@@ -4328,7 +4407,7 @@ function reset() {
   document.querySelectorAll('.btn-sel').forEach(b => b.disabled = learningMode);
   document.getElementById('autokør-cb').disabled = false;
   document.getElementById('autokør-delay').disabled = false;
-  document.querySelectorAll('.model-btn').forEach(b => b.disabled = learningMode);
+  document.querySelectorAll('.model-btn').forEach(b => b.disabled = learningMode || IMPORT_MODE);
   // Gendan originale kapaciteter (applyPladsflyt og toggleGrpCfg muterer disse)
   for (const stnId of Object.keys(CAPACITY)) {
     CAPACITY[stnId] = JSON.parse(JSON.stringify(CAPACITY_ORIGINAL[stnId]));
@@ -4339,6 +4418,199 @@ function reset() {
   document.getElementById('followed-status').textContent = followedPid
     ? (!selected.has(followedPid) ? 'Ikke aktiv i denne fordeling.' : 'Fordeling ikke startet endnu.')
     : 'Vælg en favorit i ansøgerlisten.';
+}
+
+// ─── CSV Import ──────────────────────────────────────────────────────────────
+
+function parseCSV(text) {
+  const lines = text.replace(/^﻿/, '').split('\n').map(l => l.trim()).filter(Boolean);
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(';').map(h => h.trim());
+  return lines.slice(1).map(line => {
+    const vals = line.split(';');
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = (vals[i] || '').trim(); });
+    return obj;
+  });
+}
+
+const _importFiles = { udbud: null, pladser: null, ansoeg: null, rang: null };
+
+function toggleImportPanel() {
+  document.getElementById('import-header').classList.toggle('open');
+  document.getElementById('import-body').classList.toggle('open');
+}
+
+function markImportFile(key) {
+  const inp = document.getElementById(`f-${key}`);
+  const st  = document.getElementById(`st-${key}`);
+  if (inp.files.length > 0) {
+    _importFiles[key] = inp.files[0];
+    st.textContent = '✓ ' + inp.files[0].name;
+    st.className = 'import-file-status ok';
+  }
+  const allReady = Object.values(_importFiles).every(f => f !== null);
+  document.getElementById('btn-import-load').disabled = !allReady;
+}
+
+function loadImport() {
+  const keys = ['udbud', 'pladser', 'ansoeg', 'rang'];
+  Promise.all(keys.map(k => new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = e => resolve(parseCSV(e.target.result));
+    fr.onerror = reject;
+    fr.readAsText(_importFiles[k], 'utf-8');
+  }))).then(([uRows, pRows, aRows, rRows]) => {
+    applyImportedData(uRows, pRows, aRows, rRows);
+  }).catch(err => {
+    document.getElementById('import-status').textContent = 'Fejl: ' + err.message;
+  });
+}
+
+const _IMPORT_PALETTE = [
+  {fill:'#c8e0ff',stroke:'#4a90d9',textColor:'#1a4f7a'},
+  {fill:'#c0f0f0',stroke:'#38b2ac',textColor:'#0a5a5a'},
+  {fill:'#a7f3d0',stroke:'#10b981',textColor:'#064e3b'},
+  {fill:'#fce7f3',stroke:'#ec4899',textColor:'#831843'},
+  {fill:'#fef3c7',stroke:'#f59e0b',textColor:'#78350f'},
+  {fill:'#e0f2fe',stroke:'#0ea5e9',textColor:'#0c4a6e'},
+  {fill:'#dbeafe',stroke:'#3b82f6',textColor:'#1e3a8a'},
+  {fill:'#fde68a',stroke:'#d97706',textColor:'#78350f'},
+  {fill:'#ede4fb',stroke:'#9b6ed4',textColor:'#4a2880'},
+  {fill:'#d4edda',stroke:'#5cb874',textColor:'#1e6b3a'},
+  {fill:'#fdf4ff',stroke:'#c084fc',textColor:'#6b21a8'},
+  {fill:'#fff7ed',stroke:'#f97316',textColor:'#7c2d12'},
+  {fill:'#f0fdfa',stroke:'#14b8a6',textColor:'#134e4a'},
+  {fill:'#fef2f2',stroke:'#ef4444',textColor:'#7f1d1d'},
+  {fill:'#f7fee7',stroke:'#84cc16',textColor:'#365314'},
+];
+
+function applyImportedData(uRows, pRows, aRows, rRows) {
+  // 1. STATIONS from udbud.csv
+  const n = uRows.length;
+  const spacing = 360 / Math.max(n, 1);
+  const newStations = {};
+  uRows.forEach((row, i) => {
+    const stnId = String(row.udbud).trim();
+    const angle = +((90 - i * spacing + 3600) % 360).toFixed(2);
+    const x = +(CX + R * Math.cos(angle * DEG)).toFixed(1);
+    const y = +(CY - R * Math.sin(angle * DEG)).toFixed(1);
+    const name = (row.udbudsnavn || stnId).trim();
+    newStations[stnId] = { name, label: name.slice(0, 3), angle, x, y, capacity: {} };
+  });
+  STATIONS = newStations;
+
+  // 2. CAPACITY from pladser.csv
+  const newCap = {};
+  for (const stnId of Object.keys(STATIONS)) newCap[stnId] = {};
+  for (const row of pRows) {
+    const stnId = String(row.udbud).trim();
+    const grp   = parseInt(row.gruppe);
+    const count = parseInt(row.pladser) || 0;
+    if (newCap[stnId]) newCap[stnId][grp] = count;
+  }
+  CAPACITY          = newCap;
+  CAPACITY_DEFAULTS = JSON.parse(JSON.stringify(newCap));
+  CAPACITY_ORIGINAL = JSON.parse(JSON.stringify(newCap));
+  applyStationConfig();
+
+  // 3. PERSONS from unique CPRs in rangeringer.csv
+  const personData = {};
+  for (const row of rRows) {
+    const pid = String(row.cpr).trim();
+    if (!personData[pid]) {
+      personData[pid] = { kvotient: parseFloat((row.kara || '0').replace(',', '.')) || 0, point: 0 };
+    }
+    const grp = parseInt(row.gruppe);
+    if (grp >= 20 && grp < 60 && row.kval_p) {
+      const kp = parseInt(row.kval_p);
+      if (!isNaN(kp)) personData[pid].point = kp;
+    }
+  }
+  const newPersons = {};
+  Object.entries(personData).forEach(([pid, data], i) => {
+    const col   = _IMPORT_PALETTE[i % _IMPORT_PALETTE.length];
+    const label = String(i + 1).padStart(2, '0');
+    newPersons[pid] = { name: `Ans. ${label}`, label, kvotient: data.kvotient, point: data.point, ...col };
+  });
+  PERSONS = newPersons;
+
+  // 4. WISH_OVERRIDE from ansøgere.csv + rangeringer.csv
+  // Group ansøgere by CPR, sorted by prioritet
+  const appByCpr = {};
+  for (const row of aRows) {
+    const pid  = String(row.cpr).trim();
+    const udbud = String(row.udbud).trim();
+    const pri  = parseInt(row.prioritet) || 0;
+    if (!appByCpr[pid]) appByCpr[pid] = [];
+    appByCpr[pid].push({ udbud, pri });
+  }
+  for (const arr of Object.values(appByCpr)) arr.sort((a, b) => a.pri - b.pri);
+
+  // Group rangeringer by cpr+udbud
+  const rangByKey = {};
+  for (const row of rRows) {
+    const pid   = String(row.cpr).trim();
+    const udbud = String(row.udbud).trim();
+    const key   = `${pid}|${udbud}`;
+    if (!rangByKey[key]) rangByKey[key] = [];
+    rangByKey[key].push({ grp: parseInt(row.gruppe), standby: row.standby === 'x' });
+  }
+
+  const newWishes = {};
+  for (const [pid, udbuds] of Object.entries(appByCpr)) {
+    if (!(pid in newPersons)) continue;
+    const wishList = [];
+    for (const { udbud } of udbuds) {
+      if (!(udbud in STATIONS)) continue;
+      const groups = (rangByKey[`${pid}|${udbud}`] || []).sort((a, b) => a.grp - b.grp);
+      for (const { grp, standby } of groups) {
+        wishList.push({ stn: udbud, grp });
+        if (standby && grp < 60 && (CAPACITY[udbud]?.[grp + 50] || 0) > 0) {
+          wishList.push({ stn: udbud, grp: grp + 50 });
+        }
+      }
+    }
+    if (wishList.length > 0) newWishes[pid] = wishList;
+  }
+  WISH_OVERRIDE = newWishes;
+  GARANTERET_SET.clear();
+  selected = new Set(Object.keys(newPersons));
+
+  IMPORT_MODE = true;
+  document.getElementById('btn-import-clear').disabled = false;
+  document.getElementById('btn-import-load').disabled  = true;
+  document.getElementById('import-status').textContent =
+    `${n} uddannelser · ${Object.keys(newPersons).length} ansøgere · ${aRows.length} ansøgninger`;
+
+  // Show/hide metro based on station count
+  const metroCard = document.querySelector('.simulation-card');
+  const importMsg = document.getElementById('import-metro-msg');
+  if (n > 12) {
+    if (metroCard) metroCard.style.display = 'none';
+    if (importMsg) {
+      importMsg.style.display = 'block';
+      document.getElementById('import-metro-sub').textContent =
+        `${n} uddannelser er for mange til metro-visualisering. Kør fordelingen — resultater vises i Hoofdtal nedenfor.`;
+    }
+  } else {
+    if (metroCard) metroCard.style.display = '';
+    if (importMsg) importMsg.style.display = 'none';
+  }
+
+  document.querySelectorAll('.model-btn').forEach(b => b.disabled = true);
+  renderSVGStations();
+  resetSimState();
+  renderAppList();
+  renderActiveCards();
+  updateSelCount();
+  renderCapConfig();
+  renderCapBoxRight();
+  renderRangeringslister();
+}
+
+function clearImportMode() {
+  location.reload();
 }
 
 /* Init */
