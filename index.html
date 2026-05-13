@@ -1120,6 +1120,12 @@ Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, 
         </g>
       </svg>
 
+      <div id="import-metro-msg" style="display:none;padding:24px 20px;text-align:center;color:var(--text-2);font-size:14px;line-height:1.6;">
+        <div style="font-size:28px;margin-bottom:8px;">📊</div>
+        <div style="font-weight:700;color:var(--text);margin-bottom:4px;">Metro-visning skjult</div>
+        <div id="import-metro-sub"></div>
+      </div>
+
       <div class="model-selector" id="model-selector">
         <span class="model-selector-label">Uddannelser:</span>
         <button class="model-btn" data-model="3" onclick="onModelSelect(3)">3</button>
@@ -1150,11 +1156,6 @@ Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, 
       </div>
     </div>
 
-    <div id="import-metro-msg" style="display:none;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:24px 20px;text-align:center;color:var(--text-2);font-size:14px;line-height:1.6;">
-      <div style="font-size:28px;margin-bottom:8px;">📊</div>
-      <div style="font-weight:700;color:var(--text);margin-bottom:4px;">Metro-visning skjult</div>
-      <div id="import-metro-sub">For mange uddannelser til metro-visualisering. Kør fordelingen — resultaterne vises i Hoofdtal-sektionen nedenfor.</div>
-    </div>
 
     <!-- Hovedtal panel -->
     <div class="result-panel" id="hovedtal-panel" style="display:none;">
@@ -1852,9 +1853,11 @@ function onModelSelect(n) {
   if (locked) return;
   WISH_OVERRIDE = null;
   IMPORT_MODE = false;
-  const metroCard = document.querySelector('.simulation-card');
+  const metroSvg = document.getElementById('metro-svg');
+  const modelSel = document.getElementById('model-selector');
   const importMsg = document.getElementById('import-metro-msg');
-  if (metroCard) metroCard.style.display = '';
+  if (metroSvg) metroSvg.style.display = '';
+  if (modelSel) modelSel.style.display = '';
   if (importMsg) importMsg.style.display = 'none';
   const rb = document.getElementById('btn-reset-wishes');
   if (rb) rb.disabled = true;
@@ -2238,29 +2241,27 @@ function renderCapBoxRight() {
         const bg = GARANTERET_SET.has(`${b}-${stnId}-${grp}`) ? 0 : 1;
         return ag - bg;
       });
-      const overflow = Math.max(0, occupants.length - cap);
-      const free = cap - Math.min(occupants.length, cap);
+      const occ  = Math.min(occupants.length, cap);
+      const free = cap - occ;
+      const MAX_BUBBLES = 8;
+      const showCount = Math.min(cap, cap > MAX_BUBBLES ? MAX_BUBBLES - 1 : MAX_BUBBLES);
       let bar = '';
-      for (let i = 0; i < cap; i++) {
+      for (let i = 0; i < showCount; i++) {
         const filled = i < occupants.length;
-        const isGar = filled && occupants[i] && GARANTERET_SET.has(`${occupants[i]}-${stnId}-${grp}`);
-        bar += `<span style="
-          display:inline-block;
-          width:18px;height:18px;
-          border-radius:50%;
-          margin-right:2px;
-          background:${filled ? (isGar ? '#fef3c7' : gc.fill) : '#f1f5f9'};
-          border:${isGar ? '2px solid #f59e0b' : `1.5px solid ${filled ? '#aaa' : '#e2e8f0'}`};
-          vertical-align:middle;
-          font-size:11px;
-          line-height:18px;
-          text-align:center;
-          font-weight:700;
-          color:${isGar ? '#92400e' : gc.text};
-        ">${filled && occupants[i] ? occupants[i].toUpperCase() : ''}</span>`;
+        const pid = filled ? occupants[i] : null;
+        const isGar = filled && pid && GARANTERET_SET.has(`${pid}-${stnId}-${grp}`);
+        const lbl = pid ? (PERSONS[pid]?.label ?? pid.slice(0,1)).toUpperCase() : '';
+        bar += `<span style="display:inline-block;width:18px;height:18px;border-radius:50%;margin-right:2px;background:${filled ? (isGar ? '#fef3c7' : gc.fill) : '#f1f5f9'};border:${isGar ? '2px solid #f59e0b' : `1.5px solid ${filled ? '#aaa' : '#e2e8f0'}`};vertical-align:middle;font-size:10px;line-height:18px;text-align:center;font-weight:700;color:${isGar ? '#92400e' : gc.text};">${lbl}</span>`;
       }
-      if (overflow > 0) {
-        bar += `<span style="display:inline-block;height:18px;border-radius:9px;padding:0 5px;margin-right:2px;background:#e2e8f0;vertical-align:middle;font-size:11px;line-height:18px;font-weight:700;color:#64748b;">+${overflow}</span>`;
+      if (cap > MAX_BUBBLES) {
+        const shownOcc  = Math.min(occ, MAX_BUBBLES);
+        const restOcc   = occ - shownOcc;
+        const restFree  = cap - MAX_BUBBLES - restOcc;
+        const parts = [];
+        if (restOcc  > 0) parts.push(`+${restOcc} opt`);
+        if (restFree > 0) parts.push(`${restFree} led`);
+        if (parts.length > 0)
+          bar += `<span style="display:inline-block;height:18px;border-radius:9px;padding:0 6px;margin-left:1px;background:var(--surface-2);border:1px solid var(--border);vertical-align:middle;font-size:11px;line-height:18px;font-weight:600;color:var(--text-3);white-space:nowrap;">${parts.join(' · ')}</span>`;
       }
       const freeLabel = free > 0
         ? `<span style="color:#94a3b8;font-size:13px;margin-left:4px">${free} ledig</span>`
@@ -3962,9 +3963,13 @@ function stepSlutOpsummering() {
     const optaget = new Set([...FINAL_KEYS].map(k => k.split('-')[0])).size;
     const kandidat = [...FINAL_KEYS].filter(k => k.endsWith('-33')).length;
     const afvist = selected.size - optaget;
-    const totalCap = Object.values(CAPACITY).reduce((s, grps) =>
-      s + Object.entries(grps).reduce((a, [g, v]) => +g === 49 ? a : a + v, 0), 0);
-    const ledige = totalCap - optaget;
+    const capSrc = CAPACITY_PRE_GRP33 || CAPACITY_DEFAULTS;
+    const totalCap = Object.values(capSrc).reduce((s, grps) =>
+      s + Object.entries(grps).reduce((a, [g, v]) => (+g === 49 || +g === 33) ? a : a + v, 0), 0);
+    const regularOptaget = new Set(
+      [...FINAL_KEYS].filter(k => !k.endsWith('-49')).map(k => k.split('-')[0])
+    ).size;
+    const ledige = totalCap - regularOptaget;
     renderRunde1Statistik({
       titel: 'ENDELIG FORDELING',
       optaget, afvist, ledige,
@@ -3999,6 +4004,12 @@ function stepSlutOpsummering() {
     grænsekvotientMap = computeGrænsekvotient();
     renderGrænsekvotienter();
     setCenter('Færdig', 'Endelig fordeling');
+    if (IMPORT_MODE) {
+      const metroSvg = document.getElementById('metro-svg');
+      const importMsg = document.getElementById('import-metro-msg');
+      if (metroSvg) metroSvg.style.display = '';
+      if (importMsg) importMsg.style.display = 'none';
+    }
     setStatus('Endelig fordeling',
       `${optaget} optaget (heraf ${kandidat} på grp.33 kandidat) · ${afvist} afvist · ${ledige} ledige pladser.`);
     document.getElementById('btn-next').disabled = true;
@@ -4348,6 +4359,12 @@ function nextStep() {
 }
 
 function resetSimState() {
+  if (IMPORT_MODE && Object.keys(STATIONS).length > 12) {
+    const metroSvg = document.getElementById('metro-svg');
+    const importMsg = document.getElementById('import-metro-msg');
+    if (metroSvg) metroSvg.style.display = 'none';
+    if (importMsg) importMsg.style.display = 'block';
+  }
   if (autokørTimerId) { clearTimeout(autokørTimerId); autokørTimerId = null; }
   learningPending = false;
   learningModalCount = 0;
@@ -4580,21 +4597,28 @@ function applyImportedData(uRows, pRows, aRows, rRows) {
   IMPORT_MODE = true;
   document.getElementById('btn-import-clear').disabled = false;
   document.getElementById('btn-import-load').disabled  = true;
+  const totalPladser = pRows.reduce((s, r) => {
+    const grp = parseInt(r.gruppe);
+    return (grp === 33 || grp === 49) ? s : s + (parseInt(r.pladser) || 0);
+  }, 0);
   document.getElementById('import-status').textContent =
-    `${n} uddannelser · ${Object.keys(newPersons).length} ansøgere · ${aRows.length} ansøgninger`;
+    `${n} uddannelser · ${Object.keys(newPersons).length} ansøgere · ${aRows.length} ansøgninger · ${totalPladser} pladser`;
 
-  // Show/hide metro based on station count
-  const metroCard = document.querySelector('.simulation-card');
+  // Show/hide metro SVG based on station count
+  const metroSvg = document.getElementById('metro-svg');
+  const modelSel = document.getElementById('model-selector');
   const importMsg = document.getElementById('import-metro-msg');
   if (n > 12) {
-    if (metroCard) metroCard.style.display = 'none';
+    if (metroSvg) metroSvg.style.display = 'none';
+    if (modelSel) modelSel.style.display = 'none';
     if (importMsg) {
       importMsg.style.display = 'block';
       document.getElementById('import-metro-sub').textContent =
         `${n} uddannelser er for mange til metro-visualisering. Kør fordelingen — resultater vises i Hoofdtal nedenfor.`;
     }
   } else {
-    if (metroCard) metroCard.style.display = '';
+    if (metroSvg) metroSvg.style.display = '';
+    if (modelSel) modelSel.style.display = '';
     if (importMsg) importMsg.style.display = 'none';
   }
 
