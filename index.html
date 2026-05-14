@@ -4516,7 +4516,7 @@ function reset() {
   document.querySelectorAll('.btn-sel').forEach(b => b.disabled = learningMode);
   document.getElementById('autokør-cb').disabled = false;
   document.getElementById('autokør-delay').disabled = false;
-  document.querySelectorAll('.model-btn').forEach(b => b.disabled = learningMode);
+  document.querySelectorAll('.model-btn').forEach(b => b.disabled = learningMode || IMPORT_MODE);
   // Gendan originale kapaciteter (applyPladsflyt og toggleGrpCfg muterer disse)
   for (const stnId of Object.keys(CAPACITY)) {
     CAPACITY[stnId] = JSON.parse(JSON.stringify(CAPACITY_ORIGINAL[stnId]));
