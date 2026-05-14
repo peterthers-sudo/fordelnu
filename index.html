@@ -1006,7 +1006,7 @@ Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, 
     <!-- Følg ansøger -->
     <div id="followed-card">
       <div id="followed-card-header">
-        <span class="followed-star-icon">★</span>
+        <div id="followed-avatar" style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;background:var(--indigo-light);flex-shrink:0;">★</div>
         <span class="followed-name" id="followed-name">Følger ingen</span>
         <button class="followed-close" id="followed-close-btn" onclick="setFollowed(null)" title="Stop med at følge" style="display:none">×</button>
       </div>
@@ -1134,12 +1134,14 @@ Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, 
         <text id="ctr2" x="300" y="273" text-anchor="middle" font-size="18" font-weight="700" fill="var(--indigo)" font-family="DM Sans, sans-serif"></text>
 
         <g id="train">
-          <rect x="-26" y="-12" width="52" height="24" rx="7" fill="var(--train-body)"/>
-          <rect x="-23" y="-9" width="18" height="12" rx="2" fill="#87CEEB" opacity="0.75"/>
-          <rect x="-1"  y="-9" width="18" height="12" rx="2" fill="#87CEEB" opacity="0.75"/>
-          <circle cx="-14" cy="13" r="4.5" fill="var(--train-wheel)"/>
-          <circle cx="14"  cy="13" r="4.5" fill="var(--train-wheel)"/>
-          <text x="0" y="5" text-anchor="middle" font-size="9" fill="white" font-weight="800" font-family="DM Mono, monospace" letter-spacing="1">KOT</text>
+          <g transform="scale(1.4)">
+            <rect x="-26" y="-12" width="52" height="24" rx="7" fill="var(--train-body)"/>
+            <rect x="-23" y="-9" width="18" height="12" rx="2" fill="#87CEEB" opacity="0.75"/>
+            <rect x="-1"  y="-9" width="18" height="12" rx="2" fill="#87CEEB" opacity="0.75"/>
+            <circle cx="-14" cy="13" r="4.5" fill="var(--train-wheel)"/>
+            <circle cx="14"  cy="13" r="4.5" fill="var(--train-wheel)"/>
+            <text x="0" y="5" text-anchor="middle" font-size="9" fill="white" font-weight="800" font-family="DM Mono, monospace" letter-spacing="1">KOT</text>
+          </g>
         </g>
 
         <defs>
@@ -2642,6 +2644,12 @@ function updateSelCount() {
   document.getElementById('pass-count').textContent = `(${selected.size})`;
 }
 
+const _AVATARS = ['👦','👧','🧑‍🎓','👩‍🎓','😎','🤓','🙋','🧒','👱','🧑','🙋‍♀️','🙋‍♂️'];
+function getAvatar(pid) {
+  const hash = [...String(pid)].reduce((a, c) => a + c.charCodeAt(0), 0);
+  return _AVATARS[hash % _AVATARS.length];
+}
+
 function setFollowed(pid) {
   followedPid = pid;
   followedPrevKey = null;
@@ -2650,79 +2658,87 @@ function setFollowed(pid) {
   renderActiveCards();
   document.getElementById('followed-name').textContent = pid ? PERSONS[pid]?.name || pid : 'Følger ingen';
   document.getElementById('followed-status').textContent = pid
-    ? (!selected.has(pid) ? 'Ikke aktiv i denne fordeling.' : step === 0 ? 'Fordeling ikke startet endnu.' : getFollowedStatusText(null))
+    ? (!selected.has(pid) ? 'Jeg er ikke med i denne fordeling... 😶' : step === 0 ? 'Jeg venter spændt på at fordelingen starter! 🤞' : getFollowedStatusText(null))
     : 'Vælg en favorit i ansøgerlisten.';
   document.getElementById('followed-close-btn').style.display = pid ? 'inline' : 'none';
+  const avEl = document.getElementById('followed-avatar');
+  if (avEl) avEl.textContent = pid ? getAvatar(pid) : '★';
 }
 
 function getFollowedStatusText(stepKey) {
   if (!followedPid) return '';
-  if (!selected.has(followedPid)) return 'Ikke aktiv i denne fordeling.';
+  if (!selected.has(followedPid)) return 'Jeg er ikke med i denne fordeling... 😶';
+  const person = PERSONS[followedPid];
   const currentKey = [...FINAL_KEYS].find(k => k.startsWith(followedPid + '-'));
   const prevKey = followedPrevKey;
+  const wishes = getWishes(followedPid);
 
-  const stnPrioMap = (() => {
-    const map = {};
-    let pos = 1;
-    for (const w of getWishes(followedPid)) {
-      if (!(w.stn in map)) map[w.stn] = pos++;
-    }
-    return map;
-  })();
+  const stnPrioMap = {};
+  let pos = 1;
+  for (const w of wishes) { if (!(w.stn in stnPrioMap)) stnPrioMap[w.stn] = pos++; }
 
+  const getStnId = key => key ? key.split('-').slice(1, -1).join('-') : null;
+  const getStnName = key => { const id = getStnId(key); return id ? (STATIONS[id]?.name || id) : null; };
+  const getPrio = key => { const id = getStnId(key); return id ? (stnPrioMap[id] || null) : null; };
   const fmt = (key, withPrio = false) => {
     if (!key) return null;
-    const parts = key.split('-');
-    const grp = parts[parts.length - 1];
-    const stnId = parts.slice(1, -1).join('-');
-    const stnName = STATIONS[stnId]?.name?.split(' ')[0] || stnId;
-    const prio = stnPrioMap[stnId];
-    const prioStr = withPrio && prio ? `${prio}. prio — ` : '';
-    return `${prioStr}${stnName} · grp ${grp}`;
+    const grp = key.split('-').at(-1);
+    const name = getStnName(key);
+    const p = getPrio(key);
+    return `${withPrio && p ? p + '. prio — ' : ''}${name} · grp ${grp}`;
   };
 
-  const cur = fmt(currentKey, true), prev = fmt(prevKey, true);
+  const curName = getStnName(currentKey);
+  const curPrio = getPrio(currentKey);
 
   if (stepKey === 'statistik') {
-    const ws = getWishes(followedPid);
-    const nStns = new Set(ws.map(w => w.stn)).size;
-    return `Klar til fordeling — ${ws.length} ønsker på ${nStns} uddannelse${nStns !== 1 ? 'r' : ''}.`;
+    const firstStn = wishes.length ? (STATIONS[wishes[0].stn]?.name || wishes[0].stn) : '?';
+    const nStns = new Set(wishes.map(w => w.stn)).size;
+    const kv = person?.kvotient;
+    return kv
+      ? `Jeg søger ${firstStn} som 1. prioritet! Jeg har ${kv.toFixed(1)} i snit 📋`
+      : `Jeg søger ${nStns} uddannelse${nStns !== 1 ? 'r' : ''} — ${firstStn} som 1. prioritet! 🤞`;
   }
   if (stepKey === 'runde1-klar') {
     const r1 = (ROUND1 || []).filter(e => e.person === followedPid);
-    if (!r1.length) return 'Ingen midlertidige placeringer.';
-    return `Midlertidigt placeret på ${r1.length} gruppe${r1.length !== 1 ? 'r' : ''}.`;
+    if (!r1.length) return 'Ingen midlertidige placeringer — det ser ikke godt ud! 😬';
+    const stn = STATIONS[r1[0].stn]?.name || r1[0].stn;
+    return `Foreløbig på ${stn}${r1.length > 1 ? ` og ${r1.length - 1} til` : ''} — vi ser hvad der sker! 😅`;
   }
   if (stepKey?.startsWith('clearing')) {
-    if (!cur) return 'Ingen plads efter clearing.';
-    if (!prev || currentKey === prevKey) return `Beholder pladsen på sin ${cur}.`;
-    return `Beholder sin ${cur} — frigivet fra ${fmt(prevKey)}.`;
+    if (!currentKey) return 'Ingen plads efter clearing... 😬 Det ser skidt ud!';
+    if (!prevKey || currentKey === prevKey) return `Jeg holder min plads på ${curName}! Puh! 😅`;
+    return `Jeg beholder ${curName} — og frigjorde en plads! 🎉`;
   }
   if (stepKey?.startsWith('pladsflyt')) {
-    if (!cur) return 'Ingen plads.';
-    if (!prev || currentKey === prevKey) return `Ingen pladsflyt — ${cur}.`;
-    return `Pladsflyt: ${fmt(prevKey)} → ${cur}.`;
+    if (!currentKey) return 'Ingen plads endnu... 😔';
+    if (!prevKey || currentKey === prevKey) return `Ingen pladsflyt — jeg sidder stadig på ${curName}. 😌`;
+    return `Pladsflyt! Rykket fra ${getStnName(prevKey)} til ${curName}! 🔄`;
   }
   if (stepKey?.startsWith('togkørsel')) {
-    if (!cur && !prev) return 'Ingen plads.';
-    if (cur && !prev) return `Fik plads — ${cur}.`;
-    if (!cur && prev) return `Mistet plads fra ${fmt(prevKey)}.`;
-    if (currentKey !== prevKey) return `Rykket op til sin ${cur} (fra ${fmt(prevKey)}).`;
-    return `Ingen ændring — ${cur}.`;
+    if (!currentKey && !prevKey) return 'Ingen plads i denne runde... 😔';
+    if (currentKey && !prevKey) return `Wuhuu! Jeg fik plads på ${curName}! 🙌`;
+    if (!currentKey && prevKey) return `Neeej! Jeg mistede min plads på ${getStnName(prevKey)}! 😱`;
+    if (currentKey !== prevKey) return curPrio === 1
+      ? `JA! Rykket op til min 1. prioritet — ${curName}! 🎉`
+      : `Rykket op til ${curName} — det er bedre! 🎉`;
+    return `Ingen ændring — jeg sidder stadig på ${curName}. 😌`;
   }
   if (stepKey?.startsWith('opsummering')) {
-    return cur ? `Placeret på sin ${cur}.` : 'Ingen plads endnu.';
+    return currentKey ? `Foreløbig placeret på ${curName}${curPrio ? ` (${curPrio}. prio)` : ''}. 🙂` : 'Ingen plads endnu... 😟';
   }
   if (stepKey === 'kandidatrunde') {
-    const hasGrp33 = getWishes(followedPid).some(w => w.grp === 33);
-    if (!hasGrp33) return 'Ikke søgt i grp. 33.';
-    if (currentKey?.endsWith('-33')) return `Optaget via gruppe 33 — ${fmt(currentKey)}.`;
-    return cur ? `Ikke optaget via grp 33 — ${cur}.` : 'Ikke optaget.';
+    const hasGrp33 = wishes.some(w => w.grp === 33);
+    if (!hasGrp33) return 'Jeg er altså ikke kandidat! 😄';
+    if (currentKey?.endsWith('-33')) return `Kandidatreglen reddede mig på ${curName}! 🎓`;
+    return currentKey ? `Ikke optaget via kandidatregel — men ${curName}! 😌` : 'Kandidatregel hjalp ikke... 😔';
   }
   if (stepKey === 'slutopsummering') {
-    return cur ? `🥇 Tillykke! Optaget på sin ${cur}.` : '😔 Ikke optaget.';
+    if (!currentKey) return 'Ingen plads denne gang... 😔 Måske næste år!';
+    if (curPrio === 1) return `JUBII! Jeg kom ind på min 1. prioritet — ${curName}! 🎉🎉🎉`;
+    return `JA! Jeg kom ind på ${curName} (${curPrio}. prioritet)! 😊🎉`;
   }
-  return cur ? cur : 'Ingen plads.';
+  return currentKey ? `Foreløbig på ${fmt(currentKey, true)}. 😌` : 'Ingen plads endnu. 😟';
 }
 
 function updateFollowedCard(stepKey) {
@@ -4573,7 +4589,7 @@ function reset() {
   resetSimState();
   followedPrevKey = null;
   document.getElementById('followed-status').textContent = followedPid
-    ? (!selected.has(followedPid) ? 'Ikke aktiv i denne fordeling.' : 'Fordeling ikke startet endnu.')
+    ? (!selected.has(followedPid) ? 'Jeg er ikke med i denne fordeling... 😶' : 'Jeg venter spændt på at fordelingen starter! 🤞')
     : 'Vælg en favorit i ansøgerlisten.';
 }
 
