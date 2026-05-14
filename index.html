@@ -1109,7 +1109,7 @@ Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, 
   <div class="center-panel">
 
     <div class="simulation-card">
-      <svg id="metro-svg" viewBox="0 0 620 520">
+      <svg id="metro-svg" viewBox="60 20 500 470">
         <!-- Metro ring -->
         <circle cx="300" cy="260" r="190" fill="none" stroke="var(--red)" stroke-width="14" opacity="0.6"/>
         <circle cx="300" cy="260" r="190" fill="none" stroke="var(--red)" stroke-width="8"/>
@@ -1169,7 +1169,7 @@ Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, 
           <div class="ak-sub">
             <input type="number" id="autokør-delay" min="0" max="10" value="2" step="1" class="delay-input" disabled>
             <span>sek</span>
-            <button class="btn btn-pause" id="pause-btn" onclick="togglePause()" disabled>⏸ Pause</button>
+            <button class="btn btn-pause" id="pause-btn" onclick="togglePause()" disabled>⏸</button>
           </div>
         </div>
         <label class="autokør-label" id="lærings-label" style="background:linear-gradient(135deg,#ede9fe,#ddd6fe);border:1.5px solid #a5b4fc;border-radius:8px;padding:4px 10px;">
@@ -4416,8 +4416,7 @@ function togglePause() {
 }
 
 function setPauseBtnState(paused) {
-  const btn = document.getElementById('pause-btn');
-  btn.textContent = paused ? '▶ Fortsæt' : '⏸ Pause';
+  document.getElementById('pause-btn').textContent = paused ? '▶' : '⏸';
 }
 
 function enableNextBtn(autoTrigger = true) {
