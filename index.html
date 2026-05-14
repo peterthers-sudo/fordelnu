@@ -1996,6 +1996,12 @@ let selected = new Set(Object.keys(PERSONS));
 
 let WISH_OVERRIDE = null;
 
+function getWishScore(pid, stnId, grp) {
+  const src = WISH_OVERRIDE ? (WISH_OVERRIDE[pid] || []) : (ALL_WISHES[pid] || []);
+  const w = src.find(w => w.stn === stnId && w.grp === grp);
+  return (w?.score !== undefined) ? w.score : (PERSONS[pid]?.point || 0);
+}
+
 function getWishes(pid) {
   const base = WISH_OVERRIDE ? (WISH_OVERRIDE[pid] || []) : (ALL_WISHES[pid] || []);
   return base.filter(w => {
@@ -2145,7 +2151,7 @@ function buildRound1(selSet) {
       if (!seen.has(w.stn)) { stnOrder[w.stn] = pos++; seen.add(w.stn); }
     }
     for (const w of wishes) {
-      entries.push({ person: pid, stn: w.stn, grp: w.grp, priority: stnOrder[w.stn] });
+      entries.push({ person: pid, stn: w.stn, grp: w.grp, priority: stnOrder[w.stn], ...(w.score !== undefined ? { score: w.score } : {}) });
     }
   }
   entries.sort((a, b) => {
@@ -2156,9 +2162,10 @@ function buildRound1(selSet) {
 }
 
 function computeFinalKeys(round1) {
-  const getScore = (pid, grp, stn) => {
+  const getScore = (pid, grp, stn, wishScore) => {
     if (GARANTERET_SET.has(`${pid}-${stn}-${grp}`)) return Infinity;
-    return (grp == 10 || grp == 60) ? PERSONS[pid].kvotient : PERSONS[pid].point;
+    if (grp == 10 || grp == 60) return PERSONS[pid].kvotient;
+    return wishScore !== undefined ? wishScore : PERSONS[pid].point;
   };
   const allPersons = [...new Set(round1.map(p => p.person))];
   const round1Set = new Set(round1.map(p => `${p.person}-${p.stn}-${p.grp}`));
@@ -2181,7 +2188,7 @@ function computeFinalKeys(round1) {
       const key = `${stnId}-${grp}`;
       appsByKey[key] = round1
         .filter(p => p.stn === stnId && p.grp == grp)
-        .map(p => ({ person: p.person, score: getScore(p.person, p.grp, p.stn) }))
+        .map(p => ({ person: p.person, score: getScore(p.person, p.grp, p.stn, p.score) }))
         .sort((a, b) => b.score - a.score);
     }
   }
@@ -2778,13 +2785,14 @@ function renderRangeringslister() {
           if (isGar(a) !== isGar(b)) return isGar(a) ? -1 : 1;
           return (PERSONS[b]?.kvotient || 0) - (PERSONS[a]?.kvotient || 0);
         });
-      } else if (grp === 20 || grp === 70) {
+      } else if (grp !== 33 && grp !== 49) {
+        // kvote 2 og specialgrupper: brug per-ønske score (fra import) eller global point (demo)
         applicants.sort((a, b) => {
           if (isGar(a) !== isGar(b)) return isGar(a) ? -1 : 1;
-          return (PERSONS[b]?.point || 0) - (PERSONS[a]?.point || 0);
+          return getWishScore(b, stnId, grp) - getWishScore(a, stnId, grp);
         });
       }
-      // grp 49: leave in natural order
+      // grp 33, 49: leave in natural order
 
       const grpDiv = document.createElement('div');
       grpDiv.className = 'rang-grp';
@@ -2816,8 +2824,8 @@ function renderRangeringslister() {
             scoreHtml = `<span class="rang-gar-score">Garanteret optagelse</span>`;
           } else if (grp === 10 || grp === 60) {
             scoreHtml = `<span class="rang-score">Gns: ${p.kvotient.toFixed(1)}</span>`;
-          } else if (grp === 20 || grp === 70) {
-            scoreHtml = `<span class="rang-score">Kval: ${p.point}</span>`;
+          } else if (grp !== 33 && grp !== 49) {
+            scoreHtml = `<span class="rang-score">Kval: ${getWishScore(pid, stnId, grp)}</span>`;
           }
           const placedDot = simActive
             ? `<span class="rang-dot ${isPlaced ? 'rang-dot-placed' : 'rang-dot-empty'}"></span>`
@@ -4654,6 +4662,7 @@ function applyImportedData(uRows, pRows, aRows, rRows) {
       grp:       parseInt(row.gruppe),
       standby:   row.standby === 'x',
       garanteret: row.rang_nr === '0',
+      kval_p:    row.kval_p ? parseInt(row.kval_p) : null,
     });
   }
 
@@ -4664,8 +4673,9 @@ function applyImportedData(uRows, pRows, aRows, rRows) {
     for (const { udbud } of udbuds) {
       if (!(udbud in STATIONS)) continue;
       const groups = (rangByKey[`${pid}|${udbud}`] || []).sort((a, b) => a.grp - b.grp);
-      for (const { grp, standby, garanteret } of groups) {
-        wishList.push({ stn: udbud, grp, ...(garanteret ? { garanteret: true } : {}) });
+      for (const { grp, standby, garanteret, kval_p } of groups) {
+        const scoreObj = (grp >= 20 && grp < 60 && kval_p != null) ? { score: kval_p } : {};
+        wishList.push({ stn: udbud, grp, ...scoreObj, ...(garanteret ? { garanteret: true } : {}) });
         if (standby && grp < 60 && (CAPACITY[udbud]?.[grp + 50] || 0) > 0) {
           wishList.push({ stn: udbud, grp: grp + 50 });
         }
