@@ -633,6 +633,8 @@ html.dark .person-card.followed { background: rgba(245,158,11,0.08); }
 
 #metro-svg { width: 100%; height: 540px; display: block; }
 #metro-svg #train { will-change: transform; }
+@keyframes train-pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+#metro-svg #train.idle { animation: train-pulse 1s ease-in-out infinite; }
 
 /* Status bar */
 .status-bar {
@@ -1141,7 +1143,7 @@ Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, 
         <text id="ctr1" x="300" y="250" text-anchor="middle" font-size="16" font-weight="700" fill="var(--ctr-text)" font-family="DM Sans, sans-serif"></text>
         <text id="ctr2" x="300" y="273" text-anchor="middle" font-size="18" font-weight="700" fill="var(--indigo)" font-family="DM Sans, sans-serif"></text>
 
-        <g id="train">
+        <g id="train" class="idle">
           <g transform="scale(1.4)">
             <rect x="-26" y="-12" width="52" height="24" rx="7" fill="var(--train-body)"/>
             <rect x="-23" y="-9" width="18" height="12" rx="2" fill="#87CEEB" opacity="0.75"/>
@@ -3371,6 +3373,7 @@ function hideTrainBubble() {
 
 function animateTrain(fromA, totalDeg, ms, waypoints, onDone) {
   animating = true;
+  document.getElementById('train')?.classList.remove('idle');
   document.getElementById('btn-next').disabled = true;
   const wps = waypoints.map(w => ({ ...w, fired: false }));
   let progress = 0;
@@ -3391,6 +3394,7 @@ function animateTrain(fromA, totalDeg, ms, waypoints, onDone) {
       animFrame = null;
       trainAngle = ((fromA - totalDeg) % 360 + 360) % 360;
       animating = false;
+      document.getElementById('train')?.classList.add('idle');
       if (onDone) onDone();
       enableNextBtn();
     }
@@ -4584,6 +4588,7 @@ function resetSimState() {
 function reset() {
   if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
   animating = false;
+  document.getElementById('train')?.classList.remove('idle');
   locked = false;
   document.querySelectorAll('.btn-sel').forEach(b => b.disabled = learningMode);
   document.getElementById('autokør-cb').disabled = false;
