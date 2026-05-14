@@ -1145,10 +1145,19 @@ Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, 
     <div class="simulation-card">
       <svg id="metro-svg" viewBox="60 -40 500 560">
         <!-- Metro ring -->
-        <circle cx="300" cy="260" r="190" fill="none" stroke="var(--red)" stroke-width="14" opacity="0.6"/>
-        <circle cx="300" cy="260" r="190" fill="none" stroke="var(--red)" stroke-width="8"/>
+        <circle cx="300" cy="260" r="198" fill="none" stroke="#2a4a6a" stroke-width="3"/>
+        <circle cx="300" cy="260" r="182" fill="none" stroke="#2a4a6a" stroke-width="3"/>
+        <circle cx="300" cy="260" r="190" fill="none" stroke="#2a4a6a" stroke-width="8" stroke-dasharray="4 14" stroke-linecap="round"/>
+        <circle cx="300" cy="260" r="190" fill="none" stroke="#00b4d8" stroke-width="18" opacity="0.07"/>
+        <circle cx="300" cy="260" r="190" fill="none" stroke="#00b4d8" stroke-width="2.5" opacity="0.7"/>
 
         <g id="stations-layer"></g>
+
+        <!-- Pulsing center ring -->
+        <circle cx="300" cy="260" r="60" fill="none" stroke="#00b4d8" stroke-width="1.5" opacity="0.25">
+          <animate attributeName="r" values="55;75;55" dur="3s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0.3;0;0.3" dur="3s" repeatCount="indefinite"/>
+        </circle>
 
         <text id="ctr1" x="300" y="250" text-anchor="middle" font-size="16" font-weight="700" fill="var(--ctr-text)" font-family="DM Sans, sans-serif"></text>
         <text id="ctr2" x="300" y="273" text-anchor="middle" font-size="18" font-weight="700" fill="var(--indigo)" font-family="DM Sans, sans-serif"></text>
@@ -1842,6 +1851,8 @@ function applyStationConfig() {
   }
 }
 
+const STN_COLORS = ['#f72585','#4cc9f0','#7209b7','#06d6a0','#ff9f1c','#4361ee','#e63946','#43aa8b','#f8961e','#577590'];
+
 function renderSVGStations() {
   const layer = document.getElementById('stations-layer');
   if (!layer) return;
@@ -1850,7 +1861,10 @@ function renderSVGStations() {
   const stnR = nStn <= 7 ? 36 : nStn <= 12 ? 26 : 18;
   const lblSize = nStn <= 7 ? (s => s.length > 1 ? 14 : 16) : (s => s.length > 5 ? 8 : 11);
   const nmSize = nStn <= 12 ? 12 : 9;
+  let stnIdx = 0;
   for (const [stnId, stn] of Object.entries(STATIONS)) {
+    const stnColor = STN_COLORS[stnIdx % STN_COLORS.length];
+    stnIdx++;
     const g = document.createElementNS(NS, 'g');
     g.id = `stn-${stnId}`;
     const circ = document.createElementNS(NS, 'circle');
@@ -1858,7 +1872,8 @@ function renderSVGStations() {
     circ.setAttribute('r', String(stnR));
     const cs = getComputedStyle(document.documentElement);
     circ.setAttribute('fill', cs.getPropertyValue('--stn-fill').trim() || '#ffffff');
-    circ.setAttribute('stroke', cs.getPropertyValue('--stn-stroke').trim() || '#cbd5e1');
+    circ.setAttribute('stroke', stnColor);
+    circ.setAttribute('data-color', stnColor);
     circ.setAttribute('stroke-width', nStn <= 7 ? '4' : '2.5');
     const lblColor = cs.getPropertyValue('--stn-label').trim() || '#1e293b';
     const lblParts = stn.label.split(' ');
@@ -3317,11 +3332,13 @@ function repositionStnPavs(stnId) {
 function pulseStn(stnId) {
   const circ = document.querySelector(`#stn-${stnId} circle`);
   if (!circ) return;
-  circ.setAttribute('stroke', '#4f46e5');
-  circ.setAttribute('stroke-width', '5');
+  const origColor = circ.getAttribute('data-color') || '#cbd5e1';
+  const origWidth = circ.getAttribute('stroke-width') || '3.5';
+  circ.setAttribute('stroke', '#ffffff');
+  circ.setAttribute('stroke-width', '6');
   setTimeout(() => {
-    circ.setAttribute('stroke', '#cbd5e1');
-    circ.setAttribute('stroke-width', '3.5');
+    circ.setAttribute('stroke', origColor);
+    circ.setAttribute('stroke-width', origWidth);
   }, 700);
 }
 
