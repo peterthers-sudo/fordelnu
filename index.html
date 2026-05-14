@@ -1005,13 +1005,13 @@ Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, 
         <span class="coll-label">Valgte ansøgere <span id="pass-count"></span></span>
         <span class="coll-icon">▾</span>
       </div>
-      <div class="coll-body open" id="active-cards"></div>
-    </div>
-
-    <!-- Shuffle grupper -->
-    <div style="display:flex;gap:8px;padding:4px 2px;">
-      <button class="btn-sel" onclick="shuffleWishes()" style="flex:1;font-weight:700;">Shuffle grupper</button>
-      <button class="btn-sel" id="btn-reset-wishes" onclick="resetWishes()" disabled style="flex:1;">Nulstil grupper</button>
+      <div class="coll-body open" id="pass-body">
+        <div id="active-cards"></div>
+        <div class="sel-actions">
+          <button class="btn-sel" onclick="shuffleWishes()" style="flex:1;font-weight:700;">Shuffle grupper</button>
+          <button class="btn-sel" id="btn-reset-wishes" onclick="resetWishes()" disabled style="flex:1;">Nulstil grupper</button>
+        </div>
+      </div>
     </div>
 
     <!-- Vælg ansøgere -->
@@ -2744,7 +2744,7 @@ function toggleIntro() {
 
 function togglePassList() {
   document.getElementById('pass-header').classList.toggle('open');
-  document.getElementById('active-cards').classList.toggle('open');
+  document.getElementById('pass-body').classList.toggle('open');
 }
 
 function toggleCfgList() {
