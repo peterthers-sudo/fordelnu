@@ -2,7 +2,8 @@
 <html lang="da">
 <head>
 <meta charset="utf-8">
-<title>KOT — Fordelingsalgoritmen</title>
+<title>SimKOT</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop stop-color='%236366f1'/><stop offset='1' stop-color='%2306b6d4'/></linearGradient></defs><rect width='32' height='32' rx='7' fill='url(%23g)'/><circle cx='16' cy='16' r='9' fill='none' stroke='white' stroke-width='3.5'/><circle cx='16' cy='7' r='2.5' fill='white'/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -975,7 +976,20 @@ html.dark .person-card.done { background: rgba(99,102,241,0.1); border-color: va
 <div class="page-header">
   <div class="header-title">
     <div>
-      <h1>KOT — Fordelingsalgoritmen <button class="intro-toggle" id="intro-toggle" onclick="toggleIntro()" title="Skjul/vis beskrivelse">▾</button></h1>
+      <h1 style="display:flex;align-items:center;gap:10px;">
+        <svg width="34" height="34" viewBox="0 0 32 32" fill="none" style="flex-shrink:0;">
+          <defs>
+            <linearGradient id="logo-g" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#6366f1"/>
+              <stop offset="1" stop-color="#06b6d4"/>
+            </linearGradient>
+          </defs>
+          <circle cx="16" cy="16" r="10" stroke="url(#logo-g)" stroke-width="4"/>
+          <circle cx="16" cy="6" r="3" fill="url(#logo-g)"/>
+        </svg>
+        <span style="background:linear-gradient(90deg,#6366f1,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-size:32px;font-weight:800;letter-spacing:-0.5px;">SimKOT</span>
+        <button class="intro-toggle" id="intro-toggle" onclick="toggleIntro()" title="Skjul/vis beskrivelse">▾</button>
+      </h1>
       <p class="subtitle" id="intro-text">KOT-fordelingen gennemføres i en række fordelingsrunder, hvor ansøgerne løbende vurderes på de uddannelser og grupper, de har søgt. I hver runde placeres ansøgerne dér, hvor de kan få en plads ud fra institutionernes rangeinger, deres egen prioriteringer, karakterer eller kvalifikationsspoint.<br>
 Når en runde er afsluttet, ryddes der op i placeringerne, så hver ansøger kun står på den højest prioriterede uddannelse, hvor vedkommende har fået en plads. Ansøgere kan miste en plads, hvis højere rangerede ansøgere senere får forrang, mens ledige pladser samtidig flyttes mellem grupper for at sikre den bedst mulige udnyttelse af kapaciteten.<br>
 Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, hvordan grupper fyldes op, og hvordan fordelingen gradvist finder frem til det endelige resultat. Processen fortsætter automatisk, indtil alle ansøgere enten er optaget på deres højest mulige prioritet eller har fået afslag på alle ønsker.</p>
@@ -4665,7 +4679,7 @@ function applyImportedData(uRows, pRows, aRows, rRows) {
     const x = +(CX + R * Math.cos(angle * DEG)).toFixed(1);
     const y = +(CY - R * Math.sin(angle * DEG)).toFixed(1);
     const name = (row.udbudsnavn || stnId).trim();
-    newStations[stnId] = { name, label: 'KOT ' + stnId, angle, x, y, capacity: {} };
+    newStations[stnId] = { name, label: 'SimKOT ' + stnId, angle, x, y, capacity: {} };
   });
   STATIONS = newStations;
   STATION_INST = newStationInst;
