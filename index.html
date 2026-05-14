@@ -638,14 +638,26 @@ html.dark .person-card.followed { background: rgba(245,158,11,0.08); }
 .status-bar {
   background: var(--status-bar-bg);
   color: white;
-  padding: 14px 20px;
-  font-size: 14px;
+  padding: 6px 16px;
+  font-size: 13px;
   line-height: 1.5;
-  min-height: 52px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  min-height: 48px;
+  max-height: 200px;
+  overflow-y: auto;
   font-weight: 500;
+  display: flex;
+  flex-direction: column;
+}
+.status-log-line {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 3px 0;
+}
+.status-log-line + .status-log-line {
+  border-top: 1px solid rgba(255,255,255,0.07);
+  padding-top: 4px;
+  margin-top: 2px;
 }
 
 .step-badge.kandidat {
@@ -3400,13 +3412,21 @@ function animateTrain(fromA, totalDeg, ms, waypoints, onDone) {
 }
 
 function setStatus(badge, msg) {
+  const bar = document.getElementById('status-bar');
   if (learningMode) {
-    document.getElementById('status-bar').innerHTML =
-      `<span class="step-badge" style="background:#6366f1">Læringsmode</span><span style="color:#e2e8f0">Tryk <strong>Næste ▶</strong> for at gå videre til næste trin</span>`;
+    bar.innerHTML = `<div class="status-log-line"><span class="step-badge" style="background:#6366f1">Læringsmode</span><span style="color:#e2e8f0">Tryk <strong>Næste ▶</strong> for at gå videre til næste trin</span></div>`;
     return;
   }
-  document.getElementById('status-bar').innerHTML =
-    `<span class="step-badge">${badge}</span><span style="color:#e2e8f0">${msg}</span>`;
+  bar.innerHTML = `<div class="status-log-line"><span class="step-badge">${badge}</span><span style="color:#e2e8f0">${msg}</span></div>`;
+}
+
+function appendStatus(badge, msg) {
+  if (learningMode) return;
+  const bar = document.getElementById('status-bar');
+  const line = document.createElement('div');
+  line.className = 'status-log-line';
+  line.innerHTML = `<span class="step-badge">${badge}</span><span style="color:#e2e8f0">${msg}</span>`;
+  bar.prepend(line);
 }
 
 function setCenter(t1, t2) {
@@ -3635,7 +3655,7 @@ function buildWaypoints() {
       const names = [...new Set(here.map(p => PERSONS[p.person].name))].join(', ');
       const garHere = here.filter(p => GARANTERET_SET.has(`${p.person}-${stnId}-${p.grp}`));
       const garNote = garHere.map(p => `${PERSONS[p.person].name}: garanteret optagelse`).join(' · ');
-      setStatus(`Runde 1 · ${stn.name}`,
+      appendStatus(stn.name,
         names ? `${names} sættes foreløbigt af her.${garNote ? ` ${garNote}.` : ''}` : 'Ingen ansøgere til denne station.');
       const cap = CAPACITY[stnId] || {};
       const totalSpots = Object.entries(cap).reduce((s, [g, v]) => +g !== 33 ? s + v : s, 0);
@@ -3656,31 +3676,35 @@ function buildWaypoints2(rNr) {
       pulseStn(stnId);
 
       const stn = STATIONS[stnId];
-      // Find hvem der ender her i den nye fordeling
-      const newHere = [...FINAL_KEYS]
-        .filter(k => { const p = k.split('-'); return p.slice(1,-1).join('-') === stnId; })
-        .map(k => PERSONS[k.split('-')[0]]?.name)
-        .filter(Boolean);
-      // Find hvem der var her i runde 1 men nu er rykket
-      const oldHere = ROUND1.filter(p => p.stn === stnId);
-      const moved = oldHere
-        .filter(p => {
-          const newKey = [...FINAL_KEYS].find(k => k.startsWith(p.person + '-'));
-          return newKey && !newKey.includes(`-${stnId}-`);
-        })
-        .map(p => PERSONS[p.person]?.name);
-      let msg = newHere.length > 0 ? `${newHere.join(', ')} er placeret her.` : 'Ingen placeret her.';
-      if (moved.length > 0) msg += ` ${moved.join(', ')} er rykket videre.`;
+      const stnFilter = k => k.split('-').slice(1, -1).join('-') === stnId;
+
+      const prevHere = prevFinalKeys
+        ? new Set([...prevFinalKeys].filter(stnFilter).map(k => k.split('-')[0]))
+        : new Set();
+      const currHere = new Set([...FINAL_KEYS].filter(stnFilter).map(k => k.split('-')[0]));
+
+      const name = pid => PERSONS[pid]?.name;
+      const stayed  = [...currHere].filter(p =>  prevHere.has(p)).map(name).filter(Boolean);
+      const arrived = [...currHere].filter(p => !prevHere.has(p)).map(name).filter(Boolean);
+      const departed = [...prevHere].filter(p => !currHere.has(p)).map(name).filter(Boolean);
+
+      const parts = [];
+      if (stayed.length)   parts.push(`${stayed.join(', ')} holder ${stayed.length === 1 ? 'sin' : 'deres'} plads herfra forrige runde.`);
+      if (arrived.length)  parts.push(`${arrived.join(', ')} ${arrived.length === 1 ? 'er rykket hertil' : 'er rykket hertil'} — en bedre placering end sidst.`);
+      if (departed.length) parts.push(`${departed.join(', ')} ${departed.length === 1 ? 'har fået en bedre plads andetsteds' : 'har fået en bedre plads andetsteds'} og er væk herfra.`);
+      if (!currHere.size)  parts.push('Ingen er optaget her.');
+
       const garAtStn = [...GARANTERET_SET]
-        .filter(k => { const p = k.split('-'); return p.slice(1,-1).join('-') === stnId && FINAL_KEYS.has(k); })
-        .map(k => PERSONS[k.split('-')[0]]?.name).filter(Boolean);
-      if (garAtStn.length > 0) msg += ` (${garAtStn.join(', ')}: garanteret optagelse)`;
-      setStatus(`Runde ${rNr} · ${stn.name}`, msg);
+        .filter(k => stnFilter(k) && FINAL_KEYS.has(k))
+        .map(k => name(k.split('-')[0])).filter(Boolean);
+      if (garAtStn.length) parts.push(`(${garAtStn.join(', ')}: garanteret optagelse)`);
+
+      appendStatus(stn.name, parts.join(' '));
       const cap = CAPACITY[stnId] || {};
       const totalSpots = Object.entries(cap).reduce((s, [g, v]) => +g !== 33 ? s + v : s, 0);
-      const free = Math.max(0, totalSpots - newHere.length);
-      const bubbleInfo = newHere.length > 0
-        ? `${newHere.length} placeret · ${free} ledig${free !== 1 ? 'e' : ''} plads${free !== 1 ? 'er' : ''}`
+      const free = Math.max(0, totalSpots - currHere.size);
+      const bubbleInfo = currHere.size > 0
+        ? `${currHere.size} placeret · ${free} ledig${free !== 1 ? 'e' : ''} plads${free !== 1 ? 'er' : ''}`
         : `Ingen placeret · ${totalSpots} ledig${totalSpots !== 1 ? 'e' : ''} plads${totalSpots !== 1 ? 'er' : ''}`;
       showTrainBubble(stnId, bubbleInfo);
     }
@@ -4050,7 +4074,7 @@ function stepKandidatrunde() {
             const here = kandidatByStn[stnId] || [];
             if (here.length > 0) {
               const names = here.map(o => PERSONS[o.pid]?.name).join(', ');
-              setStatus(`Kandidatrunden · ${STATIONS[stnId]?.name}`, `${names} optages på grp.33`);
+              appendStatus(STATIONS[stnId]?.name ?? stnId, `${names} optages på grp.33`);
               showTrainBubble(stnId, `${names} optages på grp. 33`);
               for (const o of here) {
                 if (o.fromKey) {
@@ -4073,7 +4097,7 @@ function stepKandidatrunde() {
               updateCardResults();
               renderCapBoxRight();
             } else {
-              setStatus(`Kandidatrunden · ${STATIONS[stnId]?.name}`, 'Ingen grp.33-ansøgere ved denne station.');
+              appendStatus(STATIONS[stnId]?.name ?? stnId, 'Ingen grp.33-ansøgere ved denne station.');
               showTrainBubble(stnId, 'Ingen grp.33-ansøgere');
             }
           }
@@ -4082,7 +4106,7 @@ function stepKandidatrunde() {
         animateTrain(trainAngle, 360, 6000, waypoints, () => {
           hideTrainBubble();
           if (optag.length === 0) {
-            setStatus('Kandidatrunden — ingen optagelse', 'Ingen ansøgere kan optages på kandidatuddannelser med bedre prioritet.');
+            appendStatus('✓', 'Ingen ansøgere kan optages på kandidatuddannelser med bedre prioritet.');
             setCenter('Kandidat', 'Ingen ændringer');
             steps.push(stepAfslut());
           } else {
@@ -4093,7 +4117,7 @@ function stepKandidatrunde() {
               const fGrp = fparts[fparts.length-1];
               return `${PERSONS[o.pid]?.name}: grp.${fGrp} ${STATIONS[fStn]?.name.split(' ')[0]} → grp.33 ${STATIONS[o.stnId].name.split(' ')[0]}`;
             }).join(' · ');
-            setStatus('Kandidatrunden — optagelse udført', fromInfo);
+            appendStatus('✓', fromInfo);
             setCenter('Kandidat', `${optag.length} optaget`);
             const anyFreed = optag.some(o => o.fromKey);
             if (anyFreed) {
@@ -4200,7 +4224,7 @@ function stepSlutOpsummering() {
 
 function stepAfslut() {
   return () => {
-    setStatus('Færdig', 'Alle er placeret på den bedst mulige plads de kunne opnå. Tryk Næste for den endelige oversigt.');
+    appendStatus('✓', 'Alle er placeret på deres højest mulige prioritet. Tryk Næste for den endelige oversigt.');
     steps.push(stepSlutOpsummering());
   };
 }
@@ -4236,13 +4260,12 @@ function buildSteps() {
     withLearning('runde1-klar', () => {
       clearStatistik();
       roundNumber = 1;
-      setStatus('Runde 1', 'KOT-fordelingen kører og sætter alle af på de grupper de har søgt.');
+      setStatus('Runde 1', 'KOT-fordelingen kører og sætter alle af på de udbud og grupper de er indberettet i.');
       setCenter('Runde 1', 'Midlertidigt optag');
       positionTrain(115);
       animateTrain(115, 360, 6000, buildWaypoints(), () => {
         hideTrainBubble();
-        setStatus('Runde 1 — Midlertidigt optag',
-          'Alle ansøgere er midlertidigt placeret på deres ønskede uddannelser. Tryk Næste for at rydde op så hver ansøger kun beholder pladsen på deres højeste prioritet.');
+        appendStatus('✓', 'Alle ansøgere er midlertidigt placeret. Tryk Næste for at rydde op — hver ansøger beholder kun pladsen på deres højeste prioritet.');
         setCenter('Runde 1', 'Klar til clearing');
       });
     }),
@@ -4266,8 +4289,10 @@ function buildWaypointsClearing(rNr) {
       const names = hereKeys.map(k => PERSONS[k.split('-')[0]]?.name).filter(Boolean);
       const cap = CAPACITY[stnId] || {};
       const totalSpots = Object.entries(cap).reduce((s, [g, v]) => +g !== 33 ? s + v : s, 0);
-      setStatus(`Runde ${rNr} — Clearing · ${stn.name}`,
-        names.length > 0 ? `${names.join(', ')} — beholder den bedste prioritet` : 'Ingen placeret her');
+      appendStatus(stn.name,
+        names.length > 0
+          ? `${names.join(', ')} beholder ${names.length === 1 ? 'sin' : 'deres'} plads her — bedste match indtil videre. Lavere prioriteter fjernes.`
+          : 'Ingen er placeret her — alle pladser ledige.');
       showTrainBubble(stnId, names.length > 0
         ? `${names.length} placeret · ${totalSpots} plads${totalSpots !== 1 ? 'er' : ''}`
         : `Tom · ${totalSpots} ledig${totalSpots !== 1 ? 'e' : ''} plads${totalSpots !== 1 ? 'er' : ''}`);
@@ -4286,7 +4311,7 @@ function buildWaypointsPladsflyt(rNr) {
       const totalSpots = Object.entries(cap).reduce((s, [g, v]) => +g !== 33 ? s + v : s, 0);
       const placed = [...FINAL_KEYS].filter(k => k.split('-').slice(1,-1).join('-') === stnId).length;
       const free = Math.max(0, totalSpots - placed);
-      setStatus(`Runde ${rNr} — Pladsflyt · ${stn.name}`,
+      appendStatus(stn.name,
         free > 0 ? `${free} ledig${free !== 1 ? 'e' : ''} plads${free !== 1 ? 'er' : ''} — tjekker om de kan flyttes`
                  : 'Alle pladser optaget');
       showTrainBubble(stnId, `${placed} placeret · ${free} ledig${free !== 1 ? 'e' : ''}`);
@@ -4296,7 +4321,7 @@ function buildWaypointsPladsflyt(rNr) {
 
 // Fabrik: clearing-trin (vises som "Clearing efter runde N")
 function doClearing(rNr, onDone) {
-  setStatus(`Runde ${rNr} — Clearing`, 'Rydder op — hver ansøger beholder pladsen med den højeste prioritet.');
+  setStatus(`Runde ${rNr} — Clearing`, 'Rydder op — hver ansøger beholder pladsen med deres højeste prioritet.');
   setCenter(`Runde ${rNr}`, 'Clearing');
   document.getElementById('btn-next').disabled = true;
   animateTrain(trainAngle, 360, 3000, buildWaypointsClearing(rNr), () => {
@@ -4311,8 +4336,7 @@ function doClearing(rNr, onDone) {
       for (const stnId of Object.keys(STATIONS)) repositionStnPavs(stnId);
     }, 650);
     updateCardResults();
-    setStatus(`Runde ${rNr} — Clearing færdig`,
-      'Hver ansøger er nu kun optaget på pladsen med sin højeste prioritet. Inden for samme uddannelse er pladsen på laveste gruppenumre beholdt, hvis ansøger var optaget i flere grupper.');
+    appendStatus('✓', 'Clearing færdig — hver ansøger er nu på den bedste plads de er kommet ind på indtil videre.');
     if (onDone) onDone();
   });
 }
@@ -4329,8 +4353,7 @@ function stepRundeOpsummering(moves) {
     const pladserFlyttet = moves.reduce((s, m) => s + m.antal, 0);
     renderRunde1Statistik({ rNr, optaget, afvist, ledige, pladserFlyttet });
     setCenter(`Runde ${rNr}`, 'Afsluttet');
-    setStatus(`Runde ${rNr} — afsluttet`,
-      `Tryk Næste for at starte runde ${rNr + 1}.`);
+    appendStatus('→', `Tryk Næste for at starte runde ${rNr + 1}.`);
     steps.push(stepTogkørsel(rNr + 1));
   });
 }
@@ -4339,7 +4362,7 @@ function stepRundeOpsummering(moves) {
 function stepPladsflyt() {
   const rNr = roundNumber; // fanges ved oprettelse
   return withLearning(`pladsflyt-${rNr}`, () => {
-    setStatus(`Runde ${rNr} — Pladsflyt`, 'Tjekker om ledige pladser kan flyttes mellem gruppe 10↔20 eller 60↔70...');
+    setStatus(`Runde ${rNr} — Pladsflyt`, 'Tjekker om ledige pladser kan flyttes mellem grupper...');
     setCenter(`Runde ${rNr}`, 'Pladsflyt');
     document.getElementById('btn-next').disabled = true;
 
@@ -4357,14 +4380,14 @@ function stepPladsflyt() {
         renderRangeringslister();
 
         if (moves.length === 0) {
-          setStatus(`Runde ${rNr} — Pladsflyt`, 'Der er ingen ledige pladser at flytte.');
+          appendStatus('→', 'Ingen ledige pladser at flytte.');
           setCenter(`Runde ${rNr}`, 'Ingen ændringer');
         } else {
           const total = moves.reduce((s, m) => s + m.antal, 0);
           const summary = moves.map(m =>
             `${STATIONS[m.stnId].name.split(' ')[0]}: ${m.antal} plads${m.antal>1?'er':''} fra grp.${m.fra}→grp.${m.til}`
           ).join(' · ');
-          setStatus(`Runde ${rNr} — Pladsflyt`, `${total} plads${total>1?'er':''} flyttet. ${summary}`);
+          appendStatus('→', `${total} plads${total>1?'er':''} flyttet. ${summary}`);
           setCenter(`Runde ${rNr}`, `${total} plads${total>1?'er':''} flyttet`);
         }
         steps.push(stepRundeOpsummering(moves));
@@ -4393,7 +4416,7 @@ function stepTogkørsel(rNr) {
       // Sammenlign FINAL_KEYS med forrige runde
       if (keysEqual(FINAL_KEYS, prevFinalKeys)) {
         // Ingen ændringer — algoritmen er stabil
-        setStatus(`Runde ${rNr} — stabil`, `Ingen kan forbedre sig. Algoritmen er stabil og stopper.`);
+        appendStatus('✓', `Runde ${rNr} — ingen ændringer. Alle er på den bedst mulige plads. Fordelingen er stabil og stopper.`);
         const _optaget = new Set([...FINAL_KEYS].map(k => k.split('-')[0])).size;
         const _afvist = selected.size - _optaget;
         setCenter('Stabil!', `Optaget: ${_optaget} · Afvist: ${_afvist}`);
@@ -4421,7 +4444,7 @@ function stepTogkørsel(rNr) {
           }
         }
         const changeMsg = movedLines.length ? movedLines.join(', ') : 'Nogen';
-        setStatus(`Runde ${rNr} — ændringer`, `${changeMsg} er rykket til en højere prioritet. Tryk Næste for at køre en clearing.`);
+        appendStatus('→', `${changeMsg} er rykket til en højere prioritet. Tryk Næste for at køre en clearing.`);
         updateCardResults();
         steps.push(withLearning(`clearing-${rNr}`, () => doClearing(rNr, () => {
           steps.push(stepPladsflyt());
