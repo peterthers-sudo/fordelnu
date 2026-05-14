@@ -4724,6 +4724,7 @@ function applyImportedData(uRows, pRows, aRows, rRows) {
   document.getElementById('btn-import-clear').disabled = false;
   document.getElementById('btn-import-load').disabled  = true;
   document.getElementById('btn-import-load').textContent = 'Indlæst ✓';
+  document.querySelectorAll('.model-btn').forEach(b => b.disabled = true);
   const lCb = document.getElementById('lærings-cb');
   if (lCb.checked) { lCb.checked = false; onLæringsChange(); }
   lCb.disabled = true;
