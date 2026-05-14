@@ -3318,27 +3318,7 @@ let trainAngle = 115;
 let animating = false;
 let animFrame = null;
 let locked = false;
-let _pulseRaf = null;
-let _pulseStart = null;
 
-function startTrainPulse() {
-  if (_pulseRaf) return;
-  _pulseStart = performance.now();
-  function tick(ts) {
-    const el = document.getElementById('train');
-    if (!el) { _pulseRaf = null; return; }
-    const t = (ts - _pulseStart) / 1000;
-    el.style.opacity = 0.35 + 0.65 * (0.5 + 0.5 * Math.cos(2 * Math.PI * t));
-    _pulseRaf = requestAnimationFrame(tick);
-  }
-  _pulseRaf = requestAnimationFrame(tick);
-}
-
-function stopTrainPulse() {
-  if (_pulseRaf) { cancelAnimationFrame(_pulseRaf); _pulseRaf = null; }
-  const el = document.getElementById('train');
-  if (el) el.style.opacity = '1';
-}
 let trainSpeedKmh = 60;
 
 function onSpeedChange() {
@@ -3392,7 +3372,6 @@ function hideTrainBubble() {
 
 function animateTrain(fromA, totalDeg, ms, waypoints, onDone) {
   animating = true;
-  stopTrainPulse();
   document.getElementById('btn-next').disabled = true;
   const wps = waypoints.map(w => ({ ...w, fired: false }));
   let progress = 0;
@@ -3413,7 +3392,6 @@ function animateTrain(fromA, totalDeg, ms, waypoints, onDone) {
       animFrame = null;
       trainAngle = ((fromA - totalDeg) % 360 + 360) % 360;
       animating = false;
-      startTrainPulse();
       if (onDone) onDone();
       enableNextBtn();
     }
@@ -4607,7 +4585,6 @@ function resetSimState() {
 function reset() {
   if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
   animating = false;
-  stopTrainPulse();
   locked = false;
   document.querySelectorAll('.btn-sel').forEach(b => b.disabled = learningMode);
   document.getElementById('autokør-cb').disabled = false;
@@ -4901,7 +4878,6 @@ renderCapConfig();
 renderCapBoxRight();
 renderGrænsekvotienter();
 positionTrain(115);
-startTrainPulse();
 const savedLæring = localStorage.getItem('metro_learning');
 document.getElementById('lærings-cb').checked = savedLæring === null ? true : savedLæring === '1';
 onLæringsChange();
