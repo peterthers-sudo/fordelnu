@@ -1229,13 +1229,13 @@ Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, 
         </svg>
         <span class="result-panel-title">Endelig fordeling — KOT-fordelingen er stoppet</span>
       </div>
+      <div class="result-note" id="result-note"></div>
       <div id="priority-breakdown" style="display:none;padding:10px 16px 8px;flex-wrap:wrap;gap:8px;align-items:center;border-bottom:1px solid var(--border);"></div>
       <div class="res-row" id="result-row"></div>
       <div id="res-ledige-section" style="display:none;border-top:1px solid var(--border);padding:8px 16px 4px;">
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3);margin-bottom:6px;">Ubesatte pladser</div>
         <div class="res-row" id="result-row-ledige" style="padding:0 0 10px;"></div>
       </div>
-      <div class="result-note" id="result-note"></div>
     </div>
 
   </div>
@@ -3563,7 +3563,7 @@ function renderRunde1Statistik({ rNr, optaget, afvist, ledige, pladserFlyttet, t
 /* Resultatpanel */
 function renderResultPanel() {
   const note = document.getElementById('result-note');
-  if (note) note.innerHTML = `<b>Stabilt resultat:</b> KOT-fordelingen har kørt ${roundNumber} runde${roundNumber !== 1 ? 'r' : ''}. Ingen kan flyttes til en bedre plads. Algoritmen stopper.`;
+  if (note) note.innerHTML = `<b>Stabilt resultat:</b> Fordelingen kørte ${roundNumber} runde${roundNumber !== 1 ? 'r' : ''}. Ingen ansøgere kan flyttes til en bedre plads.`;
   const row = document.getElementById('result-row');
   row.innerHTML = '';
   for (const pid of selected) {
