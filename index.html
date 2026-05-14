@@ -1767,6 +1767,7 @@ let CAPACITY = {};
 let CAPACITY_DEFAULTS = {};
 let CAPACITY_PRE_GRP33 = null; // snapshot taget inden applyKandidatPladsflyt muterer CAPACITY
 let IMPORT_MODE = false;
+let IMPORT_WISH_ORIGINAL = null;
 let STATION_INST = {}; // stnId → instId
 
 function applyStationConfig() {
@@ -1784,7 +1785,7 @@ function renderSVGStations() {
   layer.innerHTML = '';
   const nStn = Object.keys(STATIONS).length;
   const stnR = nStn <= 7 ? 36 : nStn <= 12 ? 26 : 18;
-  const lblSize = nStn <= 7 ? (s => s.length > 1 ? 14 : 16) : () => 11;
+  const lblSize = nStn <= 7 ? (s => s.length > 1 ? 14 : 16) : (s => s.length > 5 ? 8 : 11);
   const nmSize = nStn <= 12 ? 12 : 9;
   for (const [stnId, stn] of Object.entries(STATIONS)) {
     const g = document.createElementNS(NS, 'g');
@@ -1796,22 +1797,49 @@ function renderSVGStations() {
     circ.setAttribute('fill', cs.getPropertyValue('--stn-fill').trim() || '#ffffff');
     circ.setAttribute('stroke', cs.getPropertyValue('--stn-stroke').trim() || '#cbd5e1');
     circ.setAttribute('stroke-width', nStn <= 7 ? '4' : '2.5');
+    const lblColor = cs.getPropertyValue('--stn-label').trim() || '#1e293b';
+    const lblParts = stn.label.split(' ');
+    const twoLine = lblParts.length >= 2 && nStn <= 12;
+
     const lbl = document.createElementNS(NS, 'text');
-    lbl.setAttribute('x', stn.x); lbl.setAttribute('y', stn.y - (stnR <= 18 ? 2 : 6));
+    lbl.setAttribute('x', stn.x);
     lbl.setAttribute('text-anchor', 'middle');
-    lbl.setAttribute('font-size', String(lblSize(stn.label)));
-    lbl.setAttribute('font-weight', '800'); lbl.setAttribute('fill', cs.getPropertyValue('--stn-label').trim() || '#1e293b');
+    lbl.setAttribute('font-weight', '800');
+    lbl.setAttribute('fill', lblColor);
     lbl.setAttribute('font-family', 'DM Sans, sans-serif');
-    lbl.textContent = nStn > 12 ? stn.label.slice(0,2) : stn.label;
+    if (twoLine) {
+      lbl.setAttribute('y', stn.y - (stnR <= 18 ? 6 : 9));
+      lbl.setAttribute('font-size', '10');
+      lbl.textContent = lblParts[0];
+    } else {
+      lbl.setAttribute('y', stn.y - (stnR <= 18 ? 2 : 6));
+      lbl.setAttribute('font-size', String(lblSize(stn.label)));
+      lbl.textContent = nStn > 12 ? stn.label.slice(0, 2) : stn.label;
+    }
+
     const nm = document.createElementNS(NS, 'text');
     nm.setAttribute('x', stn.x); nm.setAttribute('y', stn.y + (stnR <= 18 ? 8 : 11));
     nm.setAttribute('text-anchor', 'middle'); nm.setAttribute('font-size', String(nmSize));
     nm.setAttribute('fill', cs.getPropertyValue('--stn-name').trim() || '#94a3b8'); nm.setAttribute('font-family', 'DM Sans, sans-serif');
-    if (nStn <= 12) {
+    if (nStn <= 12 && !twoLine) {
       const dispName = stn.name.split(' ')[0];
       nm.textContent = dispName.length > 9 ? dispName.slice(0, 8) + '.' : dispName;
     }
-    g.appendChild(circ); g.appendChild(lbl); g.appendChild(nm);
+
+    g.appendChild(circ); g.appendChild(lbl);
+    if (twoLine) {
+      const lbl2 = document.createElementNS(NS, 'text');
+      lbl2.setAttribute('x', stn.x);
+      lbl2.setAttribute('y', stn.y + (stnR <= 18 ? 4 : 5));
+      lbl2.setAttribute('text-anchor', 'middle');
+      lbl2.setAttribute('font-size', '9');
+      lbl2.setAttribute('font-weight', '800');
+      lbl2.setAttribute('fill', lblColor);
+      lbl2.setAttribute('font-family', 'DM Sans, sans-serif');
+      lbl2.textContent = lblParts.slice(1).join(' ');
+      g.appendChild(lbl2);
+    }
+    g.appendChild(nm);
     layer.appendChild(g);
   }
 }
@@ -1983,8 +2011,10 @@ function getWishes(pid) {
 
 function shuffleWishes() {
   if (animating || locked) return;
+  // I import mode: brug de aktuelle importerede ønsker som kilde (ikke demo-data)
+  const wishSource = IMPORT_MODE ? WISH_OVERRIDE : ALL_WISHES;
   WISH_OVERRIDE = {};
-  for (const [pid, allW] of Object.entries(ALL_WISHES)) {
+  for (const [pid, allW] of Object.entries(wishSource)) {
     const seenStns = [];
     for (const w of allW) {
       if (!(w.stn in STATIONS)) continue;
@@ -2027,8 +2057,8 @@ function shuffleWishes() {
       WISH_OVERRIDE[pid].push({ stn, grp: 49 });
     }
   }
-  // Ca. hver anden shuffle: 2 ansøgere får gruppe 33 på alle uddannelser
-  if (Math.random() < 0.5 && [...selected].length >= 2) {
+  // Ca. hver anden shuffle: 2 ansøgere får gruppe 33 på alle uddannelser (kun demo)
+  if (!IMPORT_MODE && Math.random() < 0.5 && [...selected].length >= 2) {
     const pool = [...selected].sort(() => Math.random() - 0.5).slice(0, 2);
     for (const pid of pool) {
       const seenStns = [];
@@ -2057,7 +2087,7 @@ function shuffleWishes() {
     }
   }
 
-  // ~35% chance: 1 ansøger får garanteret optagelse på én prioritet (ingen lavere prioriteter efter)
+  // ~35% chance: 1 ansøger får garanteret optagelse på én prioritet
   if (Math.random() < 0.35) {
     const grp33Pids = new Set(
       Object.entries(WISH_OVERRIDE)
@@ -2097,7 +2127,7 @@ function shuffleWishes() {
 
 function resetWishes() {
   if (animating) return;
-  WISH_OVERRIDE = null;
+  WISH_OVERRIDE = IMPORT_MODE ? JSON.parse(JSON.stringify(IMPORT_WISH_ORIGINAL)) : null;
   rebuildGaranteretSet();
   renderActiveCards();
   if (!locked) steps = buildSteps();
@@ -4561,7 +4591,7 @@ function applyImportedData(uRows, pRows, aRows, rRows) {
     const x = +(CX + R * Math.cos(angle * DEG)).toFixed(1);
     const y = +(CY - R * Math.sin(angle * DEG)).toFixed(1);
     const name = (row.udbudsnavn || stnId).trim();
-    newStations[stnId] = { name, label: name.slice(0, 3), angle, x, y, capacity: {} };
+    newStations[stnId] = { name, label: 'KOT ' + stnId, angle, x, y, capacity: {} };
   });
   STATIONS = newStations;
   STATION_INST = newStationInst;
@@ -4597,7 +4627,7 @@ function applyImportedData(uRows, pRows, aRows, rRows) {
   Object.entries(personData).forEach(([pid, data], i) => {
     const col   = _IMPORT_PALETTE[i % _IMPORT_PALETTE.length];
     const label = String(i + 1).padStart(2, '0');
-    newPersons[pid] = { name: `Ans. ${label}`, label, kvotient: data.kvotient, point: data.point, ...col };
+    newPersons[pid] = { name: pid, label, kvotient: data.kvotient, point: data.point, ...col };
   });
   PERSONS = newPersons;
 
@@ -4644,6 +4674,7 @@ function applyImportedData(uRows, pRows, aRows, rRows) {
     if (wishList.length > 0) newWishes[pid] = wishList;
   }
   WISH_OVERRIDE = newWishes;
+  IMPORT_WISH_ORIGINAL = JSON.parse(JSON.stringify(newWishes));
   rebuildGaranteretSet();
   selected = new Set(Object.keys(newPersons));
 
