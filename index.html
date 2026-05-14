@@ -2277,7 +2277,7 @@ function renderCapBoxRight() {
         const restFree  = cap - MAX_BUBBLES - restOcc;
         const parts = [];
         if (restOcc  > 0) parts.push(`+${restOcc} opt`);
-        if (restFree > 0) parts.push(`${restFree} led`);
+        if (restFree > 0) parts.push(`+${restFree} led`);
         if (parts.length > 0)
           bar += `<span style="display:inline-block;height:18px;border-radius:9px;padding:0 6px;margin-left:1px;background:var(--surface-2);border:1px solid var(--border);vertical-align:middle;font-size:11px;line-height:18px;font-weight:600;color:var(--text-3);white-space:nowrap;">${parts.join(' · ')}</span>`;
       }
@@ -2638,7 +2638,7 @@ function getFollowedStatusText(stepKey) {
     return cur ? `Ikke optaget via grp 33 — ${cur}.` : 'Ikke optaget.';
   }
   if (stepKey === 'slutopsummering') {
-    return cur ? `🥇 Tillykke! Endeligt optaget på sin ${cur}.` : '😔 Ikke optaget.';
+    return cur ? `🥇 Tillykke! Optaget på sin ${cur}.` : '😔 Ikke optaget.';
   }
   return cur ? cur : 'Ingen plads.';
 }
@@ -3917,7 +3917,11 @@ function stepKandidatrunde() {
         const optag = computeKandidatOptag();
 
         // Byg waypoints — toget kører altid
-        const stnProgress = { lego: 25, med: 97, tiv: 169, lae: 241, bon: 313 };
+        const _stnIds = Object.keys(STATIONS);
+        const _n = _stnIds.length;
+        const stnProgress = Object.fromEntries(
+          _stnIds.map((id, i) => [id, Math.round(25 + (_n > 1 ? i * 288 / (_n - 1) : 0))])
+        );
         const kandidatByStn = {};
         for (const o of optag) {
           (kandidatByStn[o.stnId] = kandidatByStn[o.stnId] || []).push(o);
