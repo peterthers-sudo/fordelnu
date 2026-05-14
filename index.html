@@ -1045,7 +1045,7 @@ Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, 
     <!-- Importer data -->
     <div class="collapsible">
       <div class="coll-header" id="import-header" onclick="toggleImportPanel()">
-        <span class="coll-label">Importer CSV-data</span>
+        <span class="coll-label">Advanced mode</span>
         <span class="coll-icon">▾</span>
       </div>
       <div class="coll-body" id="import-body">
@@ -1077,7 +1077,7 @@ Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, 
         </div>
         <div style="display:flex;gap:8px;margin-top:8px;">
           <button class="btn-sel" id="btn-import-load" onclick="loadImport()" style="flex:1;font-weight:700;" disabled>Indlæs</button>
-          <button class="btn-sel" id="btn-import-clear" onclick="clearImportMode()" style="flex:1;" disabled>Ryd import</button>
+          <button class="btn-sel" id="btn-import-clear" onclick="clearImportMode()" style="flex:1;" disabled>← Demo</button>
         </div>
         <div id="import-status" style="font-size:11px;color:var(--text-3);margin-top:6px;min-height:14px;"></div>
       </div>
@@ -1891,8 +1891,12 @@ function onModelSelect(n) {
   if (importMsg) importMsg.style.display = 'none';
   const rb = document.getElementById('btn-reset-wishes');
   if (rb) rb.disabled = true;
+  document.getElementById('btn-import-clear').disabled = true;
+  document.getElementById('btn-import-load').textContent = 'Indlæs';
+  document.getElementById('lærings-cb').disabled = false;
   applyModel(n);
   resetSimState();
+  checkImportReady();
 }
 
 const GROUP_COLORS = {
@@ -4486,7 +4490,11 @@ function resetSimState() {
     const circ = document.querySelector(`#stn-${stnId} circle`);
     if (circ) { circ.setAttribute('stroke', '#cbd5e1'); circ.setAttribute('stroke-width', '3.5'); }
   }
-  setCenter(learningMode ? 'Læringsmode' : 'Simulationsmode', learningMode ? 'Indstillinger kan ikke ændres' : 'Alle indstillinger kan ændres');
+  if (IMPORT_MODE && !learningMode) {
+    setCenter('Advanced mode', 'Testdata indlæst');
+  } else {
+    setCenter(learningMode ? 'Læringsmode' : 'Simulationsmode', learningMode ? 'Indstillinger kan ikke ændres' : 'Alle indstillinger kan ændres');
+  }
   document.getElementById('status-bar').innerHTML = learningMode
     ? '<span style="color:#e2e8f0;">Ansøgere, uddannelser og grupper er allerede valgt. Tryk på <strong>Start</strong>.</span>'
     : '<span style="color:#e2e8f0;">Vælg hvilke ansøgere, uddannelser og grupper der skal med i fordelingen. Derefter tryk <strong>Start</strong>.</span>';
@@ -4508,7 +4516,7 @@ function reset() {
   document.querySelectorAll('.btn-sel').forEach(b => b.disabled = learningMode);
   document.getElementById('autokør-cb').disabled = false;
   document.getElementById('autokør-delay').disabled = false;
-  document.querySelectorAll('.model-btn').forEach(b => b.disabled = learningMode || IMPORT_MODE);
+  document.querySelectorAll('.model-btn').forEach(b => b.disabled = learningMode);
   // Gendan originale kapaciteter (applyPladsflyt og toggleGrpCfg muterer disse)
   for (const stnId of Object.keys(CAPACITY)) {
     CAPACITY[stnId] = JSON.parse(JSON.stringify(CAPACITY_ORIGINAL[stnId]));
@@ -4536,10 +4544,21 @@ function parseCSV(text) {
 }
 
 const _importFiles = { udbud: null, pladser: null, ansoeg: null, rang: null };
+const _lsCsv  = k => `kot_adv_csv_${k}`;
+const _lsName = k => `kot_adv_name_${k}`;
 
 function toggleImportPanel() {
   document.getElementById('import-header').classList.toggle('open');
   document.getElementById('import-body').classList.toggle('open');
+}
+
+function checkImportReady() {
+  const keys = ['udbud', 'pladser', 'ansoeg', 'rang'];
+  const allReady = keys.every(k => {
+    if (_importFiles[k] !== null) return true;
+    try { return !!localStorage.getItem(_lsCsv(k)); } catch(e) { return false; }
+  });
+  document.getElementById('btn-import-load').disabled = !allReady;
 }
 
 function markImportFile(key) {
@@ -4547,20 +4566,33 @@ function markImportFile(key) {
   const st  = document.getElementById(`st-${key}`);
   if (inp.files.length > 0) {
     _importFiles[key] = inp.files[0];
-    st.textContent = '✓ ' + inp.files[0].name;
+    const name = inp.files[0].name;
+    st.textContent = '✓ ' + name;
     st.className = 'import-file-status ok';
+    try { localStorage.setItem(_lsName(key), name); } catch(e) {}
   }
-  const allReady = Object.values(_importFiles).every(f => f !== null);
-  document.getElementById('btn-import-load').disabled = !allReady;
+  checkImportReady();
 }
 
 function loadImport() {
   const keys = ['udbud', 'pladser', 'ansoeg', 'rang'];
   Promise.all(keys.map(k => new Promise((resolve, reject) => {
-    const fr = new FileReader();
-    fr.onload = e => resolve(parseCSV(e.target.result));
-    fr.onerror = reject;
-    fr.readAsText(_importFiles[k], 'utf-8');
+    if (_importFiles[k] !== null) {
+      const fr = new FileReader();
+      fr.onload = e => {
+        const text = e.target.result;
+        try { localStorage.setItem(_lsCsv(k), text); } catch(e2) {}
+        resolve(parseCSV(text));
+      };
+      fr.onerror = reject;
+      fr.readAsText(_importFiles[k], 'utf-8');
+    } else {
+      try {
+        const text = localStorage.getItem(_lsCsv(k));
+        if (text) { resolve(parseCSV(text)); return; }
+      } catch(e) {}
+      reject(new Error(`Mangler fil: ${k}`));
+    }
   }))).then(([uRows, pRows, aRows, rRows]) => {
     applyImportedData(uRows, pRows, aRows, rRows);
   }).catch(err => {
@@ -4691,6 +4723,10 @@ function applyImportedData(uRows, pRows, aRows, rRows) {
   IMPORT_MODE = true;
   document.getElementById('btn-import-clear').disabled = false;
   document.getElementById('btn-import-load').disabled  = true;
+  document.getElementById('btn-import-load').textContent = 'Indlæst ✓';
+  const lCb = document.getElementById('lærings-cb');
+  if (lCb.checked) { lCb.checked = false; onLæringsChange(); }
+  lCb.disabled = true;
   const totalPladser = pRows.reduce((s, r) => {
     const grp = parseInt(r.gruppe);
     return (grp === 33 || grp === 49) ? s : s + (parseInt(r.pladser) || 0);
@@ -4716,7 +4752,6 @@ function applyImportedData(uRows, pRows, aRows, rRows) {
     if (importMsg) importMsg.style.display = 'none';
   }
 
-  document.querySelectorAll('.model-btn').forEach(b => b.disabled = true);
   renderSVGStations();
   resetSimState();
   renderAppList();
@@ -4728,7 +4763,12 @@ function applyImportedData(uRows, pRows, aRows, rRows) {
 }
 
 function clearImportMode() {
-  location.reload();
+  try {
+    const m = parseInt(localStorage.getItem('metro_model') || '5');
+    onModelSelect(m in MODEL_CONFIGS ? m : 5);
+  } catch(e) {
+    onModelSelect(5);
+  }
 }
 
 /* Init */
@@ -4767,6 +4807,20 @@ positionTrain(115);
 const savedLæring = localStorage.getItem('metro_learning');
 document.getElementById('lærings-cb').checked = savedLæring === null ? true : savedLæring === '1';
 onLæringsChange();
+
+(function restoreAdvancedMode() {
+  ['udbud', 'pladser', 'ansoeg', 'rang'].forEach(k => {
+    try {
+      const name = localStorage.getItem(_lsName(k));
+      const hasContent = !!localStorage.getItem(_lsCsv(k));
+      if (name && hasContent) {
+        const st = document.getElementById(`st-${k}`);
+        if (st) { st.textContent = '✓ ' + name; st.className = 'import-file-status ok'; }
+      }
+    } catch(e) {}
+  });
+  checkImportReady();
+})();
 </script>
 </body>
 </html>
