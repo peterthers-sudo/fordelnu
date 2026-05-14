@@ -708,6 +708,26 @@ html.dark .person-card.followed { background: rgba(245,158,11,0.08); }
   font-family: 'DM Sans', sans-serif;
 }
 
+.autokør-group {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-left: 6px;
+  padding: 4px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: var(--font-sm);
+  font-weight: 600;
+  color: var(--text-2);
+  font-family: 'DM Sans', sans-serif;
+  white-space: nowrap;
+}
+.autokør-group input[type=checkbox] { cursor: pointer; }
+.autokør-group .ak-sep { opacity: 0.3; font-weight: 400; }
+.autokør-group .ak-sub { display:flex; align-items:center; gap:5px; transition: opacity .15s; }
+.autokør-group .ak-sub:has(input:disabled, button:disabled) { opacity: 0.35; }
+
 .delay-input {
   width: 46px;
   padding: 4px 6px;
@@ -1140,19 +1160,26 @@ Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, 
       <div class="controls">
         <button class="btn btn-go" id="btn-next" onclick="nextStep()">&#9654; Start</button>
         <button class="btn btn-reset" onclick="reset()">&#8635; Ny fordeling</button>
-        <label class="autokør-label">
-          <input type="checkbox" id="autokør-cb" onchange="onAutokørChange()">
-          Autokør
-        </label>
+        <div class="autokør-group">
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none;">
+            <input type="checkbox" id="autokør-cb" onchange="onAutokørChange()">
+            Autokør
+          </label>
+          <span class="ak-sep">|</span>
+          <div class="ak-sub">
+            <input type="number" id="autokør-delay" min="0" max="10" value="2" step="1" class="delay-input" disabled>
+            <span>sek</span>
+            <button class="btn btn-pause" id="pause-btn" onclick="togglePause()" disabled>⏸ Pause</button>
+          </div>
+        </div>
         <label class="autokør-label" id="lærings-label" style="background:linear-gradient(135deg,#ede9fe,#ddd6fe);border:1.5px solid #a5b4fc;border-radius:8px;padding:4px 10px;">
           <input type="checkbox" id="lærings-cb" onchange="onLæringsChange()">
           Læringsmode
         </label>
-        <label class="autokør-label" id="delay-label" style="display:none;">
-          <input type="number" id="autokør-delay" min="0" max="10" value="2" step="1" class="delay-input">
-          sek
+        <label class="autokør-label" id="speed-label" style="gap:5px;">
+          🚌 <input type="range" id="train-speed" min="20" max="120" value="60" step="10" style="width:72px;cursor:pointer;" oninput="onSpeedChange()">
+          <span id="train-speed-val" style="font-weight:700;min-width:22px;text-align:right;">60</span>&nbsp;km/t
         </label>
-        <button class="btn btn-pause" id="pause-btn" style="display:none;" onclick="togglePause()">⏸ Pause</button>
       </div>
     </div>
 
@@ -3253,6 +3280,12 @@ let trainAngle = 115;
 let animating = false;
 let animFrame = null;
 let locked = false;
+let trainSpeedKmh = 60;
+
+function onSpeedChange() {
+  trainSpeedKmh = parseInt(document.getElementById('train-speed').value);
+  document.getElementById('train-speed-val').textContent = trainSpeedKmh;
+}
 
 function positionTrain(angle) {
   const x = CX + R * Math.cos(angle * DEG);
@@ -3302,18 +3335,20 @@ function animateTrain(fromA, totalDeg, ms, waypoints, onDone) {
   animating = true;
   document.getElementById('btn-next').disabled = true;
   const wps = waypoints.map(w => ({ ...w, fired: false }));
-  let start = null;
+  let progress = 0;
+  let lastTs = null;
   function frame(ts) {
     if (!animating) return;
-    if (!start) start = ts;
-    const t = Math.min((ts - start) / ms, 1);
-    const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-    const progress = totalDeg * ease;
+    if (lastTs === null) { lastTs = ts; animFrame = requestAnimationFrame(frame); return; }
+    const elapsed = ts - lastTs;
+    lastTs = ts;
+    const duration = learningMode ? Math.round(360000 / trainSpeedKmh) : Math.round(ms * 60 / trainSpeedKmh);
+    progress = Math.min(progress + (totalDeg / duration) * elapsed, totalDeg);
     positionTrain(fromA - progress);
     for (const wp of wps) {
       if (!wp.fired && progress >= wp.progress) { wp.fired = true; wp.fn(); }
     }
-    if (t < 1) { animFrame = requestAnimationFrame(frame); }
+    if (progress < totalDeg) { animFrame = requestAnimationFrame(frame); }
     else {
       animFrame = null;
       trainAngle = ((fromA - totalDeg) % 360 + 360) % 360;
@@ -4366,8 +4401,8 @@ function getAutokørDelay() {
 
 function onAutokørChange() {
   const on = document.getElementById('autokør-cb').checked;
-  document.getElementById('delay-label').style.display = on ? 'flex' : 'none';
-  document.getElementById('pause-btn').style.display = on ? '' : 'none';
+  document.getElementById('autokør-delay').disabled = !on;
+  document.getElementById('pause-btn').disabled = !on;
   if (!on) { autokørPaused = false; setPauseBtnState(false); }
 }
 
