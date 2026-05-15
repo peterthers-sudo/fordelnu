@@ -2395,6 +2395,10 @@ function addToState(stnId, grp, personId) {
   if (!placedState[key].includes(personId)) placedState[key].push(personId);
 }
 
+function countPlaced() {
+  return new Set([...FINAL_KEYS].map(k => k.split('-')[0])).size;
+}
+
 function addStnToState(stnId) {
   ROUND1.filter(p => p.stn === stnId)
         .forEach(p => addToState(stnId, String(p.grp), p.person));
@@ -4380,7 +4384,7 @@ function buildSteps() {
     // Step 3: Clearing efter runde 1
     withLearning('clearing-1', () => {
       doClearing(1, () => {
-        steps.push(stepPladsflyt());
+        steps.push(stepInnerStabilCheck(1));
       });
     }),
   ];
@@ -4449,20 +4453,77 @@ function doClearing(rNr, onDone) {
   });
 }
 
-// Fabrik: runde-opsummering efter pladsflyt
-function stepRundeOpsummering(moves) {
-  const rNr = roundNumber; // fanges ved oprettelse — roundNumber er sat korrekt på dette tidspunkt
+// Fabrik: inner stabilitetscheck — vises efter clearing, inden pladsflyt
+function stepInnerStabilCheck(rNr) {
   return withLearning(`opsummering-${rNr}`, () => {
-    const optaget = new Set([...FINAL_KEYS].map(k => k.split('-')[0])).size;
+    const optaget = countPlaced();
     const afvist = selected.size - optaget;
     const totalCap = Object.values(CAPACITY).reduce((s, grps) =>
       s + Object.entries(grps).reduce((a, [g, v]) => +g === 49 ? a : a + v, 0), 0);
     const ledige = totalCap - optaget;
-    const pladserFlyttet = moves.reduce((s, m) => s + m.antal, 0);
+    const pladserFlyttet = lastPladsflytMoves.reduce((s, m) => s + m.antal, 0);
     renderRunde1Statistik({ rNr, optaget, afvist, ledige, pladserFlyttet });
     setCenter(`Runde ${rNr}`, 'Afsluttet');
-    appendStatus('→', `Tryk Næste for at starte runde ${rNr + 1}.`);
-    steps.push(stepTogkørsel(rNr + 1));
+    const msg = afvist > 0
+      ? `${optaget} optaget — ${afvist} ansøger${afvist !== 1 ? 'e' : ''} har endnu ingen plads. Pladsflyt undersøger om der kan frigives yderligere pladser.`
+      : `Alle ${optaget} ansøgere er placeret på deres højeste prioritet.`;
+    appendStatus('→', `${msg} Tryk Næste for at starte pladsflyt.`);
+    steps.push(stepPladsflyt());
+  });
+}
+
+// Fabrik: sub-runde — viser hvem der er rykket efter pladsflyt
+function stepSubRunde(rNr) {
+  return withLearning(`togkørsel-${rNr}`, () => {
+    clearStatistik();
+    roundNumber = rNr;
+    const udenPlads = selected.size - countPlaced();
+    setStatus(`Runde ${rNr}`, udenPlads > 0
+      ? `${udenPlads} ansøger${udenPlads !== 1 ? 'e' : ''} uden plads forsøger at komme ind — pladsflyt kan have åbnet nye muligheder.`
+      : `KOT tjekker om nogen kan flyttes til en højere prioritet.`
+    );
+    setCenter(`Runde ${rNr}`, 'Ny fordeling');
+
+    const wps = buildWaypoints2(rNr);
+    animateTrain(trainAngle, 360, 6000, wps, () => {
+      hideTrainBubble();
+      applyRunde2Changes();
+      lastRundeMoved = [];
+
+      if (keysEqual(FINAL_KEYS, prevFinalKeys)) {
+        appendStatus('✓', `Runde ${rNr} — ingen ændringer. Alle er placeret på deres højeste mulige prioritet. Fordelingen er nu stabil og stopper.`);
+        const _optaget = countPlaced();
+        const _afvist = selected.size - _optaget;
+        setCenter('Stabil!', `Optaget: ${_optaget} · Afvist: ${_afvist}`);
+        updateCardResults();
+        for (const pid of selected) document.getElementById(`card-${pid}`)?.classList.add('done');
+        steps.push(stepKandidatrunde());
+      } else {
+        const fmtKey = k => {
+          if (!k) return 'ingen plads';
+          const p = k.split('-'), grp = p[p.length - 1], stnId = p.slice(1, -1).join('-');
+          return `${STATIONS[stnId]?.name || stnId} ${grp}`;
+        };
+        const movedLines = [];
+        lastRundeMoved = [];
+        for (const pid of selected) {
+          const oldK = prevFinalKeys ? [...prevFinalKeys].find(k => k.startsWith(pid + '-')) : null;
+          const newK = [...FINAL_KEYS].find(k => k.startsWith(pid + '-'));
+          if (oldK !== newK) {
+            movedLines.push(`${PERSONS[pid]?.name || pid}: ${fmtKey(oldK)} → ${fmtKey(newK)}`);
+            const newStn = newK ? newK.split('-').slice(1, -1).join('-') : null;
+            const newGrp = newK ? newK.split('-').at(-1) : null;
+            lastRundeMoved.push({ name: PERSONS[pid]?.name, stn: newStn ? STATIONS[newStn]?.name?.split(' ')[0] : null, grp: newGrp, placed: !!newK });
+          }
+        }
+        const movedHeader = movedLines.length ? 'Følgende ansøgere er rykket til en højere prioritet:' : 'Ingen ansøgere ændrede plads.';
+        appendStatus('→', `${movedHeader}<br>${movedLines.join('<br>')}<br>Tryk Næste for at køre en clearing.`);
+        updateCardResults();
+        steps.push(withLearning(`clearing-${rNr}`, () => doClearing(rNr, () => {
+          steps.push(stepInnerStabilCheck(rNr));
+        })));
+      }
+    });
   });
 }
 
@@ -4489,7 +4550,13 @@ function stepPladsflyt() {
 
         if (moves.length === 0) {
           appendStatus('→', 'Ingen ledige pladser at flytte.');
-          setCenter(`Runde ${rNr}`, 'Ingen ændringer');
+          const _optaget = countPlaced();
+          const _afvist = selected.size - _optaget;
+          setCenter('Stabil!', `Optaget: ${_optaget} · Afvist: ${_afvist}`);
+          appendStatus('✓', `Ingen pladser at flytte. Fordelingen er nu stabil — ${_optaget} optaget${_afvist > 0 ? `, ${_afvist} har ingen plads` : ', alle placeret'}.`);
+          updateCardResults();
+          for (const pid of selected) document.getElementById(`card-${pid}`)?.classList.add('done');
+          steps.push(stepKandidatrunde());
         } else {
           const total = moves.reduce((s, m) => s + m.antal, 0);
           const byStn = {};
@@ -4505,8 +4572,8 @@ function stepPladsflyt() {
           });
           appendStatus('→', `${total} plads${total>1?'er':''} flyttet<br>${stnLines.join('<br>')}`);
           setCenter(`Runde ${rNr}`, `${total} plads${total>1?'er':''} flyttet`);
+          steps.push(stepSubRunde(roundNumber + 1));
         }
-        steps.push(stepRundeOpsummering(moves));
       } catch (err) {
         console.error('Pladsflyt fejl:', err);
         setStatus(`Runde ${rNr} — Pladsflyt fejl`, `Fejl: ${err.message}`);
@@ -4515,60 +4582,6 @@ function stepPladsflyt() {
   });
 }
 
-// Fabrik: togkørsel-trin for runde N
-function stepTogkørsel(rNr) {
-  return withLearning(`togkørsel-${rNr}`, () => {
-    clearStatistik();
-    roundNumber = rNr;
-    setStatus(`Runde ${rNr}`, `KOT-fordelingen kører runde ${rNr} — tjekker om nogen kan flyttes til en højere prioritet efter pladsflyt.`);
-    setCenter(`Runde ${rNr}`, 'Ny fordeling');
-
-    const wps = buildWaypoints2(rNr);
-    animateTrain(trainAngle, 360, 6000, wps, () => {
-      hideTrainBubble();
-      applyRunde2Changes();
-      lastRundeMoved = [];
-
-      // Sammenlign FINAL_KEYS med forrige runde
-      if (keysEqual(FINAL_KEYS, prevFinalKeys)) {
-        // Ingen ændringer — algoritmen er stabil
-        appendStatus('✓', `Runde ${rNr} — ingen ændringer. Alle er placeret på deres højeste mulige prioritet. Fordelingen er nu stabil og stopper.`);
-        const _optaget = new Set([...FINAL_KEYS].map(k => k.split('-')[0])).size;
-        const _afvist = selected.size - _optaget;
-        setCenter('Stabil!', `Optaget: ${_optaget} · Afvist: ${_afvist}`);
-        updateCardResults();
-        for (const pid of selected) document.getElementById(`card-${pid}`)?.classList.add('done');
-        // Kø kandidatrunden inden afslutning
-        steps.push(stepKandidatrunde());
-      } else {
-        // Der skete ændringer — kør clearing + pladsflyt + ny runde
-        const fmtKey = k => {
-          if (!k) return 'ingen plads';
-          const p = k.split('-'), grp = p[p.length - 1], stnId = p.slice(1, -1).join('-');
-          return `${STATIONS[stnId]?.name || stnId} ${grp}`;
-        };
-        const movedLines = [];
-        lastRundeMoved = [];
-        for (const pid of selected) {
-          const oldK = prevFinalKeys ? [...prevFinalKeys].find(k => k.startsWith(pid + '-')) : null;
-          const newK = [...FINAL_KEYS].find(k => k.startsWith(pid + '-'));
-          if (oldK !== newK) {
-            movedLines.push(`${PERSONS[pid]?.name || pid}: ${fmtKey(oldK)} → ${fmtKey(newK)}`);
-            const newStn = newK ? newK.split('-').slice(1, -1).join('-') : null;
-            const newGrp = newK ? newK.split('-').at(-1) : null;
-            lastRundeMoved.push({ name: PERSONS[pid]?.name, stn: newStn ? STATIONS[newStn]?.name?.split(' ')[0] : null, grp: newGrp, placed: !!newK });
-          }
-        }
-        const movedHeader = movedLines.length ? 'Følgende ansøgere er rykket til en højere prioritet:' : 'Ingen ansøgere ændrede plads.';
-        appendStatus('→', `${movedHeader}<br>${movedLines.join('<br>')}<br>Tryk Næste for at køre en clearing.`);
-        updateCardResults();
-        steps.push(withLearning(`clearing-${rNr}`, () => doClearing(rNr, () => {
-          steps.push(stepPladsflyt());
-        })));
-      }
-    });
-  });
-}
 
 let autokørPaused = false;
 let autokørTimerId = null;
