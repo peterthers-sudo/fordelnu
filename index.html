@@ -2402,6 +2402,7 @@ function addStnToState(stnId) {
 }
 
 function setStateFromKeys(keys) {
+  inTempPlacement = false;
   placedState = {};
   for (const k of keys) {
     const parts = k.split('-');
@@ -2467,9 +2468,10 @@ function renderCapBoxRight() {
       if (hasOverflow) {
         bar += `<span style="display:inline-block;height:18px;border-radius:9px;padding:0 6px;margin-left:1px;background:var(--surface-2);border:1px solid var(--border);vertical-align:middle;font-size:11px;line-height:18px;font-weight:600;color:var(--text-3);white-space:nowrap;">+${placed - showFilled}</span>`;
       }
+      const fullLabel = inTempPlacement ? 'placeret' : 'optaget';
       const freeLabel = free > 0
         ? `<span style="color:#94a3b8;font-size:13px;margin-left:4px">${free} ledig</span>`
-        : `<span style="color:#94a3b8;font-size:13px;margin-left:4px">optaget</span>`;
+        : `<span style="color:#94a3b8;font-size:13px;margin-left:4px">${fullLabel}</span>`;
       html += `<div style="display:flex;align-items:center;gap:4px;margin-bottom:3px;">
         ${grpLabel}
         ${bar}${freeLabel}
@@ -3980,6 +3982,7 @@ function renderPladsflytClear() {
 let step = 0;
 let roundNumber = 0;         // Aktuel rundenummer (1, 2, 3...)
 let prevFinalKeys = null;    // FINAL_KEYS fra forrige runde til sammenligning
+let inTempPlacement = false; // true under runde 1 midlertidig placering, false efter clearing
 
 function keysEqual(a, b) {
   if (a === null || b === null) return false;
@@ -4364,6 +4367,7 @@ function buildSteps() {
     withLearning('runde1-klar', () => {
       clearStatistik();
       roundNumber = 1;
+      inTempPlacement = true;
       setStatus('Runde 1', 'KOT-fordelingen placerer midlertidigt alle ansøgere på de udbud og grupper, de er indberettet i, ud fra deres rangeringsnummer.');
       setCenter('Runde 1', 'Midlertidigt optag');
       positionTrain(115);
@@ -4671,6 +4675,7 @@ function resetSimState() {
   hideTrainBubble();
   step = 0;
   roundNumber = 0;
+  inTempPlacement = false;
   ROUND1 = [];
   FINAL_KEYS = new Set();
   prevFinalKeys = null;
