@@ -1023,7 +1023,10 @@ Når en runde er afsluttet, ryddes der op i placeringerne, så hver ansøger kun
 Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, hvordan grupper fyldes op, og hvordan fordelingen gradvist finder frem til det endelige resultat. Processen fortsætter automatisk, indtil alle ansøgere enten er optaget på deres højest mulige prioritet eller har fået afslag på alle ønsker.</p>
       </div>
     </div>
-    <button id="theme-toggle" onclick="toggleTheme()" title="Skift tema" style="background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:8px 16px;font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;color:var(--text-2);box-shadow:var(--shadow-sm);transition:background .15s,border-color .15s;flex-shrink:0;display:flex;align-items:center;gap:7px;letter-spacing:.01em;">☀ Lys</button>
+    <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
+      <button onclick="document.getElementById('help-modal').style.display='flex'" title="Hjælp" style="background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:8px 14px;font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;color:var(--text-2);box-shadow:var(--shadow-sm);transition:background .15s,border-color .15s;display:flex;align-items:center;gap:6px;letter-spacing:.01em;">? Hjælp</button>
+      <button id="theme-toggle" onclick="toggleTheme()" title="Skift tema" style="background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:8px 16px;font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;color:var(--text-2);box-shadow:var(--shadow-sm);transition:background .15s,border-color .15s;flex-shrink:0;display:flex;align-items:center;gap:7px;letter-spacing:.01em;">☀ Lys</button>
+    </div>
   </div>
 
   <!-- ── Venstre panel ── -->
@@ -1287,6 +1290,74 @@ Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, 
   </div>
 
 </div><!-- end .bento -->
+
+<!-- Hjælp modal -->
+<div id="help-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:var(--modal-backdrop);align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:var(--modal-bg);border-radius:20px;width:720px;max-width:96vw;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 32px 80px rgba(0,0,0,0.38);overflow:hidden;">
+    <div style="padding:18px 28px;background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);display:flex;align-items:center;gap:12px;flex-shrink:0;">
+      <span style="font-size:18px;">📖</span>
+      <span style="color:white;font-size:13px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;">SimKOT — Vejledning</span>
+      <button onclick="document.getElementById('help-modal').style.display='none'" style="margin-left:auto;background:rgba(255,255,255,0.12);border:none;border-radius:8px;color:white;font-size:18px;line-height:1;padding:2px 10px;cursor:pointer;">×</button>
+    </div>
+    <div style="padding:24px 32px;overflow-y:auto;flex:1;font-family:'DM Sans',sans-serif;">
+
+      <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:var(--modal-body-text);">SimKOT simulerer KOT-fordelingen trin for trin og viser præcist hvordan ansøgere placeres på uddannelser og grupper via den stabile matching-algoritme.</p>
+
+      <p style="margin:0 0 8px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text-3);">Data tilgængelig i simulationsmode</p>
+      <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+        <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:13px;font-weight:600;color:var(--text);"><span style="color:var(--text-3);font-weight:500;">Ansøgere</span>&ensp;26</div>
+        <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:13px;font-weight:600;color:var(--text);"><span style="color:var(--text-3);font-weight:500;">Udbud</span>&ensp;7</div>
+        <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:13px;font-weight:600;color:var(--text);"><span style="color:var(--text-3);font-weight:500;">Grupper</span>&ensp;28</div>
+        <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:13px;font-weight:600;color:var(--text);"><span style="color:var(--text-3);font-weight:500;">Rangeringer</span>&ensp;220</div>
+      </div>
+
+      <h3 style="margin:0 0 10px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--indigo);">Kom i gang</h3>
+      <div style="background:var(--surface-2);border-radius:10px;padding:14px 18px;margin-bottom:20px;font-size:13px;line-height:1.8;color:var(--modal-body-text);">
+        <b>1.</b> Vælg antal uddannelser med knapperne <b>3 · 5 · 7</b><br>
+        <b>2.</b> Vælg hvilke ansøgere der skal med under <b>Vælg ansøgere</b><br>
+        <b>3.</b> Justér evt. kapacitet og grupper under <b>Grupper og pladser</b><br>
+        <b>4.</b> Tryk <b>▶ Start</b> — brug derefter <b>Næste ▶</b> for at gå trin for trin<br>
+        <b>5.</b> Tryk <b>Ny fordeling</b> for at starte forfra
+      </div>
+
+      <h3 style="margin:0 0 10px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--indigo);">Afviklingstilstande</h3>
+      <div style="background:var(--surface-2);border-radius:10px;padding:14px 18px;margin-bottom:20px;font-size:13px;line-height:1.8;color:var(--modal-body-text);">
+        <b>Læringsmode</b> — kører en fordeling igennem på et fast datasæt og viser en forklaring ved hvert trin i et pop-up vindue.<br>
+        <b>Autokør</b> — kører automatisk videre. Indstil pause-tid (sekunder) og brug <b>⏸</b> til at sætte på pause.<br>
+        <b>🚌 Hastighed</b> — justér togets hastighed fra 20 til 120 km/t.
+      </div>
+
+      <h3 style="margin:0 0 10px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--indigo);">Metro-visualiseringen</h3>
+      <div style="background:var(--surface-2);border-radius:10px;padding:14px 18px;margin-bottom:20px;font-size:13px;line-height:1.8;color:var(--modal-body-text);">
+        Cirkelringen viser uddannelserne som stationer. Toget kører rundt og stopper ved hver station. Bobler over stationerne viser hvilke ansøgere der er placeret. Den sorte statuslog under ringen viser hvad der sker — nyeste besked øverst, ældre beskeder kan ses ved at scrolle ned.
+      </div>
+
+      <h3 style="margin:0 0 10px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--indigo);">Venstre panel</h3>
+      <div style="background:var(--surface-2);border-radius:10px;padding:14px 18px;margin-bottom:20px;font-size:13px;line-height:1.8;color:var(--modal-body-text);">
+        <b>★ Favoritter</b> — klik stjernen på en ansøger for at følge vedkommende. Vises som kort øverst med statusbeskeder i første person. Man kan følge flere ansøgere samtidigt.<br>
+        <b>Valgte ansøgere</b> — viser kort for alle valgte. <b>Shuffle grupper</b> randomiserer prioriteringsrækkefølgen; <b>Nulstil grupper</b> gendanner originalen.<br>
+        <b>Vælg ansøgere</b> — kryds af hvem der deltager i fordelingen, eller brug genvejsknapperne <b>Alle / Ingen / Vælg 5 / Vælg 15</b>.<br>
+        <b>Grupper og pladser</b> — sæt kapacitet og hvilke grupper (kvote 1, kvote 2 osv.) der indgår pr. uddannelse. <b>Shuffle pladser</b> randomiserer kapaciteterne; <b>Nulstil pladser</b> gendanner originalen.<br>
+        <b>Rangeringslister</b> — se institutionernes rangeringer af ansøgerne.
+      </div>
+
+      <h3 style="margin:0 0 10px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--indigo);">Højre panel</h3>
+      <div style="background:var(--surface-2);border-radius:10px;padding:14px 18px;margin-bottom:20px;font-size:13px;line-height:1.8;color:var(--modal-body-text);">
+        <b>Kapacitet</b> — oversigt over pladser pr. gruppe for hver uddannelse.<br>
+        <b>Pladsflyt</b> — vises efter clearing og viser hvilke pladser der er flyttet mellem grupper i hver runde.
+      </div>
+
+      <h3 style="margin:0 0 10px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--indigo);">Advanced mode</h3>
+      <div style="background:var(--surface-2);border-radius:10px;padding:14px 18px;margin-bottom:4px;font-size:13px;line-height:1.8;color:var(--modal-body-text);">
+        Indlæs data via CSV-filer: <b>udbud.csv · pladser.csv · ansøgere.csv · rangeringer.csv</b>. Tryk <b>← Demo</b> for at vende tilbage til simulationsdata.
+      </div>
+
+    </div>
+    <div style="padding:16px 32px 22px;border-top:1px solid var(--modal-footer-border);display:flex;justify-content:flex-end;flex-shrink:0;">
+      <button onclick="document.getElementById('help-modal').style.display='none'" style="background:linear-gradient(135deg,#1e3a5f,#0f172a);color:white;border:none;border-radius:12px;padding:12px 32px;font-size:14px;font-weight:700;cursor:pointer;">Luk</button>
+    </div>
+  </div>
+</div>
 
 <!-- Læringsmode modal -->
 <div id="learning-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:var(--modal-backdrop);align-items:center;justify-content:center;padding:20px;">
@@ -2377,27 +2448,24 @@ function renderCapBoxRight() {
         const bg = GARANTERET_SET.has(`${b}-${stnId}-${grp}`) ? 0 : 1;
         return ag - bg;
       });
-      const occ  = Math.min(occupants.length, cap);
-      const free = cap - occ;
+      const placed = occupants.length;
+      const free   = Math.max(0, cap - placed);
       const MAX_BUBBLES = 8;
-      const showCount = Math.min(cap, cap > MAX_BUBBLES ? MAX_BUBBLES - 1 : MAX_BUBBLES);
+      const hasOverflow = placed > MAX_BUBBLES - 1;
+      const showFilled  = hasOverflow ? MAX_BUBBLES - 1 : placed;
+      const showEmpty   = Math.min(free, MAX_BUBBLES - showFilled);
       let bar = '';
-      for (let i = 0; i < showCount; i++) {
-        const filled = i < occupants.length;
-        const pid = filled ? occupants[i] : null;
-        const isGar = filled && pid && GARANTERET_SET.has(`${pid}-${stnId}-${grp}`);
-        const lbl = pid ? (PERSONS[pid]?.label ?? pid.slice(0,1)).toUpperCase() : '';
-        bar += `<span style="display:inline-block;width:18px;height:18px;border-radius:50%;margin-right:2px;background:${filled ? (isGar ? '#fef3c7' : gc.fill) : '#f1f5f9'};border:${isGar ? '2px solid #f59e0b' : `1.5px solid ${filled ? '#aaa' : '#e2e8f0'}`};vertical-align:middle;font-size:10px;line-height:18px;text-align:center;font-weight:700;color:${isGar ? '#92400e' : gc.text};">${lbl}</span>`;
+      for (let i = 0; i < showFilled; i++) {
+        const pid   = occupants[i];
+        const isGar = pid && GARANTERET_SET.has(`${pid}-${stnId}-${grp}`);
+        const lbl   = (PERSONS[pid]?.label ?? pid.slice(0,1)).toUpperCase();
+        bar += `<span style="display:inline-block;width:18px;height:18px;border-radius:50%;margin-right:2px;background:${isGar ? '#fef3c7' : gc.fill};border:${isGar ? '2px solid #f59e0b' : `1.5px solid #aaa`};vertical-align:middle;font-size:10px;line-height:18px;text-align:center;font-weight:700;color:${isGar ? '#92400e' : gc.text};">${lbl}</span>`;
       }
-      if (cap > MAX_BUBBLES) {
-        const shownOcc  = Math.min(occ, MAX_BUBBLES);
-        const restOcc   = occ - shownOcc;
-        const restFree  = cap - MAX_BUBBLES - restOcc;
-        const parts = [];
-        if (restOcc  > 0) parts.push(`+${restOcc} opt`);
-        if (restFree > 0) parts.push(`+${restFree} led`);
-        if (parts.length > 0)
-          bar += `<span style="display:inline-block;height:18px;border-radius:9px;padding:0 6px;margin-left:1px;background:var(--surface-2);border:1px solid var(--border);vertical-align:middle;font-size:11px;line-height:18px;font-weight:600;color:var(--text-3);white-space:nowrap;">${parts.join(' · ')}</span>`;
+      for (let i = 0; i < showEmpty; i++) {
+        bar += `<span style="display:inline-block;width:18px;height:18px;border-radius:50%;margin-right:2px;background:#f1f5f9;border:1.5px solid #e2e8f0;vertical-align:middle;font-size:10px;line-height:18px;text-align:center;"></span>`;
+      }
+      if (hasOverflow) {
+        bar += `<span style="display:inline-block;height:18px;border-radius:9px;padding:0 6px;margin-left:1px;background:var(--surface-2);border:1px solid var(--border);vertical-align:middle;font-size:11px;line-height:18px;font-weight:600;color:var(--text-3);white-space:nowrap;">+${placed - showFilled}</span>`;
       }
       const freeLabel = free > 0
         ? `<span style="color:#94a3b8;font-size:13px;margin-left:4px">${free} ledig</span>`
