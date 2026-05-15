@@ -483,23 +483,23 @@ html.dark .person-card.followed { background: rgba(245,158,11,0.08); }
 }
 
 /* Følg-ansøger tracker */
-#followed-card {
+#followed-cards { display: flex; flex-direction: column; gap: 8px; }
+.followed-card-item {
   background: var(--surface); border-radius: var(--radius-sm);
   box-shadow: var(--shadow); overflow: hidden;
   border: 1.5px solid var(--indigo);
 }
-#followed-card-header {
+.followed-card-hdr {
   display: flex; align-items: center; gap: 8px;
   padding: 9px 12px; background: var(--indigo-light);
 }
-.followed-star-icon { font-size: 14px; color: var(--indigo); }
 .followed-name { flex: 1; font-size: 13px; font-weight: 700; color: var(--text); }
 .followed-close {
   background: none; border: none; cursor: pointer;
   color: var(--text-3); font-size: 18px; line-height: 1; padding: 0;
 }
 .followed-close:hover { color: var(--text); }
-#followed-status {
+.followed-card-status {
   padding: 9px 12px; font-size: 12px; color: var(--text-2); line-height: 1.6;
 }
 .app-star {
@@ -1022,14 +1022,7 @@ Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, 
   <div class="left-panel">
 
     <!-- Følg ansøger -->
-    <div id="followed-card">
-      <div id="followed-card-header">
-        <div id="followed-avatar" style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;background:var(--indigo-light);flex-shrink:0;">★</div>
-        <span class="followed-name" id="followed-name">Følger ingen</span>
-        <button class="followed-close" id="followed-close-btn" onclick="setFollowed(null)" title="Stop med at følge" style="display:none">×</button>
-      </div>
-      <div id="followed-status">Vælg en favorit i ansøgerlisten.</div>
-    </div>
+    <div id="followed-cards"></div>
 
     <!-- Ansøgerkort (selected persons) -->
     <div class="collapsible">
@@ -2310,8 +2303,8 @@ let ROUND1 = [];
 let FINAL_KEYS = new Set();
 let pavEls = {};
 let lastRundeMoved = [];
-let followedPid = null;
-let followedPrevKey = null;
+let followedPids = new Set();
+let followedPrevKeys = {};
 let lastPladsflytMoves = [];
 let grænsekvotientMap = null;
 const MAX_VISIBLE = 6;
@@ -2541,7 +2534,7 @@ function renderActiveCards() {
     for (const w of wishes) { if (!seenStns.includes(w.stn)) seenStns.push(w.stn); }
 
     const card = document.createElement('div');
-    card.className = 'person-card' + (followedPid === pid ? ' followed' : '');
+    card.className = 'person-card' + (followedPids.has(pid) ? ' followed' : '');
     card.id = `card-${pid}`;
 
     const hdr = document.createElement('div');
@@ -2560,10 +2553,10 @@ function renderActiveCards() {
     scores.style.cssText = 'font-size:11px;color:#94a3b8;margin-left:auto;font-weight:600;text-align:right;line-height:1.4;white-space:nowrap;font-family:DM Mono,monospace;';
     scores.innerHTML = `Gns: ${person.kvotient.toFixed(1)}<br><span style="color:#b08800">Kval: ${person.point}</span>`;
     const cardStar = document.createElement('button');
-    cardStar.className = 'app-star card-star' + (followedPid === pid ? ' starred' : '');
-    cardStar.textContent = followedPid === pid ? '★' : '☆';
-    cardStar.title = followedPid === pid ? 'Stop med at følge' : 'Følg ansøger';
-    cardStar.onclick = e => { e.stopPropagation(); setFollowed(followedPid === pid ? null : pid); };
+    cardStar.className = 'app-star card-star' + (followedPids.has(pid) ? ' starred' : '');
+    cardStar.textContent = followedPids.has(pid) ? '★' : '☆';
+    cardStar.title = followedPids.has(pid) ? 'Stop med at følge' : 'Følg ansøger';
+    cardStar.onclick = e => { e.stopPropagation(); setFollowed(pid); };
     hdr.appendChild(av); hdr.appendChild(nm); hdr.appendChild(scores); hdr.appendChild(cardStar);
     card.appendChild(hdr);
 
@@ -2662,10 +2655,10 @@ function renderAppList() {
     nm.className = 'app-name';
     nm.textContent = person.name;
     const star = document.createElement('button');
-    star.className = 'app-star' + (followedPid === pid ? ' starred' : '');
-    star.textContent = followedPid === pid ? '★' : '☆';
-    star.title = followedPid === pid ? 'Stop med at følge' : 'Følg ansøger';
-    star.onclick = e => { e.preventDefault(); e.stopPropagation(); setFollowed(followedPid === pid ? null : pid); };
+    star.className = 'app-star' + (followedPids.has(pid) ? ' starred' : '');
+    star.textContent = followedPids.has(pid) ? '★' : '☆';
+    star.title = followedPids.has(pid) ? 'Stop med at følge' : 'Følg ansøger';
+    star.onclick = e => { e.preventDefault(); e.stopPropagation(); setFollowed(pid); };
     row.appendChild(cb); row.appendChild(av); row.appendChild(nm); row.appendChild(star);
     list.appendChild(row);
   }
@@ -2684,27 +2677,53 @@ function getAvatar(pid) {
 }
 
 function setFollowed(pid) {
-  followedPid = pid;
-  followedPrevKey = null;
-  try { if (pid) localStorage.setItem('kot_followed', pid); else localStorage.removeItem('kot_followed'); } catch(e) {}
+  if (followedPids.has(pid)) {
+    followedPids.delete(pid);
+    delete followedPrevKeys[pid];
+  } else {
+    followedPids.add(pid);
+    followedPrevKeys[pid] = null;
+  }
+  try {
+    if (followedPids.size) localStorage.setItem('kot_followed', JSON.stringify([...followedPids]));
+    else localStorage.removeItem('kot_followed');
+  } catch(e) {}
+  renderFollowedCards();
   renderAppList();
   renderActiveCards();
-  document.getElementById('followed-name').textContent = pid ? PERSONS[pid]?.name || pid : 'Følger ingen';
-  document.getElementById('followed-status').textContent = pid
-    ? (!selected.has(pid) ? 'Jeg er ikke med i denne fordeling... 😶' : step === 0 ? 'Jeg venter spændt på at fordelingen starter! 🤞' : getFollowedStatusText(null))
-    : 'Vælg en favorit i ansøgerlisten.';
-  document.getElementById('followed-close-btn').style.display = pid ? 'inline' : 'none';
-  const avEl = document.getElementById('followed-avatar');
-  if (avEl) avEl.textContent = pid ? getAvatar(pid) : '★';
 }
 
-function getFollowedStatusText(stepKey) {
-  if (!followedPid) return '';
-  if (!selected.has(followedPid)) return 'Jeg er ikke med i denne fordeling... 😶';
-  const person = PERSONS[followedPid];
-  const currentKey = [...FINAL_KEYS].find(k => k.startsWith(followedPid + '-'));
-  const prevKey = followedPrevKey;
-  const wishes = getWishes(followedPid);
+function renderFollowedCards(stepKey) {
+  const container = document.getElementById('followed-cards');
+  if (!container) return;
+  container.innerHTML = '';
+  if (!followedPids.size) {
+    const item = document.createElement('div');
+    item.className = 'followed-card-item';
+    item.innerHTML = `<div class="followed-card-hdr"><div style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;background:var(--indigo-light);flex-shrink:0;">★</div><span class="followed-name">Følger ingen</span></div><div class="followed-card-status">Vælg en favorit i ansøgerlisten.</div>`;
+    container.appendChild(item);
+    return;
+  }
+  for (const pid of followedPids) {
+    const name = PERSONS[pid]?.name || pid;
+    const avatar = getAvatar(pid);
+    const statusText = step === 0
+      ? (!selected.has(pid) ? 'Jeg er ikke med i denne fordeling... 😶' : 'Jeg venter spændt på at fordelingen starter! 🤞')
+      : getFollowedStatusText(pid, stepKey);
+    const item = document.createElement('div');
+    item.className = 'followed-card-item';
+    item.innerHTML = `<div class="followed-card-hdr"><div style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;background:var(--indigo-light);flex-shrink:0;">${avatar}</div><span class="followed-name">${name}</span><button class="followed-close" onclick="setFollowed('${pid}')" title="Stop med at følge">×</button></div><div class="followed-card-status">${statusText}</div>`;
+    container.appendChild(item);
+  }
+}
+
+function getFollowedStatusText(pid, stepKey) {
+  if (!pid || !followedPids.has(pid)) return '';
+  if (!selected.has(pid)) return 'Jeg er ikke med i denne fordeling... 😶';
+  const person = PERSONS[pid];
+  const currentKey = [...FINAL_KEYS].find(k => k.startsWith(pid + '-'));
+  const prevKey = followedPrevKeys[pid] || null;
+  const wishes = getWishes(pid);
 
   const stnPrioMap = {};
   let pos = 1;
@@ -2733,7 +2752,7 @@ function getFollowedStatusText(stepKey) {
       : `Jeg søger ${nStns} uddannelse${nStns !== 1 ? 'r' : ''} — ${firstStn} som 1. prioritet! 🤞`;
   }
   if (stepKey === 'runde1-klar') {
-    const r1 = (ROUND1 || []).filter(e => e.person === followedPid);
+    const r1 = (ROUND1 || []).filter(e => e.person === pid);
     if (!r1.length) return 'Ingen midlertidige placeringer — det ser ikke godt ud! 😬';
     const stn = STATIONS[r1[0].stn]?.name || r1[0].stn;
     return `Foreløbig på ${stn}${r1.length > 1 ? ` og ${r1.length - 1} til` : ''} — vi ser hvad der sker! 😅`;
@@ -2775,9 +2794,7 @@ function getFollowedStatusText(stepKey) {
 }
 
 function updateFollowedCard(stepKey) {
-  if (!followedPid) return;
-  const el = document.getElementById('followed-status');
-  if (el) el.textContent = getFollowedStatusText(stepKey);
+  renderFollowedCards(stepKey);
 }
 
 function togglePerson(pid, on) {
@@ -4506,7 +4523,7 @@ function enableNextBtn(autoTrigger = true) {
 
 function afterStepDone(autoTrigger = true) {
   const stepKey = steps[step - 1]?._learningKey;
-  if (followedPid) updateFollowedCard(stepKey);
+  if (followedPids.size) updateFollowedCard(stepKey);
   if (learningMode) {
     const prevKey = stepKey;
     const txt = prevKey && LEARNING_TEXTS[prevKey];
@@ -4535,7 +4552,9 @@ function afterStepDone(autoTrigger = true) {
 
 function nextStep() {
   if (animating) return;
-  if (followedPid) followedPrevKey = [...FINAL_KEYS].find(k => k.startsWith(followedPid + '-')) || null;
+  for (const pid of followedPids) {
+    followedPrevKeys[pid] = [...FINAL_KEYS].find(k => k.startsWith(pid + '-')) || null;
+  }
   document.getElementById('btn-next').disabled = false;
   if (step === 0) {
     ROUND1 = buildRound1(selected);
@@ -4638,10 +4657,8 @@ function reset() {
   }
   applyStationConfig();
   resetSimState();
-  followedPrevKey = null;
-  document.getElementById('followed-status').textContent = followedPid
-    ? (!selected.has(followedPid) ? 'Jeg er ikke med i denne fordeling... 😶' : 'Jeg venter spændt på at fordelingen starter! 🤞')
-    : 'Vælg en favorit i ansøgerlisten.';
+  followedPrevKeys = {};
+  renderFollowedCards();
 }
 
 // ─── CSV Import ──────────────────────────────────────────────────────────────
@@ -4899,7 +4916,13 @@ let CAPACITY_ORIGINAL = {};
   } catch(e) {}
   try {
     const savedFollowed = localStorage.getItem('kot_followed');
-    if (savedFollowed && savedFollowed in PERSONS) followedPid = savedFollowed;
+    if (savedFollowed) {
+      try {
+        const arr = JSON.parse(savedFollowed);
+        if (Array.isArray(arr)) arr.filter(p => p in PERSONS).forEach(p => followedPids.add(p));
+        else if (savedFollowed in PERSONS) followedPids.add(savedFollowed);
+      } catch(e) { if (savedFollowed in PERSONS) followedPids.add(savedFollowed); }
+    }
   } catch(e) {}
 })();
 const savedModel = (() => { try { return parseInt(localStorage.getItem('metro_model') || '5'); } catch(e) { return 5; } })();
@@ -4915,7 +4938,7 @@ if (localStorage.getItem('introCollapsed') === '1') {
 steps = buildSteps();
 renderAppList();
 renderActiveCards();
-if (followedPid) setFollowed(followedPid);
+renderFollowedCards();
 renderCapConfig();
 renderCapBoxRight();
 renderGrænsekvotienter();
