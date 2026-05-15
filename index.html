@@ -125,8 +125,6 @@ body {
 
 /* ── Header ── */
 .page-header {
-  width: 100%;
-  max-width: 1280px;
   margin-bottom: 20px;
   display: flex;
   align-items: flex-end;
@@ -135,9 +133,8 @@ body {
 }
 
 .header-title {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  flex: 1;
+  min-width: 0;
 }
 
 .train-icon {
@@ -993,32 +990,33 @@ html.dark .person-card.done { background: rgba(99,102,241,0.1); border-color: va
 </head>
 <body>
 
-<div class="page-header">
-  <div class="header-title">
-    <div>
-      <h1 style="display:flex;align-items:center;gap:10px;">
-        <svg width="34" height="34" viewBox="0 0 32 32" fill="none" style="flex-shrink:0;">
-          <defs>
-            <linearGradient id="logo-g" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-              <stop stop-color="#6366f1"/>
-              <stop offset="1" stop-color="#06b6d4"/>
-            </linearGradient>
-          </defs>
-          <circle cx="16" cy="16" r="10" stroke="url(#logo-g)" stroke-width="4"/>
-          <circle cx="16" cy="6" r="3" fill="url(#logo-g)"/>
-        </svg>
-        <span style="background:linear-gradient(90deg,#6366f1,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-size:32px;font-weight:800;letter-spacing:-0.5px;">SimKOT</span>
-        <button class="intro-toggle" id="intro-toggle" onclick="toggleIntro()" title="Skjul/vis beskrivelse">▾</button>
-      </h1>
-      <p class="subtitle" id="intro-text">KOT-fordelingen gennemføres i en række fordelingsrunder, hvor ansøgerne løbende vurderes på de uddannelser og grupper, de har søgt. I hver runde placeres ansøgerne dér, hvor de kan få en plads ud fra institutionernes rangeinger, deres egen prioriteringer, karakterer eller kvalifikationsspoint.<br>
+<div class="bento">
+
+  <!-- ── Header (spans all columns) ── -->
+  <div class="page-header" style="grid-column:1/-1;">
+    <div class="header-title">
+      <div>
+        <h1 style="display:flex;align-items:center;gap:10px;">
+          <svg width="34" height="34" viewBox="0 0 32 32" fill="none" style="flex-shrink:0;">
+            <defs>
+              <linearGradient id="logo-g" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#6366f1"/>
+                <stop offset="1" stop-color="#06b6d4"/>
+              </linearGradient>
+            </defs>
+            <circle cx="16" cy="16" r="10" stroke="url(#logo-g)" stroke-width="4"/>
+            <circle cx="16" cy="6" r="3" fill="url(#logo-g)"/>
+          </svg>
+          <span style="background:linear-gradient(90deg,#6366f1,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-size:32px;font-weight:800;letter-spacing:-0.5px;">SimKOT</span>
+          <button class="intro-toggle" id="intro-toggle" onclick="toggleIntro()" title="Skjul/vis beskrivelse">▾</button>
+        </h1>
+        <p class="subtitle" id="intro-text">KOT-fordelingen gennemføres i en række fordelingsrunder, hvor ansøgerne løbende vurderes på de uddannelser og grupper, de har søgt. I hver runde placeres ansøgerne dér, hvor de kan få en plads ud fra institutionernes rangeringer, deres egen prioriteringer, karakterer eller kvalifikationsspoint.<br>
 Når en runde er afsluttet, ryddes der op i placeringerne, så hver ansøger kun står på den højest prioriterede uddannelse, hvor vedkommende har fået en plads. Ansøgere kan miste en plads, hvis højere rangerede ansøgere senere får forrang, mens ledige pladser samtidig flyttes mellem grupper for at sikre den bedst mulige udnyttelse af kapaciteten.<br>
 Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, hvordan grupper fyldes op, og hvordan fordelingen gradvist finder frem til det endelige resultat. Processen fortsætter automatisk, indtil alle ansøgere enten er optaget på deres højest mulige prioritet eller har fået afslag på alle ønsker.</p>
+      </div>
     </div>
+    <button id="theme-toggle" onclick="toggleTheme()" title="Skift tema" style="background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:8px 16px;font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;color:var(--text-2);box-shadow:var(--shadow-sm);transition:background .15s,border-color .15s;flex-shrink:0;display:flex;align-items:center;gap:7px;letter-spacing:.01em;">☀ Lys</button>
   </div>
-  <button id="theme-toggle" onclick="toggleTheme()" title="Skift tema" style="background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:8px 16px;font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;color:var(--text-2);box-shadow:var(--shadow-sm);transition:background .15s,border-color .15s;flex-shrink:0;display:flex;align-items:center;gap:7px;letter-spacing:.01em;">☀ Lys</button>
-</div>
-
-<div class="bento">
 
   <!-- ── Venstre panel ── -->
   <div class="left-panel">
