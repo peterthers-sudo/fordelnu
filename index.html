@@ -4482,12 +4482,12 @@ function buildSteps() {
       roundNumber = 1;
       inTempPlacement = true;
       setStatus('Runde 1', 'KOT-fordelingen placerer midlertidigt alle ansøgere på de udbud og grupper, de er indberettet i, ud fra deres rangeringsnummer.');
-      setCenter('Runde 1', 'Midlertidigt optag');
+      setCenter('Indre loop', 'Midlertidigt optag');
       positionTrain(115);
       animateTrain(115, 360, 6000, buildWaypoints(), () => {
         hideTrainBubble();
         appendStatus('✓', 'Ansøgere kan nu være placeret i flere grupper samtidig. I næste trin ryddes der op, så kun placeringer inden for gruppens kapacitet og på højeste prioritet bevares.');
-        setCenter('Runde 1', 'Klar til clearing');
+        setCenter('Indre loop', 'Klar til clearing');
       });
     }),
     // Step 3: Clearing efter runde 1
@@ -4543,7 +4543,7 @@ function buildWaypointsPladsflyt(rNr) {
 // Fabrik: clearing-trin (vises som "Clearing efter runde N")
 function doClearing(rNr, onDone) {
   setStatus(`Runde ${rNr} — Clearing`, 'Algoritmen kører sæt af midlertidig fordeling og clearing til antallet af optagne er stabilt i to sæt i træk. Lavere prioriteter fjernes, og kun den bedste plads beholdes.');
-  setCenter(`Runde ${rNr}`, 'Clearing');
+  setCenter('Indre loop', 'Clearing');
   document.getElementById('btn-next').disabled = true;
   animateTrain(trainAngle, 360, 3000, buildWaypointsClearing(rNr), () => {
     hideTrainBubble();
@@ -4557,6 +4557,7 @@ function doClearing(rNr, onDone) {
       for (const stnId of Object.keys(STATIONS)) repositionStnPavs(stnId);
     }, 650);
     updateCardResults();
+    setCenter(`Runde ${rNr}`, 'Indre loops afsluttet');
     animateSætTæller(lastIterations);
     appendIterLog();
     appendStatus('✓', `Clearing færdig — ${lastIterations} sæt kørte internt (se ovenfor). Hver ansøger er nu placeret på deres højest prioriterede plads.`);
@@ -4594,7 +4595,7 @@ function stepSubRunde(rNr) {
       ? `Pladsflyt kan have åbnet nye muligheder — ${udenPlads} ansøger${udenPlads !== 1 ? 'e' : ''} uden plads køres nu igennem indre løkker (midlertidig fordeling + clearing) til stabilt resultat.`
       : `Pladsflyt er gennemført. Kører indre løkker for at tjekke om nogen kan flyttes til en højere prioritet.`
     );
-    setCenter(`Runde ${rNr}`, 'Ny fordeling');
+    setCenter('Indre loop', 'Ny fordeling');
 
     const wps = buildWaypoints2(rNr);
     animateTrain(trainAngle, 360, 6000, wps, () => {
