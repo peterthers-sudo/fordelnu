@@ -3879,8 +3879,8 @@ function buildWaypoints() {
           ? `Ansøgere placeres midlertidigt her — kapacitetsgrænser ignoreres i dette trin.${garNote}`
           : 'Ingen ansøgere søgte denne station.');
       const info = uniqueApps > 0
-        ? `Midlertidig placering · ${totalSpots} plads${totalSpots !== 1 ? 'er' : ''} i alt`
-        : `Ingen ansøgere · ${totalSpots} plads${totalSpots !== 1 ? 'er' : ''} ledig${totalSpots !== 1 ? 'e' : ''}`;
+        ? `Midlertidig placering · kapacitet: ${totalSpots}`
+        : `Ingen ansøgere · kapacitet: ${totalSpots}`;
       showTrainBubble(stnId, info);
     }
   }));
