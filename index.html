@@ -2467,7 +2467,7 @@ function computeGroupProvisional(round1, grp) {
   if (!grpEntries.length) return new Set();
   const getScore = (pid, stn) => {
     if (GARANTERET_SET.has(`${pid}-${stn}-${grp}`)) return Infinity;
-    if (grp === 10 || grp === 60) return PERSONS[pid].kvotient;
+    if ((grp >= 10 && grp <= 19) || (grp >= 60 && grp <= 69)) return PERSONS[pid].kvotient;
     const e = grpEntries.find(p => p.person === pid && p.stn === stn);
     return e?.score !== undefined ? e.score : PERSONS[pid].point;
   };
@@ -2690,7 +2690,7 @@ function renderCapBoxRight() {
     for (const [grp, cap] of capEntries) {
       const gc = GROUP_COLORS[grp] || { fill: '#eee', text: '#555' };
       const grpLabel = `<span style="font-size:13px;font-weight:700;color:#94a3b8;width:38px;flex-shrink:0;font-family:'DM Mono',monospace">g${grp}</span>`;
-      if (+grp === 49) {
+      if (+grp === 49 && cap > 0) {
         const gc49 = GROUP_COLORS[49];
         const occ49 = (placedState[`${stnId}-49`] || []).length;
         html += `<div style="display:flex;align-items:center;gap:4px;margin-bottom:3px;">
@@ -4059,9 +4059,16 @@ function buildWaypoints() {
   }));
 }
 
+function getGrpLabel(grp) {
+  if (grp >= 10 && grp <= 19) return 'kvote 1 direkte';
+  if (grp >= 20 && grp <= 59) return 'kvote 2 direkte';
+  if (grp >= 60 && grp <= 69) return 'kvote 1 standby';
+  if (grp >= 70 && grp <= 79) return 'kvote 2 standby';
+  return `gruppe ${grp}`;
+}
+
 function buildWaypointsGrp(grp, provKeys) {
-  const GRP_LABELS = { 10: 'kvote 1 direkte', 20: 'kvote 2 direkte', 60: 'kvote 1 standby', 70: 'kvote 2 standby' };
-  const grpLabel = GRP_LABELS[grp] || `grp. ${grp}`;
+  const grpLabel = getGrpLabel(grp);
   const stnProgress = computeSTNProgress(trainAngle);
   return Object.entries(stnProgress).map(([stnId, progress]) => ({
     progress,
@@ -4661,37 +4668,8 @@ function stepAfslut() {
 let pendingKandidatRunde = false;
 
 function buildSteps() {
-  const GRP_LABELS = { 10: 'Kvote 1 direkte', 20: 'Kvote 2 direkte', 60: 'Kvote 1 standby', 70: 'Kvote 2 standby' };
-
-  const grpSteps = [10, 20, 60, 70].map(grp =>
-    withLearning(`grp${grp}-runde1`, () => {
-      if (roundNumber !== 1) {
-        clearStatistik();
-        roundNumber = 1;
-        inTempPlacement = true;
-        positionTrain(115);
-      }
-      const grpData = ROUND1.filter(p => +p.grp === grp);
-      if (!grpData.length) {
-        setCenter('Runde 1', `Grp. ${grp}`, 'Ingen ansøgere');
-        appendStatus(`Grp. ${grp}`, `${GRP_LABELS[grp]}: Ingen ansøgere indberettet i denne kvote.`);
-        return;
-      }
-      const provKeys = computeGroupProvisional(ROUND1, grp);
-      lastGroupProvisional[grp] = provKeys;
-      setStatus(`Grp. ${grp}`, `${GRP_LABELS[grp]} — programmer tilbyder foreløbige pladser til deres bedst rangerede ansøgere i denne kvote.`);
-      setCenter('Runde 1', `Grp. ${grp}`, GRP_LABELS[grp]);
-      animateTrain(trainAngle, 360, 5000, buildWaypointsGrp(grp, provKeys), () => {
-        hideTrainBubble();
-        const placed = provKeys.size;
-        appendStatus('✓', `Grp. ${grp} afsluttet — ${placed} foreløbig${placed !== 1 ? 'e' : ''} placering${placed !== 1 ? 'er' : ''} i denne kvote.`);
-        setCenter('Runde 1', `Grp. ${grp}`, 'Afsluttet');
-      });
-    })
-  );
-
   return [
-    // Step 0: Statistik
+    // Step 0: Statistik — pushes per-group steps dynamically (ROUND1 is populated before step 0 runs)
     withLearning('statistik', () => {
       const antalAnsøgere = selected.size;
       const uddSet = new Set();
@@ -4713,14 +4691,40 @@ function buildSteps() {
       clearStatistik();
       renderStatistik({ antalAnsøgere, antalUdd, antalGrp, totalPladser, ratio });
       document.getElementById('btn-next').textContent = '▶ Næste';
-    }),
-    // Steps 1–4: Én togkørsel per gruppe (grp. 10, 20, 60, 70)
-    ...grpSteps,
-    // Step 5: Clearing — rydder op så hver ansøger kun har én plads
-    withLearning('clearing-1', () => {
-      doClearing(1, () => {
-        steps.push(stepInnerStabilCheck(1));
-      });
+
+      // Discover groups present in ROUND1, excluding kandidat (33) and frit optag (49)
+      const groups = [...new Set(ROUND1.map(p => +p.grp))]
+        .filter(g => g !== 33 && g !== 49)
+        .sort((a, b) => a - b);
+
+      for (const grp of groups) {
+        steps.push(withLearning(`grp${grp}-runde1`, () => {
+          if (roundNumber !== 1) {
+            clearStatistik();
+            roundNumber = 1;
+            inTempPlacement = true;
+            positionTrain(115);
+          }
+          const grpLabel = getGrpLabel(grp);
+          const provKeys = computeGroupProvisional(ROUND1, grp);
+          lastGroupProvisional[grp] = provKeys;
+          setStatus(`Grp. ${grp}`, `${grpLabel.charAt(0).toUpperCase() + grpLabel.slice(1)} — programmer tilbyder foreløbige pladser til deres bedst rangerede ansøgere.`);
+          setCenter('Runde 1', `Grp. ${grp}`, grpLabel);
+          animateTrain(trainAngle, 360, 5000, buildWaypointsGrp(grp, provKeys), () => {
+            hideTrainBubble();
+            const placed = provKeys.size;
+            appendStatus('✓', `Grp. ${grp} afsluttet — ${placed} foreløbig${placed !== 1 ? 'e' : ''} placering${placed !== 1 ? 'er' : ''} i denne kvote.`);
+            setCenter('Runde 1', `Grp. ${grp}`, 'Afsluttet');
+          });
+        }));
+      }
+
+      // Clearing follows after all group rides
+      steps.push(withLearning('clearing-1', () => {
+        doClearing(1, () => {
+          steps.push(stepInnerStabilCheck(1));
+        });
+      }));
     }),
   ];
 }
