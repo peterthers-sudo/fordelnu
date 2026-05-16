@@ -1451,7 +1451,69 @@ const LEARNING_TEXTS = {
     }
   },
 
-  // ══ TRIN 2 ══════════════════════════════════════════════════════════════════
+  // ══ TRIN 2a–d: Per-gruppe DA ═════════════════════════════════════════════════
+  'grp10-runde1': {
+    title: 'Runde 1 — Kvote 1 direkte (Grp. 10)',
+    body: () => {
+      const prov = lastGroupProvisional[10] || new Set();
+      const placed = new Set([...prov].map(k => k.split('-')[0]));
+      const total = placed.size;
+      const grp10apps = [...selected].filter(pid => ROUND1.some(p => p.person === pid && +p.grp === 10));
+      const rejected = grp10apps.filter(pid => !placed.has(pid));
+      const rejEx = rejected.slice(0, 3).map(pid => PERSONS[pid]?.name).filter(Boolean);
+      return `
+<p>Kvote 1 bygger på karaktergennemsnittet. Hvert udbud rangerer sine ansøgere i grp. 10 fra højeste til laveste snit og tilbyder foreløbige pladser op til kapaciteten.</p>
+<p><strong>${grp10apps.length} ansøgere</strong> er indberettet til mindst ét udbud i kvote 1 (grp. 10).</p>
+${total > 0 ? `<p><strong>${total} foreløbige pladser</strong> er nu tildelt i kvote 1. Ansøgere kan have fået tilbud fra flere udbud — toget viser hvem der foreløbigt er på hvert udbud.</p>` : '<p>Ingen pladser i kvote 1 i denne fordeling.</p>'}
+${rejected.length ? `<p>${rejected.length} ansøger${rejected.length === 1 ? '' : 'e'} søgte kvote 1, men fik ikke plads — enten fordi de har for lavt snit, eller fordi de allerede har en bedre plads et andet sted: <strong>${rejEx.join(', ')}${rejected.length > 3 ? '…' : ''}</strong>.</p>` : ''}`;
+    }
+  },
+
+  'grp20-runde1': {
+    title: 'Runde 1 — Kvote 2 direkte (Grp. 20)',
+    body: () => {
+      const prov = lastGroupProvisional[20] || new Set();
+      const placed = new Set([...prov].map(k => k.split('-')[0]));
+      const total = placed.size;
+      const grp20apps = [...selected].filter(pid => ROUND1.some(p => p.person === pid && +p.grp === 20));
+      return `
+<p>Kvote 2 giver adgang via særlige kvalifikationer — fx erhvervserfaring, særlige talenter eller en optagelsesprøve. Institutionerne rangerer selv ansøgerne i grp. 20 og tilbyder pladser op til kapaciteten.</p>
+<p><strong>${grp20apps.length} ansøgere</strong> er indberettet til mindst ét udbud i kvote 2 (grp. 20).</p>
+${total > 0 ? `<p><strong>${total} foreløbige pladser</strong> er nu tildelt i kvote 2. Ansøgere der allerede har et tilbud i kvote 1, kan også have et foreløbigt kvote 2-tilbud — de beholder kun deres bedste i clearingen.</p>` : '<p>Ingen pladser i kvote 2 i denne fordeling.</p>'}`;
+    }
+  },
+
+  'grp60-runde1': {
+    title: 'Runde 1 — Kvote 1 standby (Grp. 60)',
+    body: () => {
+      const prov = lastGroupProvisional[60] || new Set();
+      const placed = new Set([...prov].map(k => k.split('-')[0]));
+      const total = placed.size;
+      const grp60apps = [...selected].filter(pid => ROUND1.some(p => p.person === pid && +p.grp === 60));
+      return `
+<p>Kvote 1 standby (grp. 60) fungerer som en venteliste for kvote 1 — ansøgere med karaktergennemsnit under adgangskvotienten indplaceres her i rækkefølge efter snit.</p>
+<p>Standbypladser er foreløbige og afhænger af, om nogen på den direkte liste takker nej eller trækker sig.</p>
+<p><strong>${grp60apps.length} ansøgere</strong> er indberettet til mindst ét udbud i kvote 1 standby.</p>
+${total > 0 ? `<p><strong>${total} foreløbige standbypladser</strong> er tildelt i kvote 1 standby.</p>` : '<p>Ingen standbypladser i kvote 1 i denne fordeling.</p>'}`;
+    }
+  },
+
+  'grp70-runde1': {
+    title: 'Runde 1 — Kvote 2 standby (Grp. 70)',
+    body: () => {
+      const prov = lastGroupProvisional[70] || new Set();
+      const placed = new Set([...prov].map(k => k.split('-')[0]));
+      const total = placed.size;
+      const grp70apps = [...selected].filter(pid => ROUND1.some(p => p.person === pid && +p.grp === 70));
+      return `
+<p>Kvote 2 standby (grp. 70) er ventelisten for kvote 2 — ansøgere der er indberettet i kvote 2, men ikke fik en direkte plads, placeres her efter institutionens rangering.</p>
+<p><strong>${grp70apps.length} ansøgere</strong> er indberettet til mindst ét udbud i kvote 2 standby.</p>
+${total > 0 ? `<p><strong>${total} foreløbige standbypladser</strong> er tildelt i kvote 2 standby.</p>` : '<p>Ingen standbypladser i kvote 2 i denne fordeling.</p>'}
+<p>Nu er alle kvotekørsler afsluttet. Mange ansøgere er foreløbigt placeret på <em>flere</em> uddannelser eller grupper — næste trin er clearing, der rydder op.</p>`;
+    }
+  },
+
+  // ══ TRIN 2 (legacy, ikke brugt i steps) ══════════════════════════════════════
   'runde1-klar': {
     title: 'Runde 1 — Midlertidigt optag',
     body: () => {
@@ -2345,6 +2407,10 @@ function computeFinalKeys(round1) {
         .map(p => ({ person: p.person, score: getScore(p.person, p.grp, p.stn, p.score) }))
         .sort((a, b) => b.score - a.score);
     }
+    // Frit optag — gruppe 49: ubegrænset kapacitet, alle rangerede optages
+    const key49 = `${stnId}-49`;
+    const apps49 = round1.filter(p => p.stn === stnId && +p.grp === 49).map(p => ({ person: p.person, score: 0 }));
+    if (apps49.length) appsByKey[key49] = apps49;
   }
   const assignment = {};
   for (const pid of allPersons) assignment[pid] = null;
@@ -2363,6 +2429,17 @@ function computeFinalKeys(round1) {
           return (prefRank[pid][key] ?? 999) < (prefRank[pid][curr] ?? 999);
         });
         withinCap[key] = new Set(active.slice(0, cap).map(a => a.person));
+      }
+      // Frit optag — gruppe 49: alle aktive ansøgere optages, ingen kapacitetsgrænse
+      const key49 = `${stnId}-49`;
+      if (appsByKey[key49]?.length) {
+        const active49 = appsByKey[key49].filter(({ person: pid }) => {
+          const curr = assignment[pid];
+          if (!curr) return true;
+          if (curr === key49) return true;
+          return (prefRank[pid][key49] ?? 999) < (prefRank[pid][curr] ?? 999);
+        });
+        withinCap[key49] = new Set(active49.map(a => a.person));
       }
     }
     let changeCount = 0;
@@ -2385,11 +2462,75 @@ function computeFinalKeys(round1) {
   return finalKeys;
 }
 
+function computeGroupProvisional(round1, grp) {
+  const grpEntries = round1.filter(p => +p.grp === grp);
+  if (!grpEntries.length) return new Set();
+  const getScore = (pid, stn) => {
+    if (GARANTERET_SET.has(`${pid}-${stn}-${grp}`)) return Infinity;
+    if (grp === 10 || grp === 60) return PERSONS[pid].kvotient;
+    const e = grpEntries.find(p => p.person === pid && p.stn === stn);
+    return e?.score !== undefined ? e.score : PERSONS[pid].point;
+  };
+  const allPersons = [...new Set(grpEntries.map(p => p.person))];
+  const prefList = {};
+  for (const pid of allPersons) {
+    const wishes = getWishes(pid);
+    prefList[pid] = wishes
+      .filter(w => grpEntries.some(e => e.person === pid && e.stn === w.stn && +e.grp === grp))
+      .map(w => ({ stn: w.stn, key: `${w.stn}-${grp}` }));
+  }
+  const prefRank = {};
+  for (const pid of allPersons) {
+    prefRank[pid] = {};
+    prefList[pid].forEach((p, i) => { prefRank[pid][p.key] = i; });
+  }
+  const appsByKey = {};
+  for (const stnId of Object.keys(STATIONS)) {
+    const key = `${stnId}-${grp}`;
+    const apps = grpEntries
+      .filter(p => p.stn === stnId)
+      .map(p => ({ person: p.person, score: getScore(p.person, p.stn) }))
+      .sort((a, b) => b.score - a.score);
+    if (apps.length) appsByKey[key] = apps;
+  }
+  const assignment = {};
+  for (const pid of allPersons) assignment[pid] = null;
+  for (let iter = 0; iter < 200; iter++) {
+    const withinCap = {};
+    for (const [key, apps] of Object.entries(appsByKey)) {
+      const stnId = key.split('-').slice(0, -1).join('-');
+      const cap = (STATIONS[stnId]?.capacity[grp]) || 0;
+      const active = apps.filter(({ person: pid }) => {
+        const curr = assignment[pid];
+        if (!curr) return true;
+        if (curr === key) return true;
+        return (prefRank[pid][key] ?? 999) < (prefRank[pid][curr] ?? 999);
+      });
+      withinCap[key] = new Set(active.slice(0, cap).map(a => a.person));
+    }
+    let changeCount = 0;
+    for (const pid of allPersons) {
+      let best = null;
+      for (const pref of prefList[pid]) {
+        if (withinCap[pref.key]?.has(pid)) { best = pref.key; break; }
+      }
+      if (assignment[pid] !== best) { assignment[pid] = best; changeCount++; }
+    }
+    if (changeCount === 0) break;
+  }
+  const provKeys = new Set();
+  for (const pid of allPersons) {
+    if (assignment[pid]) provKeys.add(`${pid}-${assignment[pid]}`);
+  }
+  return provKeys;
+}
+
 let placedState = {};
 let ROUND1 = [];
 let FINAL_KEYS = new Set();
 let lastIterations = 0;
 let lastIterLog = [];
+let lastGroupProvisional = {};
 let pavEls = {};
 let lastRundeMoved = [];
 let followedPids = new Set();
@@ -2514,6 +2655,15 @@ function addStnToState(stnId) {
   renderCapBoxRight();
 }
 
+function addStnToStateGrp(stnId, grp, provKeys) {
+  for (const k of provKeys) {
+    const pts = k.split('-');
+    if (pts.slice(1, -1).join('-') === stnId && +pts[pts.length - 1] === grp)
+      addToState(stnId, String(grp), pts[0]);
+  }
+  renderCapBoxRight();
+}
+
 function setStateFromKeys(keys) {
   inTempPlacement = false;
   placedState = {};
@@ -2540,7 +2690,7 @@ function renderCapBoxRight() {
     for (const [grp, cap] of capEntries) {
       const gc = GROUP_COLORS[grp] || { fill: '#eee', text: '#555' };
       const grpLabel = `<span style="font-size:13px;font-weight:700;color:#94a3b8;width:38px;flex-shrink:0;font-family:'DM Mono',monospace">g${grp}</span>`;
-      if (+grp === 49 && cap > 0) {
+      if (+grp === 49) {
         const gc49 = GROUP_COLORS[49];
         const occ49 = (placedState[`${stnId}-49`] || []).length;
         html += `<div style="display:flex;align-items:center;gap:4px;margin-bottom:3px;">
@@ -2947,6 +3097,17 @@ function getFollowedStatusText(pid, stepKey) {
     if (!r1.length) return 'Ingen midlertidige placeringer — det ser ikke godt ud! 😬';
     const stn = STATIONS[r1[0].stn]?.name || r1[0].stn;
     return `Foreløbig på ${stn}${r1.length > 1 ? ` og ${r1.length - 1} til` : ''} — vi ser hvad der sker! 😅`;
+  }
+  if (stepKey?.match(/^grp(\d+)-runde1$/)) {
+    const grp = parseInt(stepKey.match(/^grp(\d+)-runde1$/)[1]);
+    const prov = lastGroupProvisional[grp] || new Set();
+    const myKey = [...prov].find(k => k.split('-')[0] === pid);
+    if (!myKey) {
+      const inGrp = ROUND1.some(e => e.person === pid && +e.grp === grp);
+      return inGrp ? `Ikke placeret i grp. ${grp} denne gang. 😬` : `Jeg søgte ikke grp. ${grp}. 😌`;
+    }
+    const stnId = myKey.split('-').slice(1, -1).join('-');
+    return `Foreløbig placeret i grp. ${grp} på ${STATIONS[stnId]?.name || stnId}! 😅`;
   }
   if (stepKey?.startsWith('clearing')) {
     if (!currentKey) return 'Ingen plads efter clearing... 😬 Det ser skidt ud!';
@@ -3502,6 +3663,16 @@ function showStnPavs(stnId) {
   if (ob) { ob.el.style.transition = 'opacity 0.4s ease'; ob.el.style.opacity = '1'; }
 }
 
+function showStnPavsGrp(stnId, grp, provKeys) {
+  const placedPids = new Set(
+    [...provKeys]
+      .filter(k => { const pts = k.split('-'); return pts.slice(1, -1).join('-') === stnId && +pts[pts.length - 1] === grp; })
+      .map(k => k.split('-')[0])
+  );
+  ROUND1.filter(p => p.stn === stnId && +p.grp === grp && placedPids.has(p.person))
+        .forEach(p => showPav(pKey(p), true, false));
+}
+
 function tweenTranslate(el, toX, toY, ms) {
   const attr = el.getAttribute('transform') || '';
   const m = attr.match(/translate\(([^,]+),([^)]+)\)/);
@@ -3884,6 +4055,42 @@ function buildWaypoints() {
         ? `Midlertidig placering · kapacitet: ${totalSpots}`
         : `Ingen ansøgere · kapacitet: ${totalSpots}`;
       showTrainBubble(stnId, info);
+    }
+  }));
+}
+
+function buildWaypointsGrp(grp, provKeys) {
+  const GRP_LABELS = { 10: 'kvote 1 direkte', 20: 'kvote 2 direkte', 60: 'kvote 1 standby', 70: 'kvote 2 standby' };
+  const grpLabel = GRP_LABELS[grp] || `grp. ${grp}`;
+  const stnProgress = computeSTNProgress(trainAngle);
+  return Object.entries(stnProgress).map(([stnId, progress]) => ({
+    progress,
+    fn: () => {
+      pulseStn(stnId);
+      showStnPavsGrp(stnId, grp, provKeys);
+      addStnToStateGrp(stnId, grp, provKeys);
+      const stn = STATIONS[stnId];
+      const cap = (CAPACITY[stnId] || {})[grp] || 0;
+      if (cap === 0) {
+        appendStatus(stn.name, `Grp. ${grp} (${grpLabel}): Ingen pladser på dette udbud.`);
+        showTrainBubble(stnId, `grp.${grp} · 0 pladser`);
+        return;
+      }
+      const hereKeys = [...provKeys].filter(k => {
+        const pts = k.split('-');
+        return pts.slice(1, -1).join('-') === stnId && +pts[pts.length - 1] === grp;
+      });
+      const names = hereKeys.map(k => PERSONS[k.split('-')[0]]?.name).filter(Boolean);
+      const garNames = hereKeys
+        .filter(k => GARANTERET_SET.has(`${k.split('-')[0]}-${stnId}-${grp}`))
+        .map(k => PERSONS[k.split('-')[0]]?.name).filter(Boolean);
+      const garNote = garNames.length ? ` ${danishList(garNames)} er garanteret optagelse.` : '';
+      if (names.length) {
+        appendStatus(stn.name, `${danishList(names)} er foreløbigt placeret i grp. ${grp} (${grpLabel}).${garNote}`);
+      } else {
+        appendStatus(stn.name, `Grp. ${grp} (${grpLabel}): ${cap} plads${cap !== 1 ? 'er' : ''} — ingen søgte denne kvote her.`);
+      }
+      showTrainBubble(stnId, `grp.${grp} · ${names.length}/${cap} placeret`);
     }
   }));
 }
@@ -4454,6 +4661,35 @@ function stepAfslut() {
 let pendingKandidatRunde = false;
 
 function buildSteps() {
+  const GRP_LABELS = { 10: 'Kvote 1 direkte', 20: 'Kvote 2 direkte', 60: 'Kvote 1 standby', 70: 'Kvote 2 standby' };
+
+  const grpSteps = [10, 20, 60, 70].map(grp =>
+    withLearning(`grp${grp}-runde1`, () => {
+      if (roundNumber !== 1) {
+        clearStatistik();
+        roundNumber = 1;
+        inTempPlacement = true;
+        positionTrain(115);
+      }
+      const grpData = ROUND1.filter(p => +p.grp === grp);
+      if (!grpData.length) {
+        setCenter('Runde 1', `Grp. ${grp}`, 'Ingen ansøgere');
+        appendStatus(`Grp. ${grp}`, `${GRP_LABELS[grp]}: Ingen ansøgere indberettet i denne kvote.`);
+        return;
+      }
+      const provKeys = computeGroupProvisional(ROUND1, grp);
+      lastGroupProvisional[grp] = provKeys;
+      setStatus(`Grp. ${grp}`, `${GRP_LABELS[grp]} — programmer tilbyder foreløbige pladser til deres bedst rangerede ansøgere i denne kvote.`);
+      setCenter('Runde 1', `Grp. ${grp}`, GRP_LABELS[grp]);
+      animateTrain(trainAngle, 360, 5000, buildWaypointsGrp(grp, provKeys), () => {
+        hideTrainBubble();
+        const placed = provKeys.size;
+        appendStatus('✓', `Grp. ${grp} afsluttet — ${placed} foreløbig${placed !== 1 ? 'e' : ''} placering${placed !== 1 ? 'er' : ''} i denne kvote.`);
+        setCenter('Runde 1', `Grp. ${grp}`, 'Afsluttet');
+      });
+    })
+  );
+
   return [
     // Step 0: Statistik
     withLearning('statistik', () => {
@@ -4478,21 +4714,9 @@ function buildSteps() {
       renderStatistik({ antalAnsøgere, antalUdd, antalGrp, totalPladser, ratio });
       document.getElementById('btn-next').textContent = '▶ Næste';
     }),
-    // Step 1: Runde 1 togkørsel — modal vises når toget er kørt færdigt
-    withLearning('runde1-klar', () => {
-      clearStatistik();
-      roundNumber = 1;
-      inTempPlacement = true;
-      setStatus('Runde 1', 'KOT-fordelingen placerer midlertidigt alle ansøgere på de udbud og grupper, de er indberettet i, ud fra deres rangeringsnummer.');
-      setCenter('Runde 1', 'Indre loop', 'Midlertidigt optag');
-      positionTrain(115);
-      animateTrain(115, 360, 6000, buildWaypoints(), () => {
-        hideTrainBubble();
-        appendStatus('✓', 'Ansøgere kan nu være placeret i flere grupper samtidig. I næste trin ryddes der op, så kun placeringer inden for gruppens kapacitet og på højeste prioritet bevares.');
-        setCenter('Runde 1', 'Indre loop', 'Klar til clearing');
-      });
-    }),
-    // Step 3: Clearing efter runde 1
+    // Steps 1–4: Én togkørsel per gruppe (grp. 10, 20, 60, 70)
+    ...grpSteps,
+    // Step 5: Clearing — rydder op så hver ansøger kun har én plads
     withLearning('clearing-1', () => {
       doClearing(1, () => {
         steps.push(stepInnerStabilCheck(1));
@@ -4807,6 +5031,7 @@ function resetSimState() {
   inTempPlacement = false;
   ROUND1 = [];
   FINAL_KEYS = new Set();
+  lastGroupProvisional = {};
   prevFinalKeys = null;
   pendingKandidatRunde = false;
   steps = buildSteps();
