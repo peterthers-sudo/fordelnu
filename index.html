@@ -1161,8 +1161,9 @@ Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, 
           <animate attributeName="opacity" values="0.3;0;0.3" dur="3s" repeatCount="indefinite"/>
         </circle>
 
-        <text id="ctr1" x="300" y="250" text-anchor="middle" font-size="16" font-weight="700" fill="var(--ctr-text)" font-family="DM Sans, sans-serif"></text>
-        <text id="ctr2" x="300" y="273" text-anchor="middle" font-size="18" font-weight="700" fill="var(--indigo)" font-family="DM Sans, sans-serif"></text>
+        <text id="ctr1" x="300" y="243" text-anchor="middle" font-size="12" font-weight="600" fill="var(--ctr-text)" font-family="DM Sans, sans-serif"></text>
+        <text id="ctr2" x="300" y="261" text-anchor="middle" font-size="17" font-weight="700" fill="var(--indigo)" font-family="DM Sans, sans-serif"></text>
+        <text id="ctr3" x="300" y="276" text-anchor="middle" font-size="11" font-weight="500" fill="var(--ctr-text)" font-family="DM Sans, sans-serif"></text>
 
         <g id="train">
           <g transform="scale(1.4)">
@@ -3657,9 +3658,10 @@ function danishList(arr) {
   return arr.slice(0, -1).join(', ') + ' og ' + arr[arr.length - 1];
 }
 
-function setCenter(t1, t2) {
+function setCenter(t1, t2, t3 = '') {
   document.getElementById('ctr1').textContent = t1;
   document.getElementById('ctr2').textContent = t2;
+  document.getElementById('ctr3').textContent = t3;
 }
 
 let statistikEl = null;
@@ -4482,12 +4484,12 @@ function buildSteps() {
       roundNumber = 1;
       inTempPlacement = true;
       setStatus('Runde 1', 'KOT-fordelingen placerer midlertidigt alle ansøgere på de udbud og grupper, de er indberettet i, ud fra deres rangeringsnummer.');
-      setCenter('Runde 1', 'Indre loop');
+      setCenter('Runde 1', 'Indre loop', 'Midlertidigt optag');
       positionTrain(115);
       animateTrain(115, 360, 6000, buildWaypoints(), () => {
         hideTrainBubble();
         appendStatus('✓', 'Ansøgere kan nu være placeret i flere grupper samtidig. I næste trin ryddes der op, så kun placeringer inden for gruppens kapacitet og på højeste prioritet bevares.');
-        setCenter('Runde 1', 'Indre loop');
+        setCenter('Runde 1', 'Indre loop', 'Klar til clearing');
       });
     }),
     // Step 3: Clearing efter runde 1
@@ -4543,7 +4545,7 @@ function buildWaypointsPladsflyt(rNr) {
 // Fabrik: clearing-trin (vises som "Clearing efter runde N")
 function doClearing(rNr, onDone) {
   setStatus(`Runde ${rNr} — Clearing`, 'Algoritmen kører sæt af midlertidig fordeling og clearing til antallet af optagne er stabilt i to sæt i træk. Lavere prioriteter fjernes, og kun den bedste plads beholdes.');
-  setCenter(`Runde ${rNr}`, 'Indre loop');
+  setCenter(`Runde ${rNr}`, 'Indre loop', 'Clearing');
   document.getElementById('btn-next').disabled = true;
   animateTrain(trainAngle, 360, 3000, buildWaypointsClearing(rNr), () => {
     hideTrainBubble();
@@ -4595,7 +4597,7 @@ function stepSubRunde(rNr) {
       ? `Pladsflyt kan have åbnet nye muligheder — ${udenPlads} ansøger${udenPlads !== 1 ? 'e' : ''} uden plads køres nu igennem indre løkker (midlertidig fordeling + clearing) til stabilt resultat.`
       : `Pladsflyt er gennemført. Kører indre løkker for at tjekke om nogen kan flyttes til en højere prioritet.`
     );
-    setCenter(`Runde ${rNr}`, 'Indre loop');
+    setCenter(`Runde ${rNr}`, 'Indre loop', 'Ny fordeling');
 
     const wps = buildWaypoints2(rNr);
     animateTrain(trainAngle, 360, 6000, wps, () => {
