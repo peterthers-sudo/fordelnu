@@ -2701,7 +2701,8 @@ function renderCapBoxRight() {
         continue;
       }
       if (cap === 0) {
-        html += `<div style="display:flex;align-items:center;gap:4px;margin-bottom:3px;">
+        const neverSelected = !(CAPACITY_ORIGINAL[stnId]?.[grp] > 0);
+        html += `<div style="display:flex;align-items:center;gap:4px;margin-bottom:3px;${neverSelected ? 'opacity:0.35;' : ''}">
           ${grpLabel}
           <span style="color:#94a3b8;font-size:13px;">0 pladser</span>
         </div>`;
