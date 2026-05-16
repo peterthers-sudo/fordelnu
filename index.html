@@ -4482,12 +4482,12 @@ function buildSteps() {
       roundNumber = 1;
       inTempPlacement = true;
       setStatus('Runde 1', 'KOT-fordelingen placerer midlertidigt alle ansøgere på de udbud og grupper, de er indberettet i, ud fra deres rangeringsnummer.');
-      setCenter('Indre loop', 'Midlertidigt optag');
+      setCenter('Runde 1', 'Indre loop');
       positionTrain(115);
       animateTrain(115, 360, 6000, buildWaypoints(), () => {
         hideTrainBubble();
         appendStatus('✓', 'Ansøgere kan nu være placeret i flere grupper samtidig. I næste trin ryddes der op, så kun placeringer inden for gruppens kapacitet og på højeste prioritet bevares.');
-        setCenter('Indre loop', 'Klar til clearing');
+        setCenter('Runde 1', 'Indre loop');
       });
     }),
     // Step 3: Clearing efter runde 1
@@ -4543,7 +4543,7 @@ function buildWaypointsPladsflyt(rNr) {
 // Fabrik: clearing-trin (vises som "Clearing efter runde N")
 function doClearing(rNr, onDone) {
   setStatus(`Runde ${rNr} — Clearing`, 'Algoritmen kører sæt af midlertidig fordeling og clearing til antallet af optagne er stabilt i to sæt i træk. Lavere prioriteter fjernes, og kun den bedste plads beholdes.');
-  setCenter('Indre loop', 'Clearing');
+  setCenter(`Runde ${rNr}`, 'Indre loop');
   document.getElementById('btn-next').disabled = true;
   animateTrain(trainAngle, 360, 3000, buildWaypointsClearing(rNr), () => {
     hideTrainBubble();
@@ -4595,7 +4595,7 @@ function stepSubRunde(rNr) {
       ? `Pladsflyt kan have åbnet nye muligheder — ${udenPlads} ansøger${udenPlads !== 1 ? 'e' : ''} uden plads køres nu igennem indre løkker (midlertidig fordeling + clearing) til stabilt resultat.`
       : `Pladsflyt er gennemført. Kører indre løkker for at tjekke om nogen kan flyttes til en højere prioritet.`
     );
-    setCenter('Indre loop', 'Ny fordeling');
+    setCenter(`Runde ${rNr}`, 'Indre loop');
 
     const wps = buildWaypoints2(rNr);
     animateTrain(trainAngle, 360, 6000, wps, () => {
