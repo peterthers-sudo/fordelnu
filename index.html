@@ -2348,6 +2348,7 @@ function computeFinalKeys(round1) {
   const assignment = {};
   for (const pid of allPersons) assignment[pid] = null;
   let iterations = 0;
+  const iterLog = [];
   for (let iter = 0; iter < 200; iter++) {
     iterations = iter + 1;
     const withinCap = {};
@@ -2363,21 +2364,23 @@ function computeFinalKeys(round1) {
         withinCap[key] = new Set(active.slice(0, cap).map(a => a.person));
       }
     }
-    let changed = false;
+    let changeCount = 0;
     for (const pid of allPersons) {
       let best = null;
       for (const pref of prefList[pid]) {
         if (withinCap[pref.key]?.has(pid)) { best = pref.key; break; }
       }
-      if (assignment[pid] !== best) { assignment[pid] = best; changed = true; }
+      if (assignment[pid] !== best) { assignment[pid] = best; changeCount++; }
     }
-    if (!changed) break;
+    iterLog.push(changeCount);
+    if (changeCount === 0) break;
   }
   const finalKeys = new Set();
   for (const pid of allPersons) {
     if (assignment[pid]) finalKeys.add(`${pid}-${assignment[pid]}`);
   }
   finalKeys._iterations = iterations;
+  finalKeys._iterLog = iterLog;
   return finalKeys;
 }
 
@@ -2385,6 +2388,7 @@ let placedState = {};
 let ROUND1 = [];
 let FINAL_KEYS = new Set();
 let lastIterations = 0;
+let lastIterLog = [];
 let pavEls = {};
 let lastRundeMoved = [];
 let followedPids = new Set();
@@ -2402,6 +2406,105 @@ function addToState(stnId, grp, personId) {
 
 function countPlaced() {
   return new Set([...FINAL_KEYS].map(k => k.split('-')[0])).size;
+}
+
+function appendIterLog() {
+  if (!lastIterLog.length) return;
+  const n = lastIterLog.length;
+  const lines = lastIterLog.map((changes, i) => {
+    const sæt = i + 1;
+    const label = `Sæt ${sæt}/${n}`;
+    if (changes === 0) return `<span style="color:var(--text-3);font-family:'DM Mono',monospace;font-size:11px;">${label}</span> <span style="color:#4ade80">✓ 0 ændringer — stabilt</span>`;
+    return `<span style="color:var(--text-3);font-family:'DM Mono',monospace;font-size:11px;">${label}</span> ${changes} ansøger${changes !== 1 ? 'e' : ''} fandt bedre placering`;
+  });
+  appendStatus('⟳', lines.join('<br>'));
+}
+
+function burstAnimation(g, cx, cy) {
+  const NS = 'http://www.w3.org/2000/svg';
+  const colors = ['#f59e0b','#22d3ee','#a78bfa','#fb923c','#4ade80','#f472b6','#fbbf24','#38bdf8'];
+  const ring = document.createElementNS(NS, 'circle');
+  ring.setAttribute('cx', cx); ring.setAttribute('cy', cy);
+  ring.setAttribute('r', '55'); ring.setAttribute('fill', 'none');
+  ring.setAttribute('stroke', '#f59e0b'); ring.setAttribute('stroke-width', '3');
+  g.appendChild(ring);
+  const sparks = [];
+  for (let i = 0; i < 8; i++) {
+    const angle = (i * 45 - 90) * Math.PI / 180;
+    const r0 = 58, dr = 32 + (i % 3) * 10;
+    const sp = document.createElementNS(NS, 'circle');
+    sp.setAttribute('cx', String(cx + Math.cos(angle) * r0));
+    sp.setAttribute('cy', String(cy + Math.sin(angle) * r0));
+    sp.setAttribute('r', '4'); sp.setAttribute('fill', colors[i]);
+    g.appendChild(sp);
+    sparks.push({ el: sp, angle, sx: cx + Math.cos(angle) * r0, sy: cy + Math.sin(angle) * r0, dr });
+  }
+  const t0 = performance.now(), dur = 700;
+  function frame(now) {
+    const p = Math.min((now - t0) / dur, 1);
+    const e = 1 - Math.pow(1 - p, 3);
+    ring.setAttribute('r', String(55 + e * 45));
+    ring.setAttribute('stroke-width', String(3 - e * 2));
+    ring.setAttribute('opacity', String(0.9 * (1 - e)));
+    for (const s of sparks) {
+      s.el.setAttribute('cx', String(s.sx + Math.cos(s.angle) * s.dr * e));
+      s.el.setAttribute('cy', String(s.sy + Math.sin(s.angle) * s.dr * e));
+      s.el.setAttribute('r', String(Math.max(0, 4 - e * 3.5)));
+      s.el.setAttribute('opacity', String(1 - e));
+    }
+    if (p < 1) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+function animateSætTæller(count) {
+  const svg = document.getElementById('metro-svg');
+  if (!svg) return;
+  const NS = 'http://www.w3.org/2000/svg';
+  const CX = 300, CY = 262;
+  document.getElementById('sæt-tæller-overlay')?.remove();
+  const g = document.createElementNS(NS, 'g');
+  g.id = 'sæt-tæller-overlay';
+  g.style.pointerEvents = 'none';
+  const bg = document.createElementNS(NS, 'circle');
+  bg.setAttribute('cx', CX); bg.setAttribute('cy', CY);
+  bg.setAttribute('r', '52'); bg.setAttribute('fill', 'rgba(15,23,42,0.88)');
+  bg.setAttribute('stroke', '#22d3ee'); bg.setAttribute('stroke-width', '2');
+  g.appendChild(bg);
+  const lbl = document.createElementNS(NS, 'text');
+  lbl.setAttribute('x', CX); lbl.setAttribute('y', String(CY - 15));
+  lbl.setAttribute('text-anchor', 'middle'); lbl.setAttribute('fill', '#94a3b8');
+  lbl.setAttribute('font-size', '11'); lbl.setAttribute('font-family', 'DM Sans, sans-serif');
+  lbl.textContent = 'indre sæt';
+  g.appendChild(lbl);
+  const num = document.createElementNS(NS, 'text');
+  num.setAttribute('x', CX); num.setAttribute('y', String(CY + 22));
+  num.setAttribute('text-anchor', 'middle'); num.setAttribute('fill', '#22d3ee');
+  num.setAttribute('font-size', '36'); num.setAttribute('font-weight', '700');
+  num.setAttribute('font-family', 'DM Mono, monospace');
+  num.textContent = '0';
+  g.appendChild(num);
+  svg.appendChild(g);
+  const speed = count <= 1 ? 0 : Math.max(80, Math.min(220, 1400 / count));
+  let current = 0;
+  function tick() {
+    current++;
+    num.textContent = String(current);
+    const nearEnd = current >= Math.max(count - 2, count * 0.7);
+    num.setAttribute('fill', current === count ? '#f59e0b' : nearEnd ? '#fb923c' : '#22d3ee');
+    bg.setAttribute('stroke', current === count ? '#f59e0b' : nearEnd ? '#fb923c' : '#22d3ee');
+    if (current < count) {
+      setTimeout(tick, speed);
+    } else {
+      burstAnimation(g, CX, CY);
+      setTimeout(() => {
+        g.style.transition = 'opacity 0.6s';
+        g.style.opacity = '0';
+        setTimeout(() => g.remove(), 650);
+      }, 1800);
+    }
+  }
+  setTimeout(tick, count <= 1 ? 50 : 180);
 }
 
 function addStnToState(stnId) {
@@ -3766,16 +3869,17 @@ function buildWaypoints() {
 
       const stn = STATIONS[stnId];
       const here = ROUND1.filter(p => p.stn === stnId);
-      const namesArr = [...new Set(here.map(p => PERSONS[p.person].name))];
-      const garHere = here.filter(p => GARANTERET_SET.has(`${p.person}-${stnId}-${p.grp}`));
-      const garNames = [...new Set(garHere.map(p => PERSONS[p.person].name))];
-      const garNote = garNames.length ? ` ${danishList(garNames)} ${garNames.length === 1 ? 'er sikret en plads, hvis vedkommende' : 'er sikret en plads, hvis de'} ikke får tilbudt en højere prioritet.` : '';
-      appendStatus(stn.name,
-        namesArr.length ? `${danishList(namesArr)} er foreløbigt placeret i gruppen.${garNote}` : 'Ingen ansøgere til denne station.');
       const cap = CAPACITY[stnId] || {};
       const totalSpots = Object.entries(cap).reduce((s, [g, v]) => +g !== 33 ? s + v : s, 0);
-      const info = here.length > 0
-        ? `${here.length} placeret midlertidigt · ${totalSpots} plads${totalSpots !== 1 ? 'er' : ''} i alt`
+      const garHere = here.filter(p => GARANTERET_SET.has(`${p.person}-${stnId}-${p.grp}`));
+      const garNote = garHere.length ? ` ${garHere.length} ansøger${garHere.length !== 1 ? 'e er' : ' er'} garanteret optagelse her.` : '';
+      const uniqueApps = new Set(here.map(p => p.person)).size;
+      appendStatus(stn.name,
+        uniqueApps > 0
+          ? `Ansøgere placeres midlertidigt her — kapacitetsgrænser ignoreres i dette trin.${garNote}`
+          : 'Ingen ansøgere søgte denne station.');
+      const info = uniqueApps > 0
+        ? `Midlertidig placering · ${totalSpots} plads${totalSpots !== 1 ? 'er' : ''} i alt`
         : `Ingen ansøgere · ${totalSpots} plads${totalSpots !== 1 ? 'er' : ''} ledig${totalSpots !== 1 ? 'e' : ''}`;
       showTrainBubble(stnId, info);
     }
@@ -3804,9 +3908,9 @@ function buildWaypoints2(rNr) {
       const departed = [...prevHere].filter(p => !currHere.has(p)).map(name).filter(Boolean);
 
       const parts = [];
-      if (stayed.length)   parts.push(`${danishList(stayed)} beholder ${stayed.length === 1 ? 'sin' : 'deres'} plads fra forrige runde.`);
-      if (arrived.length)  parts.push(`${danishList(arrived)} er rykket hertil fra en tidligere runde, da det er en bedre placering.`);
-      if (departed.length) parts.push(`${danishList(departed)} har fået en højere prioritet og fjernes derfor herfra.`);
+      if (stayed.length)   parts.push(`${danishList(stayed)} beholder ${stayed.length === 1 ? 'sin' : 'deres'} plads.`);
+      if (arrived.length)  parts.push(`${danishList(arrived)} er rykket hertil — pladsflyt åbnede en mulighed.`);
+      if (departed.length) parts.push(`${danishList(departed)} er rykket til en højere prioritet og frigiver pladsen her.`);
       if (!currHere.size)  parts.push('Ingen er optaget her.');
 
       const garAtStn = [...GARANTERET_SET]
@@ -4237,7 +4341,7 @@ function stepKandidatrunde() {
             setCenter('Kandidat', `${optag.length} optaget`);
             const anyFreed = optag.some(o => o.fromKey);
             if (anyFreed) {
-              FINAL_KEYS = computeFinalKeys(ROUND1); lastIterations = FINAL_KEYS._iterations || 1;
+              FINAL_KEYS = computeFinalKeys(ROUND1); lastIterations = FINAL_KEYS._iterations || 1; lastIterLog = FINAL_KEYS._iterLog || [];
               renderRangeringslister();
               pendingKandidatRunde = true;
               steps.push(() => doClearing(roundNumber, () => {
@@ -4408,7 +4512,7 @@ function buildWaypointsClearing(rNr) {
       const totalSpots = Object.entries(cap).reduce((s, [g, v]) => +g !== 33 ? s + v : s, 0);
       appendStatus(stn.name,
         names.length > 0
-          ? `${danishList(names)} beholder foreløbigt ${names.length === 1 ? 'sin' : 'deres'} plads her, da dette er ${names.length === 1 ? 'vedkommendes' : 'deres'} højeste prioriterede match indtil videre. Placeringer på lavere prioriteter fjernes.`
+          ? `${names.length} ansøger${names.length !== 1 ? 'e' : ''} har her som deres bedste match — lavere prioriteter frigives.`
           : 'Ingen er placeret her — alle pladser ledige.');
       showTrainBubble(stnId, names.length > 0
         ? `${names.length} placeret · ${totalSpots} plads${totalSpots !== 1 ? 'er' : ''}`
@@ -4453,7 +4557,9 @@ function doClearing(rNr, onDone) {
       for (const stnId of Object.keys(STATIONS)) repositionStnPavs(stnId);
     }, 650);
     updateCardResults();
-    appendStatus('✓', `Clearing færdig. Algoritmen kørte internt ${lastIterations} sæt af midlertidig fordeling og clearing, til antallet af optagne ikke steg i to sæt i træk. Hver ansøger er nu placeret på deres højest prioriterede plads.`);
+    animateSætTæller(lastIterations);
+    appendIterLog();
+    appendStatus('✓', `Clearing færdig — ${lastIterations} sæt kørte internt (se ovenfor). Hver ansøger er nu placeret på deres højest prioriterede plads.`);
     if (onDone) onDone();
   });
 }
@@ -4539,6 +4645,7 @@ function stepPladsflyt() {
   return withLearning(`pladsflyt-${rNr}`, () => {
     setStatus(`Runde ${rNr} — Pladsflyt`, 'Tjekker om ledige pladser kan flyttes mellem grupper...');
     setCenter(`Runde ${rNr}`, 'Pladsflyt');
+    clearStatistik();
     document.getElementById('btn-next').disabled = true;
 
     animateTrain(trainAngle, 360, 3000, buildWaypointsPladsflyt(rNr), () => {
@@ -4549,7 +4656,7 @@ function stepPladsflyt() {
         if (moves.length > 0) {
           applyPladsflyt(moves);
         }
-        FINAL_KEYS = computeFinalKeys(ROUND1); lastIterations = FINAL_KEYS._iterations || 1;
+        FINAL_KEYS = computeFinalKeys(ROUND1); lastIterations = FINAL_KEYS._iterations || 1; lastIterLog = FINAL_KEYS._iterLog || [];
         renderPladsflyt(moves, roundNumber);
         renderCapBoxRight();
         renderRangeringslister();
@@ -4658,7 +4765,7 @@ function nextStep() {
   if (step === 0) {
     document.getElementById('lærings-cb').disabled = true;
     ROUND1 = buildRound1(selected);
-    FINAL_KEYS = computeFinalKeys(ROUND1); lastIterations = FINAL_KEYS._iterations || 1;
+    FINAL_KEYS = computeFinalKeys(ROUND1); lastIterations = FINAL_KEYS._iterations || 1; lastIterLog = FINAL_KEYS._iterLog || [];
     prevFinalKeys = null;
     buildAvatars();
     renderCapBoxRight();
