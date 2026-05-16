@@ -1453,7 +1453,7 @@ const LEARNING_TEXTS = {
 
   // ══ TRIN 2a–d: Per-gruppe DA ═════════════════════════════════════════════════
   'grp10-runde1': {
-    title: 'Runde 1 — Kvote 1 direkte (Grp. 10)',
+    title: 'Runde 1 — Kvote 1 (Grp. 10)',
     body: () => {
       const prov = lastGroupProvisional[10] || new Set();
       const placed = new Set([...prov].map(k => k.split('-')[0]));
@@ -1470,7 +1470,7 @@ ${rejected.length ? `<p>${rejected.length} ansøger${rejected.length === 1 ? '' 
   },
 
   'grp20-runde1': {
-    title: 'Runde 1 — Kvote 2 direkte (Grp. 20)',
+    title: 'Runde 1 — Kvote 2 (Grp. 20)',
     body: () => {
       const prov = lastGroupProvisional[20] || new Set();
       const placed = new Set([...prov].map(k => k.split('-')[0]));
@@ -4060,8 +4060,8 @@ function buildWaypoints() {
 }
 
 function getGrpLabel(grp) {
-  if (grp >= 10 && grp <= 19) return 'kvote 1 direkte';
-  if (grp >= 20 && grp <= 59) return 'kvote 2 direkte';
+  if (grp >= 10 && grp <= 19) return 'kvote 1';
+  if (grp >= 20 && grp <= 59) return 'kvote 2';
   if (grp >= 60 && grp <= 69) return 'kvote 1 standby';
   if (grp >= 70 && grp <= 79) return 'kvote 2 standby';
   return `gruppe ${grp}`;
@@ -4080,7 +4080,7 @@ function buildWaypointsGrp(grp, provKeys) {
       const cap = (CAPACITY[stnId] || {})[grp] || 0;
       if (cap === 0) {
         appendStatus(stn.name, `Grp. ${grp} (${grpLabel}): Ingen pladser på dette udbud.`);
-        showTrainBubble(stnId, `grp.${grp} · 0 pladser`);
+        showTrainBubble(stnId, `Ingen pladser i denne kvote`);
         return;
       }
       const hereKeys = [...provKeys].filter(k => {
@@ -4097,7 +4097,10 @@ function buildWaypointsGrp(grp, provKeys) {
       } else {
         appendStatus(stn.name, `Grp. ${grp} (${grpLabel}): ${cap} plads${cap !== 1 ? 'er' : ''} — ingen søgte denne kvote her.`);
       }
-      showTrainBubble(stnId, `grp.${grp} · ${names.length}/${cap} placeret`);
+      const ledige = cap - names.length;
+      showTrainBubble(stnId, names.length > 0
+        ? `${names.length} af ${cap} pladser foreløbigt optaget${ledige > 0 ? ` · ${ledige} ledig${ledige !== 1 ? 'e' : ''}` : ''}`
+        : `Ingen optaget — ${cap} plads${cap !== 1 ? 'er' : ''} ledig${cap !== 1 ? 'e' : ''}`);
     }
   }));
 }
@@ -4709,12 +4712,12 @@ function buildSteps() {
           const provKeys = computeGroupProvisional(ROUND1, grp);
           lastGroupProvisional[grp] = provKeys;
           setStatus(`Grp. ${grp}`, `${grpLabel.charAt(0).toUpperCase() + grpLabel.slice(1)} — programmer tilbyder foreløbige pladser til deres bedst rangerede ansøgere.`);
-          setCenter('Runde 1', `Grp. ${grp}`, grpLabel);
+          setCenter('Runde 1', 'Indre loop', `Grp. ${grp} — ${grpLabel}`);
           animateTrain(trainAngle, 360, 5000, buildWaypointsGrp(grp, provKeys), () => {
             hideTrainBubble();
             const placed = provKeys.size;
             appendStatus('✓', `Grp. ${grp} afsluttet — ${placed} foreløbig${placed !== 1 ? 'e' : ''} placering${placed !== 1 ? 'er' : ''} i denne kvote.`);
-            setCenter('Runde 1', `Grp. ${grp}`, 'Afsluttet');
+            setCenter('Runde 1', 'Indre loop', `Grp. ${grp} afsluttet`);
           });
         }));
       }
