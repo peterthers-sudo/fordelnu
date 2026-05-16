@@ -1508,7 +1508,8 @@ ${garInfo.length ? `<p style="background:var(--rang-gar-score-bg);border:1px sol
           return `<strong>${PERSONS[pid]?.name}</strong> beholder sin garanterede plads på ${STATIONS[stnId]?.name?.split(' ')[0]} grp.${grp}`;
         });
       return `
-<p>Clearingen er gennemført. <strong>${multiEntries.length} ansøger${multiEntries.length === 1 ? '' : 'e'}</strong> var placeret på mere end én uddannelse eller gruppe — hver ansøger har nu kun beholdt pladsen på sin højeste prioritet, og de øvrige pladser er frigivet.</p>
+<p>Clearingen er gennemført. Algoritmen kørte <strong>${lastIterations} indre løkker</strong> af midlertidig fordeling og clearing, til antallet af optagne ikke steg i to sæt i træk. I det virkelige KOT-system med 85.000 ansøgere kan dette tage mange runder — her gik det hurtigt.</p>
+<p><strong>${multiEntries.length} ansøger${multiEntries.length === 1 ? '' : 'e'}</strong> var placeret på mere end én uddannelse eller gruppe — hver ansøger har nu kun beholdt pladsen på sin højeste prioritet, og de øvrige pladser er frigivet.</p>
 ${examples.length ? `<p style="margin:10px 0 4px">F.eks.:</p><ul style="margin:0 0 12px;padding-left:22px;display:flex;flex-direction:column;gap:8px;">${examples.map(e => `<li>${e}</li>`).join('')}</ul>` : ''}
 ${garPlaced.length ? `<p style="background:var(--rang-gar-score-bg);border:1px solid var(--rang-gar-score-border);color:var(--rang-gar-color);border-radius:6px;padding:10px 14px;margin-top:10px;">${garPlaced.join(' · ')} — garanteret optagelse sikrer pladsen uanset øvrige ansøgeres rangeringer.</p>` : ''}
 <p><strong>${totalPlaced} ansøgere</strong> er tildelt én plads${unplaced > 0 ? ` — <strong>${unplaced}</strong> har endnu ingen plads` : ''}.</p>`;
@@ -1557,7 +1558,7 @@ ${unplacedPids.length ? `<p>Endnu uden plads: <strong>${unplacedNames.join(', ')
         ? `<p>${parts.join(', og ')} — KOT kører endnu en runde for at undersøge om de kan flytte plads.</p>`
         : '<p>Alle optagne er placeret på den højest mulige prioritet. KOT kører en ekstra runde for at bekræfte stabiliteten.</p>';
       return `
-<p>Runde 1 er afsluttet. Status:</p>
+<p>Runde 1 er afsluttet. Algoritmen kørte <strong>${lastIterations} indre løkker</strong> af midlertidig fordeling og clearing inden stabilt resultat. Status:</p>
 <ul style="margin:12px 0;padding-left:22px;display:flex;flex-direction:column;gap:7px;">
   <li><strong>${placedCount} optaget</strong></li>
   <li><strong>${unplacedCount} afvist</strong></li>
@@ -1610,7 +1611,7 @@ ${candidates.length ? `<p><strong>${candidates.length} ansøger${candidates.leng
       });
       const totalPlaced = new Set([...FINAL_KEYS].map(k => k.split('-')[0])).size;
       return `
-<p>Clearingen er gennemført. Som i runde 1 beholdt hver ansøger kun pladsen på sin højeste prioritet — de øvrige er frigivet.</p>
+<p>Clearingen er gennemført. Algoritmen kørte <strong>${lastIterations} indre løkker</strong> af midlertidig fordeling og clearing til stabilt resultat. Hver ansøger beholder kun pladsen på sin højeste prioritet — de øvrige er frigivet.</p>
 ${examples.length ? `<p style="margin:10px 0 4px">F.eks.:</p><ul style="margin:0 0 12px;padding-left:22px;display:flex;flex-direction:column;gap:6px;">${examples.map(e => `<li>${e}</li>`).join('')}</ul>` : ''}
 <p><strong>${totalPlaced} ansøgere</strong> er tildelt én plads.</p>`;
     }
@@ -1650,7 +1651,7 @@ ${unplacedPids.length ? `<p>Endnu uden plads: <strong>${[...unplacedPids].slice(
         return acc;
       }, []);
       return `
-<p>Runde 2 er afsluttet:</p>
+<p>Runde 2 er afsluttet. Algoritmen kørte <strong>${lastIterations} indre løkker</strong> af midlertidig fordeling og clearing inden stabilt resultat:</p>
 <ul style="margin:12px 0;padding-left:22px;display:flex;flex-direction:column;gap:7px;">
   <li><strong>${placedCount} optaget</strong></li>
   <li><strong>${unplacedCount} afvist</strong></li>
@@ -1701,7 +1702,7 @@ ${candidates.length ? `<p><strong>${candidates.length} ansøger${candidates.leng
         return acc;
       }, []) : [];
       return `
-<p>Clearingen efter runde 3 er gennemført — igen beholdt hver ansøger kun sin højeste prioritet, og de øvrige pladser er frigivet.</p>
+<p>Clearingen efter runde 3 er gennemført. Algoritmen kørte <strong>${lastIterations} indre løkker</strong> af midlertidig fordeling og clearing til stabilt resultat. Igen beholdt hver ansøger kun sin højeste prioritet, og de øvrige pladser er frigivet.</p>
 ${changed.length
   ? `<ul style="margin:10px 0;padding-left:22px;display:flex;flex-direction:column;gap:6px;">${changed.slice(0, 3).map(e => `<li>${e}</li>`).join('')}${changed.length > 3 ? `<li>... og ${changed.length - 3} andre</li>` : ''}</ul>`
   : '<p>Ingen ansøgere ændrede plads i denne clearing.</p>'}
@@ -1735,7 +1736,7 @@ ${unplacedPids.length ? `<p>Endnu uden plads: <strong>${[...unplacedPids].slice(
         s + Object.entries(grps).reduce((a, [g, v]) => +g === 49 ? a : a + v, 0), 0);
       const ledige = totalCap - placedCount;
       return `
-<p>Runde 3 er afsluttet:</p>
+<p>Runde 3 er afsluttet. Algoritmen kørte <strong>${lastIterations} indre løkker</strong> af midlertidig fordeling og clearing inden stabilt resultat:</p>
 <ul style="margin:12px 0;padding-left:22px;display:flex;flex-direction:column;gap:7px;">
   <li><strong>${placedCount} optaget</strong></li>
   <li><strong>${unplacedCount} afvist</strong></li>
@@ -2346,7 +2347,9 @@ function computeFinalKeys(round1) {
   }
   const assignment = {};
   for (const pid of allPersons) assignment[pid] = null;
+  let iterations = 0;
   for (let iter = 0; iter < 200; iter++) {
+    iterations = iter + 1;
     const withinCap = {};
     for (const [stnId, stn] of Object.entries(STATIONS)) {
       for (const [grp, cap] of Object.entries(stn.capacity)) {
@@ -2374,12 +2377,14 @@ function computeFinalKeys(round1) {
   for (const pid of allPersons) {
     if (assignment[pid]) finalKeys.add(`${pid}-${assignment[pid]}`);
   }
+  finalKeys._iterations = iterations;
   return finalKeys;
 }
 
 let placedState = {};
 let ROUND1 = [];
 let FINAL_KEYS = new Set();
+let lastIterations = 0;
 let pavEls = {};
 let lastRundeMoved = [];
 let followedPids = new Set();
@@ -4232,7 +4237,7 @@ function stepKandidatrunde() {
             setCenter('Kandidat', `${optag.length} optaget`);
             const anyFreed = optag.some(o => o.fromKey);
             if (anyFreed) {
-              FINAL_KEYS = computeFinalKeys(ROUND1);
+              FINAL_KEYS = computeFinalKeys(ROUND1); lastIterations = FINAL_KEYS._iterations || 1;
               renderRangeringslister();
               pendingKandidatRunde = true;
               steps.push(() => doClearing(roundNumber, () => {
@@ -4448,7 +4453,7 @@ function doClearing(rNr, onDone) {
       for (const stnId of Object.keys(STATIONS)) repositionStnPavs(stnId);
     }, 650);
     updateCardResults();
-    appendStatus('✓', 'Clearing færdig. Algoritmen har internt kørt sæt af midlertidig fordeling og clearing, til antallet af optagne ikke steg i to sæt i træk. Hver ansøger er nu placeret på deres højest prioriterede plads.');
+    appendStatus('✓', `Clearing færdig. Algoritmen kørte internt ${lastIterations} sæt af midlertidig fordeling og clearing, til antallet af optagne ikke steg i to sæt i træk. Hver ansøger er nu placeret på deres højest prioriterede plads.`);
     if (onDone) onDone();
   });
 }
@@ -4464,9 +4469,10 @@ function stepInnerStabilCheck(rNr) {
     const pladserFlyttet = lastPladsflytMoves.reduce((s, m) => s + m.antal, 0);
     renderRunde1Statistik({ rNr, optaget, afvist, ledige, pladserFlyttet });
     setCenter(`Runde ${rNr}`, 'Afsluttet');
+    const løkkerTekst = `Algoritmen kørte ${lastIterations} indre løkker${lastIterations === 1 ? ' (stabilt efter første sæt)' : ''}.`;
     const msg = afvist > 0
-      ? `Fordelingen er stabil — de indre løkker er konvergeret. ${optaget} optaget, ${afvist} ansøger${afvist !== 1 ? 'e' : ''} har ingen plads. I det virkelige KOT-system kan dette tage mange runder med op til 85.000 ansøgere — her var det hurtigt. Pladsflyt undersøger om der kan frigives yderligere pladser.`
-      : `Fordelingen er stabil — de indre løkker er konvergeret. Alle ${optaget} ansøgere er placeret på deres højeste prioritet.`;
+      ? `Fordelingen er stabil. ${løkkerTekst} ${optaget} optaget, ${afvist} ansøger${afvist !== 1 ? 'e' : ''} har ingen plads. I det virkelige KOT-system med 85.000 ansøgere kan dette tage mange runder — her gik det hurtigt. Pladsflyt undersøger om der kan frigives yderligere pladser.`
+      : `Fordelingen er stabil. ${løkkerTekst} Alle ${optaget} ansøgere er placeret på deres højeste prioritet.`;
     appendStatus('→', `${msg} Tryk Næste for at starte pladsflyt.`);
     steps.push(stepPladsflyt());
   });
@@ -4543,7 +4549,7 @@ function stepPladsflyt() {
         if (moves.length > 0) {
           applyPladsflyt(moves);
         }
-        FINAL_KEYS = computeFinalKeys(ROUND1);
+        FINAL_KEYS = computeFinalKeys(ROUND1); lastIterations = FINAL_KEYS._iterations || 1;
         renderPladsflyt(moves, roundNumber);
         renderCapBoxRight();
         renderRangeringslister();
@@ -4652,7 +4658,7 @@ function nextStep() {
   if (step === 0) {
     document.getElementById('lærings-cb').disabled = true;
     ROUND1 = buildRound1(selected);
-    FINAL_KEYS = computeFinalKeys(ROUND1);
+    FINAL_KEYS = computeFinalKeys(ROUND1); lastIterations = FINAL_KEYS._iterations || 1;
     prevFinalKeys = null;
     buildAvatars();
     renderCapBoxRight();
