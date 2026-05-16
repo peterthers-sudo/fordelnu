@@ -4433,7 +4433,7 @@ function buildWaypointsPladsflyt(rNr) {
 
 // Fabrik: clearing-trin (vises som "Clearing efter runde N")
 function doClearing(rNr, onDone) {
-  setStatus(`Runde ${rNr} — Clearing`, 'Rydder op — lavere prioriteter fjernes, så hver ansøger kun står tilbage med sin bedste plads.');
+  setStatus(`Runde ${rNr} — Clearing`, 'Algoritmen kører sæt af midlertidig fordeling og clearing til antallet af optagne er stabilt i to sæt i træk. Lavere prioriteter fjernes, og kun den bedste plads beholdes.');
   setCenter(`Runde ${rNr}`, 'Clearing');
   document.getElementById('btn-next').disabled = true;
   animateTrain(trainAngle, 360, 3000, buildWaypointsClearing(rNr), () => {
@@ -4448,7 +4448,7 @@ function doClearing(rNr, onDone) {
       for (const stnId of Object.keys(STATIONS)) repositionStnPavs(stnId);
     }, 650);
     updateCardResults();
-    appendStatus('✓', 'Clearing færdig — hver ansøger er nu placeret på deres højest prioriterede plads blandt de opnåede muligheder.');
+    appendStatus('✓', 'Clearing færdig. Algoritmen har internt kørt sæt af midlertidig fordeling og clearing, til antallet af optagne ikke steg i to sæt i træk. Hver ansøger er nu placeret på deres højest prioriterede plads.');
     if (onDone) onDone();
   });
 }
@@ -4465,8 +4465,8 @@ function stepInnerStabilCheck(rNr) {
     renderRunde1Statistik({ rNr, optaget, afvist, ledige, pladserFlyttet });
     setCenter(`Runde ${rNr}`, 'Afsluttet');
     const msg = afvist > 0
-      ? `${optaget} optaget — ${afvist} ansøger${afvist !== 1 ? 'e' : ''} har endnu ingen plads. Pladsflyt undersøger om der kan frigives yderligere pladser.`
-      : `Alle ${optaget} ansøgere er placeret på deres højeste prioritet.`;
+      ? `Fordelingen er stabil — de indre løkker er konvergeret. ${optaget} optaget, ${afvist} ansøger${afvist !== 1 ? 'e' : ''} har ingen plads. I det virkelige KOT-system kan dette tage mange runder med op til 85.000 ansøgere — her var det hurtigt. Pladsflyt undersøger om der kan frigives yderligere pladser.`
+      : `Fordelingen er stabil — de indre løkker er konvergeret. Alle ${optaget} ansøgere er placeret på deres højeste prioritet.`;
     appendStatus('→', `${msg} Tryk Næste for at starte pladsflyt.`);
     steps.push(stepPladsflyt());
   });
@@ -4479,8 +4479,8 @@ function stepSubRunde(rNr) {
     roundNumber = rNr;
     const udenPlads = selected.size - countPlaced();
     setStatus(`Runde ${rNr}`, udenPlads > 0
-      ? `${udenPlads} ansøger${udenPlads !== 1 ? 'e' : ''} uden plads forsøger at komme ind — pladsflyt kan have åbnet nye muligheder.`
-      : `KOT tjekker om nogen kan flyttes til en højere prioritet.`
+      ? `Pladsflyt kan have åbnet nye muligheder — ${udenPlads} ansøger${udenPlads !== 1 ? 'e' : ''} uden plads køres nu igennem indre løkker (midlertidig fordeling + clearing) til stabilt resultat.`
+      : `Pladsflyt er gennemført. Kører indre løkker for at tjekke om nogen kan flyttes til en højere prioritet.`
     );
     setCenter(`Runde ${rNr}`, 'Ny fordeling');
 
