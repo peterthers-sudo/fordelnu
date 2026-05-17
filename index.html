@@ -1807,9 +1807,17 @@ ${lastRundeMoved.length
     title: 'Kandidatrunden — Gruppe 33',
     body: () => {
       const kandPids = ROUND1 ? [...new Set(ROUND1.filter(p => +p.grp === 33).map(p => p.person))] : [];
+      const moves = lastKandidatFlytMoves || [];
+      const totalFlyt = moves.reduce((s, m) => s + m.antal, 0);
+      const flytHtml = totalFlyt > 0
+        ? `<p>Alle ledige pladser er nu flyttet til gruppe 33:<br>${moves.map(m =>
+            `<strong>${STATIONS[m.stnId]?.name?.split(' ')[0]}</strong>: ${m.antal} plads${m.antal !== 1 ? 'er' : ''} fra grp.${m.fra} → grp.33`
+          ).join('<br>')}</p>`
+        : `<p>Der er ingen ledige pladser at flytte til gruppe 33 i denne fordeling.</p>`;
       return `
 <p>Den ordinære fordeling er stabil. Nu køres <strong>kandidatrunden</strong> (grp. 33) — en særlig runde for ansøgere med en kandidatuddannelse.</p>
 <p>Gruppe 33-ansøgere kan <em>kun</em> optages hvis der er ledige pladser tilbage efter den ordinære fordeling. De konkurrerer ikke med de ordinære ansøgere og påvirker ikke de placeringer der allerede er fastlagt.</p>
+${flytHtml}
 ${kandPids.length > 0
   ? `<p>Der er <strong>${kandPids.length} ansøger${kandPids.length === 1 ? '' : 'e'}</strong> med gruppe 33 i denne fordeling. Tryk Næste for at se hvem der optages.</p>`
   : '<p>Der er ingen ansøgere med gruppe 33 i denne fordeling — runden afsluttes hurtigt.</p>'}`;
@@ -1962,6 +1970,7 @@ let STATIONS = {};
 let CAPACITY = {};
 let CAPACITY_DEFAULTS = {};
 let CAPACITY_PRE_GRP33 = null; // snapshot taget inden applyKandidatPladsflyt muterer CAPACITY
+let lastKandidatFlytMoves = null;
 let IMPORT_MODE = false;
 let IMPORT_WISH_ORIGINAL = null;
 let STATION_INST = {}; // stnId → instId
@@ -4484,7 +4493,17 @@ function addKandidatCircle(pid, stnId) {
 
 function stepKandidatrundeIntro() {
   return withLearning('kandidatrunde-intro', () => {
-    setStatus('Kandidat', 'Kandidatrunden klar — tryk Næste for at køre grp. 33-fordelingen.');
+    lastKandidatFlytMoves = applyKandidatPladsflyt();
+    renderCapBoxRight();
+    const totalFlyt = lastKandidatFlytMoves.reduce((s, m) => s + m.antal, 0);
+    if (totalFlyt > 0) {
+      const flytLines = lastKandidatFlytMoves.map(m =>
+        `${STATIONS[m.stnId]?.name?.split(' ')[0]}: ${m.antal} ledig${m.antal !== 1 ? 'e' : ''} plads${m.antal !== 1 ? 'er' : ''} fra grp.${m.fra} → grp.33`
+      ).join(' · ');
+      setStatus('Grp. 33', `Ledige pladser flyttes til gruppe 33: ${flytLines}`);
+    } else {
+      setStatus('Grp. 33', 'Ingen ledige pladser at flytte til gruppe 33.');
+    }
     setCenter('Kandidat', 'Grp. 33');
     enableNextBtn();
   });
@@ -4503,9 +4522,21 @@ function stepKandidatrunde() {
 
     setTimeout(() => {
       try {
-        // Flyt ledige pladser til grp.33
-        const pladsMoves = applyKandidatPladsflyt();
-        renderCapBoxRight();
+        // Flyt ledige pladser til grp.33 (springes over hvis intro-steget allerede gjorde det)
+        const pladsMoves = lastKandidatFlytMoves ?? applyKandidatPladsflyt();
+        lastKandidatFlytMoves = null; // nulstilles efter animation er startet, modal er allerede vist
+        if (!learningMode) renderCapBoxRight();
+
+        // Vis besked om pladsflyt til grp.33
+        const totalFlyt = pladsMoves.reduce((s, m) => s + m.antal, 0);
+        if (totalFlyt > 0) {
+          const flytLines = pladsMoves.map(m =>
+            `${STATIONS[m.stnId]?.name?.split(' ')[0]}: ${m.antal} ledig${m.antal !== 1 ? 'e' : ''} plads${m.antal !== 1 ? 'er' : ''} fra grp.${m.fra} → grp.33`
+          ).join(' · ');
+          setStatus('Grp. 33', `Ledige pladser flyttes til gruppe 33: ${flytLines}`);
+        } else {
+          setStatus('Grp. 33', 'Ingen ledige pladser at flytte til gruppe 33.');
+        }
 
         // Find hvem der kan optages
         const optag = computeKandidatOptag();
