@@ -1349,8 +1349,22 @@ Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, 
       </div>
 
       <h3 style="margin:0 0 10px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--indigo);">Advanced mode</h3>
-      <div style="background:var(--surface-2);border-radius:10px;padding:14px 18px;margin-bottom:4px;font-size:13px;line-height:1.8;color:var(--modal-body-text);">
+      <div style="background:var(--surface-2);border-radius:10px;padding:14px 18px;margin-bottom:20px;font-size:13px;line-height:1.8;color:var(--modal-body-text);">
         Indlæs data via CSV-filer: <b>udbud.csv · pladser.csv · ansøgere.csv · rangeringer.csv</b>. Tryk <b>← Demo</b> for at vende tilbage til simulationsdata.
+      </div>
+
+      <h3 style="margin:0 0 10px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--indigo);">Teknisk dokumentation</h3>
+      <div style="background:var(--surface-2);border-radius:10px;padding:14px 18px;margin-bottom:4px;font-size:13px;line-height:1.8;color:var(--modal-body-text);">
+
+        <b>Runde 1 vs. runde 2+</b><br>
+        Runde 1 viser én togkørsel per gruppe (grp. 10, grp. 20, grp. 49 osv.) fordi grupperne er fuldstændigt uafhængige i den midlertidige fordeling: de har hvert sit kapacitetsloft og sin egen rangeringslogik (karaktergennemsnit i kvote 1, rangeringsnummer/kval_p i kvote 2). En ansøger kan godt forekomme i flere grupper på samme udbud — de konkurrerer ikke på tværs af grupper. Efter alle gruppe-kørsler rydder clearing op, så hver ansøger kun beholder sin bedste placering.<br><br>
+        Runde 2 og frem viser én samlet kørsel fordi de løser et andet problem: de tjekker om den eksisterende fordeling er global stabil efter pladsflyt. Det er en global operation over alle grupper og udbud samtidigt — der er ingen naturlig per-gruppe opdeling. Resultatet er enten "ingen ændringer → stabilt og slut" eller "N ansøgere rykket → kør endnu en runde".<br><br>
+
+        <b>Gruppe 49 — frit optag</b><br>
+        Gruppe 49 deltager i alle runder på samme måde som alle andre grupper, med én undtagelse: kapaciteten er ubegrænset. I den per-gruppe DA i runde 1 accepteres alle ansøgere der søgte frit optag på et udbud — der sker ingen frasortering pga. pladsmangel. I clearing og runde 2+ behandles gruppe 49 identisk med øvrige grupper: for hver ansøger vinder den placering (udbud + gruppe) der svarer til den højeste prioritet i ansøgerens ønskeliste. En ansøger kan godt have gruppe 49-placeringer på flere udbud samt placeringer i andre grupper — algoritmen finder korrekt den ene bedste.<br><br>
+
+        <b>Hvad består et clearingssæt af?</b><br>
+        Efter runde 1 kan en ansøger sidde med foreløbige placeringer i flere grupper på tværs af udbud. Clearingen konvergerer disse til én placering per ansøger via gentagne sæt. Et enkelt sæt er én komplet synkron gennemgang af alle ansøgere og alle (udbud, gruppe)-pladser: hvert slot sorterer sine ansøgere efter score og beholder kun de øverste inden for kapaciteten — resten afvises. Afviste ansøgere rykker til deres næste ledige slot, hvilket kan fortrænge andre, og så videre. Alle fortrængninger sker "samtidigt" inden næste sæt starter. Sæt 1 klarer den største oprydning; efterfølgende sæt håndterer kaskadeeffekterne indtil ingen ansøgers placering længere ændrer sig.
       </div>
 
     </div>
@@ -2538,6 +2552,7 @@ let pavEls = {};
 let lastRundeMoved = [];
 let followedPids = new Set();
 let followedPrevKeys = {};
+let lastDisplayedStepKey = null;
 let lastPladsflytMoves = [];
 let grænsekvotientMap = null;
 const MAX_VISIBLE = 6;
@@ -3033,7 +3048,7 @@ function setFollowed(pid) {
     if (followedPids.size) localStorage.setItem('kot_followed', JSON.stringify([...followedPids]));
     else localStorage.removeItem('kot_followed');
   } catch(e) {}
-  renderFollowedCards();
+  renderFollowedCards(lastDisplayedStepKey);
   renderAppList();
   renderActiveCards();
 }
@@ -3150,6 +3165,7 @@ function getFollowedStatusText(pid, stepKey) {
 }
 
 function updateFollowedCard(stepKey) {
+  lastDisplayedStepKey = stepKey;
   renderFollowedCards(stepKey);
 }
 
@@ -5119,6 +5135,7 @@ function reset() {
   applyStationConfig();
   resetSimState();
   followedPrevKeys = {};
+  lastDisplayedStepKey = null;
   renderFollowedCards();
 }
 
