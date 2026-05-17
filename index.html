@@ -4713,9 +4713,8 @@ function buildSteps() {
       for (const [stnId, stn] of Object.entries(STATIONS)) {
         if (Object.keys(stn.capacity).length > 0) uddSet.add(stnId);
         for (const [grp, cap] of Object.entries(stn.capacity)) {
-          if (+grp === 49) continue;
           grpSet.add(`${stnId}-${grp}`);
-          totalPladser += cap;
+          if (+grp !== 49) totalPladser += cap;
         }
       }
       const antalUdd = uddSet.size;
