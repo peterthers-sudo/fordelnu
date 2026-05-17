@@ -1441,93 +1441,73 @@ const LEARNING_TEXTS = {
 
   // ══ TRIN 1 ══════════════════════════════════════════════════════════════════
   'statistik': {
-    title: 'Start — KOT simulation',
+    title: 'Start — KOT-fordelingen',
     body: () => {
       const n = selected.size;
       const stnList = Object.values(STATIONS);
       const totalCap = Object.values(CAPACITY).reduce((s, grps) =>
         s + Object.entries(grps).reduce((a, [g, v]) => +g === 49 ? a : a + v, 0), 0);
       const ratio = (totalCap / n).toFixed(1);
-      const stnCounts = {};
-      for (const pid of selected)
-        for (const stn of [...new Set(getWishes(pid).map(w => w.stn))])
-          stnCounts[stn] = (stnCounts[stn] || 0) + 1;
-      const top = Object.entries(stnCounts).sort(([, a], [, b]) => b - a)[0];
-      const multiWish = [...selected]
-        .map(pid => ({ name: PERSONS[pid]?.name, n: new Set(getWishes(pid).map(w => w.stn)).size }))
-        .filter(a => a.n > 1).sort((a, b) => b.n - a.n).slice(0, 2);
       return `
-<p style="margin:0 0 6px">Inden KOT-fordelingen kan starte skal der være indlæst data fra fire kilder:</p>
-<ul style="margin:0 0 6px;padding-left:22px;display:flex;flex-direction:column;gap:2px;">
-  <li><strong>Udbud</strong> — Alle uddannelser og udbud</li>
-  <li><strong>Optagelse.dk</strong> — Alle ansøgere og deres prioriterede ønsker</li>
-  <li><strong>Uddannelser</strong> — Inkl. grupper, pladsantal og regler for pladsflyt</li>
-  <li><strong>Institutionerne</strong> — Rangerede ansøgninger inkl. karaktergennemsnit, kvote 2-point, standby m.m</li>
-</ul>
-<p style="margin:0 0 6px">I læringsmode har vi følgende data: <strong>${n} ansøgere</strong> · <strong>${stnList.length} uddannelser</strong> (${stnList.map(s => s.name).join(', ')}) · <strong>${totalCap} pladser</strong> i alt (ca. ${ratio} plads pr. ansøger).</p>
-<p style="margin:0">Tryk på "Forstået" og derefter på "Næste" for at starte fordelingssimulatoren.</p>`;
+<p>KOT fordeler <strong>${n} ansøgere</strong> på <strong>${stnList.length} uddannelser</strong> med i alt <strong>${totalCap} pladser</strong> (ca. ${ratio} plads pr. ansøger).</p>
+<p>Fordelingen bruger <strong>Deferred Acceptance (DA)</strong> — en algoritme der garanterer at alle ansøgere ender på den <em>højest mulige prioritet</em>, givet den kapacitet og de rangeringer der er indberettet. Ingen ansøger kan forbedre sig uden at fortrænge en der er bedre rangeret.</p>
+<p>Algoritmen kører i runder med tre faste trin per runde: <strong>(1) midlertidig DA-fordeling per gruppe</strong>, <strong>(2) clearing</strong> som reducerer til én plads per ansøger, og <strong>(3) pladsflyt</strong> som omfordeler ubrugt kapacitet. Runderne gentages til resultatet er stabilt.</p>`;
     }
   },
 
   // ══ TRIN 2a–d: Per-gruppe DA ═════════════════════════════════════════════════
   'grp10-runde1': {
-    title: 'Runde 1 — Kvote 1 (Grp. 10)',
+    title: 'Runde 1 — DA for kvote 1 (Grp. 10)',
     body: () => {
       const prov = lastGroupProvisional[10] || new Set();
       const placed = new Set([...prov].map(k => k.split('-')[0]));
       const total = placed.size;
       const grp10apps = [...selected].filter(pid => ROUND1.some(p => p.person === pid && +p.grp === 10));
       const rejected = grp10apps.filter(pid => !placed.has(pid));
-      const rejEx = rejected.slice(0, 3).map(pid => PERSONS[pid]?.name).filter(Boolean);
       return `
-<p>Kvote 1 bygger på karaktergennemsnittet. Hvert udbud rangerer sine ansøgere i grp. 10 fra højeste til laveste snit og tilbyder foreløbige pladser op til kapaciteten.</p>
-<p><strong>${grp10apps.length} ansøgere</strong> er indberettet til mindst ét udbud i kvote 1 (grp. 10).</p>
-${total > 0 ? `<p><strong>${total} foreløbige pladser</strong> er nu tildelt i kvote 1. Ansøgere kan have fået tilbud fra flere udbud — toget viser hvem der foreløbigt er på hvert udbud.</p>` : '<p>Ingen pladser i kvote 1 i denne fordeling.</p>'}
-${rejected.length ? `<p>${rejected.length} ansøger${rejected.length === 1 ? '' : 'e'} søgte kvote 1, men fik ikke plads — enten fordi de har for lavt snit, eller fordi de allerede har en bedre plads et andet sted: <strong>${rejEx.join(', ')}${rejected.length > 3 ? '…' : ''}</strong>.</p>` : ''}`;
+<p><strong>${grp10apps.length} ansøgere</strong> er indberettet på mindst ét udbud i kvote 1 (grp. 10). DA-algoritmen kører nu for denne gruppe: hvert udbud sorterer sine ansøgere efter karaktergennemsnit og accepterer tentativt de øverste inden for kapaciteten. Ansøgere der ikke er inden for kapaciteten afvises straks og rykker automatisk til deres næste ønske — de er aldrig formelt placeret.</p>
+<p><strong>${total > 0 ? total + ' tentative pladser' : 'Ingen pladser'}</strong> tildelt i kvote 1. Disse tildelinger er foreløbige og kan ændres i de efterfølgende trin.</p>
+${rejected.length ? `<p><strong>${rejected.length} ansøger${rejected.length === 1 ? '' : 'e'}</strong> søgte kvote 1 men er ikke inden for kapaciteten på noget udbud. De indgår stadig i fordelingen på andre grupper og udbud.</p>` : ''}`;
     }
   },
 
   'grp20-runde1': {
-    title: 'Runde 1 — Kvote 2 (Grp. 20)',
+    title: 'Runde 1 — DA for kvote 2 (Grp. 20)',
     body: () => {
       const prov = lastGroupProvisional[20] || new Set();
       const placed = new Set([...prov].map(k => k.split('-')[0]));
       const total = placed.size;
       const grp20apps = [...selected].filter(pid => ROUND1.some(p => p.person === pid && +p.grp === 20));
       return `
-<p>Kvote 2 giver adgang via særlige kvalifikationer — fx erhvervserfaring, særlige talenter eller en optagelsesprøve. Institutionerne rangerer selv ansøgerne i grp. 20 og tilbyder pladser op til kapaciteten.</p>
-<p><strong>${grp20apps.length} ansøgere</strong> er indberettet til mindst ét udbud i kvote 2 (grp. 20).</p>
-${total > 0 ? `<p><strong>${total} foreløbige pladser</strong> er nu tildelt i kvote 2. Ansøgere der allerede har et tilbud i kvote 1, kan også have et foreløbigt kvote 2-tilbud — de beholder kun deres bedste i clearingen.</p>` : '<p>Ingen pladser i kvote 2 i denne fordeling.</p>'}`;
+<p><strong>${grp20apps.length} ansøgere</strong> er indberettet i kvote 2 (grp. 20). Her bruger DA-algoritmen institutionernes egne rangeringer — kval_p — i stedet for karaktergennemsnit. Mekanismen er identisk: hvert udbud accepterer tentativt de øverste inden for kapaciteten, resten afvises og rykker videre.</p>
+<p><strong>${total > 0 ? total + ' tentative pladser' : 'Ingen pladser'}</strong> tildelt i kvote 2. En ansøger kan på dette tidspunkt have tentative placeringer i <em>både</em> kvote 1 og kvote 2 — clearingen afgør hvilken der beholdes.</p>`;
     }
   },
 
   'grp60-runde1': {
-    title: 'Runde 1 — Kvote 1 standby (Grp. 60)',
+    title: 'Runde 1 — DA for kvote 1 standby (Grp. 60)',
     body: () => {
       const prov = lastGroupProvisional[60] || new Set();
       const placed = new Set([...prov].map(k => k.split('-')[0]));
       const total = placed.size;
       const grp60apps = [...selected].filter(pid => ROUND1.some(p => p.person === pid && +p.grp === 60));
       return `
-<p>Kvote 1 standby (grp. 60) fungerer som en venteliste for kvote 1 — ansøgere med karaktergennemsnit under adgangskvotienten indplaceres her i rækkefølge efter snit.</p>
-<p>Standbypladser er foreløbige og afhænger af, om nogen på den direkte liste takker nej eller trækker sig.</p>
-<p><strong>${grp60apps.length} ansøgere</strong> er indberettet til mindst ét udbud i kvote 1 standby.</p>
-${total > 0 ? `<p><strong>${total} foreløbige standbypladser</strong> er tildelt i kvote 1 standby.</p>` : '<p>Ingen standbypladser i kvote 1 i denne fordeling.</p>'}`;
+<p><strong>${grp60apps.length} ansøgere</strong> er indberettet i kvote 1 standby (grp. 60). DA-algoritmen kører identisk med kvote 1 — ansøgere rangeres efter karaktergennemsnit og accepteres tentativt inden for kapaciteten.</p>
+<p><strong>${total > 0 ? total + ' tentative standbypladser' : 'Ingen standbypladser'}</strong> tildelt. Standbypladser er foreløbige og afhænger af om ansøgere på de direkte lister (grp. 10/20) takker nej eller trækker sig — det afklares endeligt i optagelsesperioden, ikke i selve fordelingen.</p>`;
     }
   },
 
   'grp70-runde1': {
-    title: 'Runde 1 — Kvote 2 standby (Grp. 70)',
+    title: 'Runde 1 — DA for kvote 2 standby (Grp. 70)',
     body: () => {
       const prov = lastGroupProvisional[70] || new Set();
       const placed = new Set([...prov].map(k => k.split('-')[0]));
       const total = placed.size;
       const grp70apps = [...selected].filter(pid => ROUND1.some(p => p.person === pid && +p.grp === 70));
       return `
-<p>Kvote 2 standby (grp. 70) er ventelisten for kvote 2 — ansøgere der er indberettet i kvote 2, men ikke fik en direkte plads, placeres her efter institutionens rangering.</p>
-<p><strong>${grp70apps.length} ansøgere</strong> er indberettet til mindst ét udbud i kvote 2 standby.</p>
-${total > 0 ? `<p><strong>${total} foreløbige standbypladser</strong> er tildelt i kvote 2 standby.</p>` : '<p>Ingen standbypladser i kvote 2 i denne fordeling.</p>'}
-<p>Nu er alle kvotekørsler afsluttet. Mange ansøgere er foreløbigt placeret på <em>flere</em> uddannelser eller grupper — næste trin er clearing, der rydder op.</p>`;
+<p><strong>${grp70apps.length} ansøgere</strong> er indberettet i kvote 2 standby (grp. 70). Mekanismen er identisk med kvote 2 — institutionens rangering afgør rækkefølgen.</p>
+<p><strong>${total > 0 ? total + ' tentative standbypladser' : 'Ingen standbypladser'}</strong> tildelt.</p>
+<p>Alle gruppers DA-løkker i runde 1 er nu afviklede. En ansøger kan have tentative placeringer på tværs af grupper og udbud — næste trin er clearing, der konvergerer til én plads per ansøger.</p>`;
     }
   },
 
@@ -1564,20 +1544,17 @@ ${garInfo.length ? `<p style="background:var(--rang-gar-score-bg);border:1px sol
 
   // ══ TRIN 3 ══════════════════════════════════════════════════════════════════
   'clearing-1': {
-    title: 'Runde 1 — Clearing',
+    title: 'Runde 1 — Clearing: Én plads per ansøger',
     body: () => {
       if (!ROUND1 || !FINAL_KEYS) return '<p>Clearing er ved at starte...</p>';
-      const stnsByPid = {};
-      for (const p of ROUND1) { if (!stnsByPid[p.person]) stnsByPid[p.person] = new Set(); stnsByPid[p.person].add(p.stn); }
-      const multiEntries = Object.entries(stnsByPid).filter(([, s]) => s.size > 1);
-      const examples = multiEntries.slice(0, 2).map(([pid, stns]) => {
+      const multiPids = [...selected].filter(pid =>
+        new Set(ROUND1.filter(p => p.person === pid).map(p => `${p.stn}-${p.grp}`)).size > 1);
+      const examples = multiPids.slice(0, 2).map(pid => {
         const keptKey = [...FINAL_KEYS].find(k => k.startsWith(pid + '-'));
         const keptStn = keptKey ? keptKey.split('-').slice(1, -1).join('-') : null;
         const keptGrp = keptKey ? keptKey.split('-').at(-1) : null;
-        const allNames = [...stns].map(s => STATIONS[s]?.name?.split(' ')[0]).join(' og ');
         const keptName = keptStn ? STATIONS[keptStn]?.name?.split(' ')[0] : '?';
-        const droppedNames = [...stns].filter(s => s !== keptStn).map(s => STATIONS[s]?.name?.split(' ')[0]).join(', ');
-        return `<strong>${PERSONS[pid]?.name}</strong> er placeret på ${allNames} — beholder gruppe ${keptGrp} på <strong>${keptName}</strong>, frigiver ${droppedNames}`;
+        return `<strong>${PERSONS[pid]?.name}</strong> → beholder grp. ${keptGrp} på <strong>${keptName}</strong>`;
       });
       const totalPlaced = new Set([...FINAL_KEYS].map(k => k.split('-')[0])).size;
       const unplaced = selected.size - totalPlaced;
@@ -1586,14 +1563,12 @@ ${garInfo.length ? `<p style="background:var(--rang-gar-score-bg);border:1px sol
         .map(k => {
           const parts = k.split('-');
           const pid = parts[0], stnId = parts.slice(1,-1).join('-'), grp = parts[parts.length-1];
-          return `<strong>${PERSONS[pid]?.name}</strong> beholder sin garanterede plads på ${STATIONS[stnId]?.name?.split(' ')[0]} grp.${grp}`;
+          return `<strong>${PERSONS[pid]?.name}</strong> (${STATIONS[stnId]?.name?.split(' ')[0]} grp.${grp})`;
         });
       return `
-<p>Clearingen er gennemført. Algoritmen kørte <strong>${lastIterations} indre løkker</strong> af midlertidig fordeling og clearing, til antallet af optagne ikke steg i to sæt i træk. I det virkelige KOT-system med 85.000 ansøgere kan dette tage mange runder — her gik det hurtigt.</p>
-<p><strong>${multiEntries.length} ansøger${multiEntries.length === 1 ? '' : 'e'}</strong> var placeret på mere end én uddannelse eller gruppe — hver ansøger har nu kun beholdt pladsen på sin højeste prioritet, og de øvrige pladser er frigivet.</p>
-${examples.length ? `<p style="margin:10px 0 4px">F.eks.:</p><ul style="margin:0 0 12px;padding-left:22px;display:flex;flex-direction:column;gap:8px;">${examples.map(e => `<li>${e}</li>`).join('')}</ul>` : ''}
-${garPlaced.length ? `<p style="background:var(--rang-gar-score-bg);border:1px solid var(--rang-gar-score-border);color:var(--rang-gar-color);border-radius:6px;padding:10px 14px;margin-top:10px;">${garPlaced.join(' · ')} — garanteret optagelse sikrer pladsen uanset øvrige ansøgeres rangeringer.</p>` : ''}
-<p><strong>${totalPlaced} ansøgere</strong> er tildelt én plads${unplaced > 0 ? ` — <strong>${unplaced}</strong> har endnu ingen plads` : ''}.</p>`;
+<p>Clearingen kørte <strong>${lastIterations} sæt</strong> — gentagne synkrone gennemløb hvor hvert (udbud, gruppe)-slot beholder sine bedste ansøgere inden for kapaciteten og afviser resten, til ingen placering ændrer sig. Resultatet: hver ansøger er reduceret til <em>én</em> plads — den bedste opnåede på tværs af alle grupper.</p>
+${examples.length ? `<p>F.eks.:</p><ul style="margin:6px 0 10px;padding-left:22px;display:flex;flex-direction:column;gap:6px;">${examples.map(e => `<li>${e}</li>`).join('')}</ul>` : ''}
+<p><strong>${totalPlaced} ansøgere</strong> har én plads${unplaced > 0 ? ` — <strong>${unplaced}</strong> er endnu uden plads` : ''}${garPlaced.length ? `. Garanteret optagelse: ${garPlaced.join(', ')}` : ''}.</p>`;
     }
   },
 
@@ -1607,115 +1582,15 @@ ${garPlaced.length ? `<p style="background:var(--rang-gar-score-bg);border:1px s
       const total = lastPladsflytMoves.reduce((s, m) => s + m.antal, 0);
       const moveSummary = lastPladsflytMoves.map(m => `${STATIONS[m.stnId]?.name?.split(' ')[0]}: ${m.antal} plads${m.antal > 1 ? 'er' : ''} fra grp.${m.fra} → grp.${m.til}`).join(', ');
       return `
-<p>KOT har nu tjekket om der var ledige pladser i grupper som kunne flyttes til en anden gruppe på samme uddannelse — fx om ledige pladser i kvote 2 kunne flyttes til kvote 1, hvis den var fyldt.</p>
-<p>Pladsflyt kan åbne for optag af ansøgere der ventede på kvote 1, selvom kvote 1 var fyldt efter clearing.</p>
-${total > 0 ? `<p><strong>${total} plads${total > 1 ? 'er' : ''} flyttet:</strong> ${moveSummary}.</p>` : '<p>Ingen pladser blev flyttet i denne runde.</p>'}
-${unplacedPids.length ? `<p>Endnu uden plads: <strong>${unplacedNames.join(', ')}${unplacedPids.length > 4 ? ` og ${unplacedPids.length - 4} andre` : ''}</strong>.</p>` : ''}`;
+<p>Pladsflyt omfordeler ubrugt kapacitet inden for samme udbud — styret af reglerne for <strong>pf_i_kv</strong> (flyt inden for kvoten) og <strong>pf_ml_kv</strong> (flyt mellem kvoter) som I har indberettet. Ledige pladser i én gruppe kan flyttes til en beslægtet gruppe og åbne for ansøgere der ellers ikke ville blive optaget.</p>
+${total > 0 ? `<p><strong>${total} plads${total > 1 ? 'er' : ''} flyttet:</strong> ${moveSummary}.</p>` : '<p>Ingen pladser blev omfordelt i denne runde.</p>'}
+${unplacedPids.length ? `<p>Endnu uden plads: <strong>${unplacedNames.join(', ')}${unplacedPids.length > 4 ? ` og ${unplacedPids.length - 4} andre` : ''}</strong> — de vil få en ny chance i næste runde.</p>` : ''}`;
     }
   },
 
   // ══ TRIN 5 ══════════════════════════════════════════════════════════════════
   'opsummering-1': {
-    title: 'Runde 1 — Opsummering',
-    body: () => {
-      const placed = new Set([...FINAL_KEYS].map(k => k.split('-')[0]));
-      const placedCount = placed.size;
-      const unplacedCount = selected.size - placedCount;
-      const totalCap = Object.values(CAPACITY).reduce((s, grps) =>
-        s + Object.entries(grps).reduce((a, [g, v]) => +g === 49 ? a : a + v, 0), 0);
-      const ledige = totalCap - placedCount;
-      const notFirst = [...selected].reduce((acc, pid) => {
-        const k = [...FINAL_KEYS].find(f => f.startsWith(pid + '-'));
-        if (!k) return acc;
-        const stn = k.split('-').slice(1, -1).join('-');
-        const w = [...new Set(getWishes(pid).map(x => x.stn))];
-        if (w.length > 1 && w[0] !== stn) acc.push({ name: PERSONS[pid]?.name, want: STATIONS[w[0]]?.name?.split(' ')[0], got: STATIONS[stn]?.name?.split(' ')[0] });
-        return acc;
-      }, []);
-      const parts = [];
-      if (notFirst.length) parts.push(`<strong>${notFirst.length} ansøger${notFirst.length === 1 ? '' : 'e'}</strong> er placeret på en lavere prioritet end deres højeste prioritet`);
-      if (unplacedCount) parts.push(`<strong>${unplacedCount}</strong> har endnu ingen plads`);
-      const bottomMsg = parts.length
-        ? `<p>${parts.join(', og ')} — KOT kører endnu en runde for at undersøge om de kan flytte plads.</p>`
-        : '<p>Alle optagne er placeret på den højest mulige prioritet. KOT kører en ekstra runde for at bekræfte stabiliteten.</p>';
-      return `
-<p>Runde 1 er afsluttet. Algoritmen kørte <strong>${lastIterations} indre løkker</strong> af midlertidig fordeling og clearing inden stabilt resultat. Status:</p>
-<ul style="margin:12px 0;padding-left:22px;display:flex;flex-direction:column;gap:7px;">
-  <li><strong>${placedCount} optaget</strong></li>
-  <li><strong>${unplacedCount} afvist</strong></li>
-  <li><strong>${ledige} ledige pladser</strong></li>
-</ul>
-${bottomMsg}`;
-    }
-  },
-
-  // ══ TRIN 6 ══════════════════════════════════════════════════════════════════
-  'togkørsel-2': {
-    title: 'Runde 2 — Kan nogen flyttes til en bedre plads?',
-    body: () => {
-      const movedEx = lastRundeMoved.slice(0, 3).map(m =>
-        m.placed ? `<strong>${m.name}</strong> er rykket til gruppe ${m.grp} på <strong>${m.stn}</strong>`
-                 : `<strong>${m.name}</strong> har mistet sin plads`);
-      const candidates = [...selected].reduce((acc, pid) => {
-        const k = [...FINAL_KEYS].find(f => f.startsWith(pid + '-'));
-        const w = [...new Set(getWishes(pid).map(x => x.stn))];
-        if (!k) { if (w.length) acc.push({ name: PERSONS[pid]?.name, want: STATIONS[w[0]]?.name?.split(' ')[0], type: 'unplaced' }); }
-        else { const stn = k.split('-').slice(1, -1).join('-'); if (w.length > 1 && w[0] !== stn) acc.push({ name: PERSONS[pid]?.name, want: STATIONS[w[0]]?.name?.split(' ')[0], got: STATIONS[stn]?.name?.split(' ')[0], type: 'lower' }); }
-        return acc;
-      }, []);
-      const ex = candidates.slice(0, 3).map(a => a.type === 'unplaced' ? `<strong>${a.name}</strong> har ingen plads og ønsker ${a.want}` : `<strong>${a.name}</strong> er placeret på ${a.got}, men har ${a.want} som højere prioritet`);
-      return `
-<p>KOT har nu kørt <strong>runde 2</strong> for at tjekke om nogen kunne flyttes til en højere prioritet efter pladsflyttet i runde 1.</p>
-${lastRundeMoved.length
-  ? `<p><strong>${lastRundeMoved.length} ansøger${lastRundeMoved.length === 1 ? '' : 'e'}</strong> er rykket til en bedre plads:</p>
-<p style="margin:10px 0 4px">F.eks.:</p><ul style="margin:0 0 12px;padding-left:22px;display:flex;flex-direction:column;gap:6px;">${movedEx.map(e => `<li>${e}</li>`).join('')}${lastRundeMoved.length > 3 ? `<li>... og ${lastRundeMoved.length - 3} andre</li>` : ''}</ul>`
-  : '<p>Ingen ansøgere ændrede plads i runde 2.</p>'}
-${candidates.length ? `<p><strong>${candidates.length} ansøger${candidates.length === 1 ? '' : 'e'}</strong> er endnu ikke placeret på deres højeste prioritet:</p>
-<p style="margin:10px 0 4px">F.eks.:</p><ul style="margin:0 0 12px;padding-left:22px;display:flex;flex-direction:column;gap:6px;">${ex.map(e => `<li>${e}</li>`).join('')}${candidates.length > 3 ? `<li>... og ${candidates.length - 3} andre</li>` : ''}</ul>` : '<p>Alle ansøgere er nu placeret på den højest mulige prioritet.</p>'}`;
-    }
-  },
-
-  // ══ TRIN 7 ══════════════════════════════════════════════════════════════════
-  'clearing-2': {
-    title: 'Runde 2 — Clearing',
-    body: () => {
-      if (!ROUND1 || !FINAL_KEYS) return '<p>Clearing er ved at starte...</p>';
-      const stnsByPid = {};
-      for (const p of ROUND1) { if (!stnsByPid[p.person]) stnsByPid[p.person] = new Set(); stnsByPid[p.person].add(p.stn); }
-      const multiEntries = Object.entries(stnsByPid).filter(([, s]) => s.size > 1);
-      const examples = multiEntries.slice(0, 2).map(([pid, stns]) => {
-        const keptKey = [...FINAL_KEYS].find(k => k.startsWith(pid + '-'));
-        const keptStn = keptKey ? keptKey.split('-').slice(1, -1).join('-') : null;
-        const keptGrp = keptKey ? keptKey.split('-').at(-1) : null;
-        const keptName = keptStn ? STATIONS[keptStn]?.name?.split(' ')[0] : '?';
-        return `<strong>${PERSONS[pid]?.name}</strong> → beholder gruppe ${keptGrp} på <strong>${keptName}</strong>`;
-      });
-      const totalPlaced = new Set([...FINAL_KEYS].map(k => k.split('-')[0])).size;
-      return `
-<p>Clearingen er gennemført. Algoritmen kørte <strong>${lastIterations} indre løkker</strong> af midlertidig fordeling og clearing til stabilt resultat. Hver ansøger beholder kun pladsen på sin højeste prioritet — de øvrige er frigivet.</p>
-${examples.length ? `<p style="margin:10px 0 4px">F.eks.:</p><ul style="margin:0 0 12px;padding-left:22px;display:flex;flex-direction:column;gap:6px;">${examples.map(e => `<li>${e}</li>`).join('')}</ul>` : ''}
-<p><strong>${totalPlaced} ansøgere</strong> er tildelt én plads.</p>`;
-    }
-  },
-
-  // ══ TRIN 8 ══════════════════════════════════════════════════════════════════
-  'pladsflyt-2': {
-    title: 'Runde 2 — Pladsflyt',
-    body: () => {
-      const placed = new Set([...FINAL_KEYS].map(k => k.split('-')[0]));
-      const unplacedPids = [...selected].filter(pid => !placed.has(pid));
-      const total2 = lastPladsflytMoves.reduce((s, m) => s + m.antal, 0);
-      const moveSummary2 = lastPladsflytMoves.map(m => `${STATIONS[m.stnId]?.name?.split(' ')[0]}: ${m.antal} plads${m.antal > 1 ? 'er' : ''} fra grp.${m.fra} → grp.${m.til}`).join(', ');
-      return `
-<p>KOT har igen tjekket om der var ledige pladser at flytte mellem grupper. Hver runde kan åbne for nye muligheder, fordi ansøgere kan have flyttet til en højere prioritet og dermed frigivet pladser i lavere grupper.</p>
-${total2 > 0 ? `<p><strong>${total2} plads${total2 > 1 ? 'er' : ''} flyttet:</strong> ${moveSummary2}.</p>` : '<p>Ingen pladser blev flyttet i denne runde.</p>'}
-${unplacedPids.length ? `<p>Endnu uden plads: <strong>${[...unplacedPids].slice(0,4).map(pid => PERSONS[pid]?.name).join(', ')}${unplacedPids.length > 4 ? ` og ${unplacedPids.length - 4} andre` : ''}</strong>.</p>` : ''}`;
-    }
-  },
-
-  // ══ TRIN 9 ══════════════════════════════════════════════════════════════════
-  'opsummering-2': {
-    title: 'Runde 2 — Opsummering',
+    title: 'Runde 1 — Status',
     body: () => {
       const placed = new Set([...FINAL_KEYS].map(k => k.split('-')[0]));
       const placedCount = placed.size;
@@ -1731,38 +1606,125 @@ ${unplacedPids.length ? `<p>Endnu uden plads: <strong>${[...unplacedPids].slice(
         if (w.length > 1 && w[0] !== stn) acc.push(PERSONS[pid]?.name);
         return acc;
       }, []);
+      const needsMore = notFirst.length > 0 || unplacedCount > 0;
       return `
-<p>Runde 2 er afsluttet. Algoritmen kørte <strong>${lastIterations} indre løkker</strong> af midlertidig fordeling og clearing inden stabilt resultat:</p>
+<p>Runde 1 afsluttet. Algoritmen kørte <strong>${lastIterations} indre løkker</strong> til stabilt resultat:</p>
 <ul style="margin:12px 0;padding-left:22px;display:flex;flex-direction:column;gap:7px;">
   <li><strong>${placedCount} optaget</strong></li>
-  <li><strong>${unplacedCount} afvist</strong></li>
+  <li><strong>${unplacedCount} uden plads</strong></li>
   <li><strong>${ledige} ledige pladser</strong></li>
 </ul>
-`;
+${needsMore
+  ? `<p>${notFirst.length > 0 ? `<strong>${notFirst.length} ansøger${notFirst.length === 1 ? '' : 'e'}</strong> er placeret på en lavere prioritet end muligt${unplacedCount > 0 ? `, og <strong>${unplacedCount}</strong> mangler plads` : ''}` : `<strong>${unplacedCount}</strong> ansøger${unplacedCount === 1 ? '' : 'e'} mangler plads`}. Pladsflyttet kan have åbnet nye muligheder — KOT kører runde 2 for at undersøge det.</p>`
+  : '<p>Alle optagne er på deres højest mulige prioritet. KOT kører en kontrolrunde for at bekræfte stabiliteten.</p>'}`;
+    }
+  },
+
+  // ══ TRIN 6 ══════════════════════════════════════════════════════════════════
+  'togkørsel-2': {
+    title: 'Runde 2 — Kan nogen rykke op?',
+    body: () => {
+      const movedEx = lastRundeMoved.slice(0, 3).map(m =>
+        m.placed ? `<strong>${m.name}</strong> → grp. ${m.grp} på <strong>${m.stn}</strong>`
+                 : `<strong>${m.name}</strong> har mistet sin plads`);
+      const candidates = [...selected].reduce((acc, pid) => {
+        const k = [...FINAL_KEYS].find(f => f.startsWith(pid + '-'));
+        const w = [...new Set(getWishes(pid).map(x => x.stn))];
+        if (!k) { if (w.length) acc.push({ name: PERSONS[pid]?.name, type: 'unplaced' }); }
+        else { const stn = k.split('-').slice(1, -1).join('-'); if (w.length > 1 && w[0] !== stn) acc.push({ name: PERSONS[pid]?.name, type: 'lower' }); }
+        return acc;
+      }, []);
+      return `
+<p>Pladsflyttet kan have frigjort kapacitet. Algoritmen kører nu en global DA-løkke over alle grupper og udbud — ikke per gruppe som i runde 1, men samlet — og tjekker om nogen ansøger kan rykke til en højere prioritet.</p>
+${lastRundeMoved.length
+  ? `<p><strong>${lastRundeMoved.length} ansøger${lastRundeMoved.length === 1 ? '' : 'e'}</strong> er rykket til en bedre plads:</p>
+<ul style="margin:6px 0 10px;padding-left:22px;display:flex;flex-direction:column;gap:6px;">${movedEx.map(e => `<li>${e}</li>`).join('')}${lastRundeMoved.length > 3 ? `<li>... og ${lastRundeMoved.length - 3} andre</li>` : ''}</ul>`
+  : '<p>Ingen ansøgere ændrede plads i runde 2.</p>'}
+${candidates.length ? `<p><strong>${candidates.length} ansøger${candidates.length === 1 ? '' : 'e'}</strong> er endnu ikke på deres højeste mulige prioritet — clearing og evt. pladsflyt kører nu.</p>` : '<p>Alle er placeret på deres højest mulige prioritet efter pladsflyttet.</p>'}`;
+    }
+  },
+
+  // ══ TRIN 7 ══════════════════════════════════════════════════════════════════
+  'clearing-2': {
+    title: 'Runde 2 — Clearing',
+    body: () => {
+      if (!ROUND1 || !FINAL_KEYS) return '<p>Clearing er ved at starte...</p>';
+      const totalPlaced = new Set([...FINAL_KEYS].map(k => k.split('-')[0])).size;
+      const changed = prevFinalKeys ? [...selected].reduce((acc, pid) => {
+        const oldK = [...prevFinalKeys].find(k => k.startsWith(pid + '-'));
+        const newK = [...FINAL_KEYS].find(k => k.startsWith(pid + '-'));
+        if (oldK && newK && oldK !== newK) {
+          const newStn = newK.split('-').slice(1, -1).join('-');
+          const newGrp = newK.split('-').at(-1);
+          acc.push(`<strong>${PERSONS[pid]?.name}</strong> → grp. ${newGrp} på <strong>${STATIONS[newStn]?.name?.split(' ')[0]}</strong>`);
+        }
+        return acc;
+      }, []) : [];
+      return `
+<p>Clearingen kørte <strong>${lastIterations} sæt</strong> og reducerede igen til én plads per ansøger — den bedste opnåede på tværs af alle grupper.</p>
+${changed.length ? `<ul style="margin:6px 0 10px;padding-left:22px;display:flex;flex-direction:column;gap:6px;">${changed.slice(0, 3).map(e => `<li>${e}</li>`).join('')}${changed.length > 3 ? `<li>... og ${changed.length - 3} andre</li>` : ''}</ul>` : ''}
+<p><strong>${totalPlaced} ansøgere</strong> er tildelt én plads.</p>`;
+    }
+  },
+
+  // ══ TRIN 8 ══════════════════════════════════════════════════════════════════
+  'pladsflyt-2': {
+    title: 'Runde 2 — Pladsflyt',
+    body: () => {
+      const placed = new Set([...FINAL_KEYS].map(k => k.split('-')[0]));
+      const unplacedPids = [...selected].filter(pid => !placed.has(pid));
+      const total2 = lastPladsflytMoves.reduce((s, m) => s + m.antal, 0);
+      const moveSummary2 = lastPladsflytMoves.map(m => `${STATIONS[m.stnId]?.name?.split(' ')[0]}: ${m.antal} plads${m.antal > 1 ? 'er' : ''} fra grp.${m.fra} → grp.${m.til}`).join(', ');
+      return `
+<p>Pladsflyt kører igen — ansøgere der rykkede til en bedre plads i runde 2 kan have frigjort kapacitet i lavere grupper, som nu kan omfordeles.</p>
+${total2 > 0 ? `<p><strong>${total2} plads${total2 > 1 ? 'er' : ''} flyttet:</strong> ${moveSummary2}.</p>` : '<p>Ingen pladser blev omfordelt.</p>'}
+${unplacedPids.length ? `<p>Endnu uden plads: <strong>${[...unplacedPids].slice(0,4).map(pid => PERSONS[pid]?.name).join(', ')}${unplacedPids.length > 4 ? ` og ${unplacedPids.length - 4} andre` : ''}</strong>.</p>` : ''}`;
+    }
+  },
+
+  // ══ TRIN 9 ══════════════════════════════════════════════════════════════════
+  'opsummering-2': {
+    title: 'Runde 2 — Status',
+    body: () => {
+      const placed = new Set([...FINAL_KEYS].map(k => k.split('-')[0]));
+      const placedCount = placed.size;
+      const unplacedCount = selected.size - placedCount;
+      const totalCap = Object.values(CAPACITY).reduce((s, grps) =>
+        s + Object.entries(grps).reduce((a, [g, v]) => +g === 49 ? a : a + v, 0), 0);
+      const ledige = totalCap - placedCount;
+      const notFirst = [...selected].reduce((acc, pid) => {
+        const k = [...FINAL_KEYS].find(f => f.startsWith(pid + '-'));
+        if (!k) return acc;
+        const stn = k.split('-').slice(1, -1).join('-');
+        const w = [...new Set(getWishes(pid).map(x => x.stn))];
+        if (w.length > 1 && w[0] !== stn) acc.push(PERSONS[pid]?.name);
+        return acc;
+      }, []);
+      const needsMore = notFirst.length > 0 || unplacedCount > 0;
+      return `
+<p>Runde 2 afsluttet. Algoritmen kørte <strong>${lastIterations} indre løkker</strong> til stabilt resultat:</p>
+<ul style="margin:12px 0;padding-left:22px;display:flex;flex-direction:column;gap:7px;">
+  <li><strong>${placedCount} optaget</strong></li>
+  <li><strong>${unplacedCount} uden plads</strong></li>
+  <li><strong>${ledige} ledige pladser</strong></li>
+</ul>
+${needsMore ? '<p>Pladsflyttet har åbnet nye muligheder — KOT kører runde 3.</p>' : '<p>Alle optagne er på deres højest mulige prioritet.</p>'}`;
     }
   },
 
   // ══ TRIN 10 ══════════════════════════════════════════════════════════════════
   'togkørsel-3': {
-    title: 'Runde 3 — Stadig muligheder for forbedring',
+    title: 'Runde 3',
     body: () => {
       const movedEx = lastRundeMoved.slice(0, 3).map(m =>
-        m.placed ? `<strong>${m.name}</strong> er rykket til gruppe ${m.grp} på <strong>${m.stn}</strong>`
+        m.placed ? `<strong>${m.name}</strong> → grp. ${m.grp} på <strong>${m.stn}</strong>`
                  : `<strong>${m.name}</strong> har mistet sin plads`);
-      const candidates = [...selected].reduce((acc, pid) => {
-        const k = [...FINAL_KEYS].find(f => f.startsWith(pid + '-'));
-        const w = [...new Set(getWishes(pid).map(x => x.stn))];
-        if (!k) { if (w.length) acc.push(PERSONS[pid]?.name + ' (ingen plads)'); }
-        else { const stn = k.split('-').slice(1, -1).join('-'); if (w.length > 1 && w[0] !== stn) acc.push(`${PERSONS[pid]?.name} (ønsker ${STATIONS[w[0]]?.name?.split(' ')[0]})`); }
-        return acc;
-      }, []);
       return `
-<p>KOT har nu kørt <strong>runde 3</strong>. Algoritmen gentager sig selv for at sikre at alle ansøgere har fået deres højest mulige prioritet.</p>
+<p>Algoritmen kører runde 3 — samme mekanisme som runde 2: global DA-løkke over alle grupper og udbud for at tjekke om pladsflyttet i runde 2 har åbnet for yderligere forbedringer.</p>
 ${lastRundeMoved.length
   ? `<p><strong>${lastRundeMoved.length} ansøger${lastRundeMoved.length === 1 ? '' : 'e'}</strong> er rykket til en bedre plads:</p>
-<p style="margin:10px 0 4px">F.eks.:</p><ul style="margin:0 0 12px;padding-left:22px;display:flex;flex-direction:column;gap:6px;">${movedEx.map(e => `<li>${e}</li>`).join('')}${lastRundeMoved.length > 3 ? `<li>... og ${lastRundeMoved.length - 3} andre</li>` : ''}</ul>`
-  : '<p>Ingen ansøgere ændrede plads i runde 3.</p>'}
-${candidates.length ? `<p><strong>${candidates.length} ansøger${candidates.length === 1 ? '' : 'e'}</strong> er endnu ikke placeret på deres højeste prioritet.</p>` : '<p>Ingen kan forbedres yderligere — algoritmen er næsten stabil.</p>'}`;
+<ul style="margin:6px 0 10px;padding-left:22px;display:flex;flex-direction:column;gap:6px;">${movedEx.map(e => `<li>${e}</li>`).join('')}${lastRundeMoved.length > 3 ? `<li>... og ${lastRundeMoved.length - 3} andre</li>` : ''}</ul>`
+  : '<p>Ingen ansøgere ændrede plads i runde 3.</p>'}`;
     }
   },
 
@@ -1778,15 +1740,13 @@ ${candidates.length ? `<p><strong>${candidates.length} ansøger${candidates.leng
         if (oldK && newK && oldK !== newK) {
           const newStn = newK.split('-').slice(1, -1).join('-');
           const newGrp = newK.split('-').at(-1);
-          acc.push(`<strong>${PERSONS[pid]?.name}</strong> → beholder gruppe ${newGrp} på <strong>${STATIONS[newStn]?.name?.split(' ')[0]}</strong>`);
+          acc.push(`<strong>${PERSONS[pid]?.name}</strong> → grp. ${newGrp} på <strong>${STATIONS[newStn]?.name?.split(' ')[0]}</strong>`);
         }
         return acc;
       }, []) : [];
       return `
-<p>Clearingen efter runde 3 er gennemført. Algoritmen kørte <strong>${lastIterations} indre løkker</strong> af midlertidig fordeling og clearing til stabilt resultat. Igen beholdt hver ansøger kun sin højeste prioritet, og de øvrige pladser er frigivet.</p>
-${changed.length
-  ? `<ul style="margin:10px 0;padding-left:22px;display:flex;flex-direction:column;gap:6px;">${changed.slice(0, 3).map(e => `<li>${e}</li>`).join('')}${changed.length > 3 ? `<li>... og ${changed.length - 3} andre</li>` : ''}</ul>`
-  : '<p>Ingen ansøgere ændrede plads i denne clearing.</p>'}
+<p>Clearingen kørte <strong>${lastIterations} sæt</strong>. Alle ansøgere er reduceret til én plads.</p>
+${changed.length ? `<ul style="margin:6px 0 10px;padding-left:22px;display:flex;flex-direction:column;gap:6px;">${changed.slice(0, 3).map(e => `<li>${e}</li>`).join('')}${changed.length > 3 ? `<li>... og ${changed.length - 3} andre</li>` : ''}</ul>` : '<p>Ingen ansøgere skiftede plads i clearingen.</p>'}
 <p><strong>${totalPlaced} ansøgere</strong> er tildelt én plads.</p>`;
     }
   },
@@ -1800,15 +1760,15 @@ ${changed.length
       const total3 = lastPladsflytMoves.reduce((s, m) => s + m.antal, 0);
       const moveSummary3 = lastPladsflytMoves.map(m => `${STATIONS[m.stnId]?.name?.split(' ')[0]}: ${m.antal} plads${m.antal > 1 ? 'er' : ''} fra grp.${m.fra} → grp.${m.til}`).join(', ');
       return `
-<p>KOT har kørt pladsflyt for tredje gang.</p>
-${total3 > 0 ? `<p><strong>${total3} plads${total3 > 1 ? 'er' : ''} flyttet:</strong> ${moveSummary3}.</p>` : '<p>Ingen pladser blev flyttet i denne runde.</p>'}
+<p>Pladsflyt for tredje gang.</p>
+${total3 > 0 ? `<p><strong>${total3} plads${total3 > 1 ? 'er' : ''} flyttet:</strong> ${moveSummary3}.</p>` : '<p>Ingen pladser blev omfordelt.</p>'}
 ${unplacedPids.length ? `<p>Endnu uden plads: <strong>${[...unplacedPids].slice(0,4).map(pid => PERSONS[pid]?.name).join(', ')}${unplacedPids.length > 4 ? ` og ${unplacedPids.length - 4} andre` : ''}</strong>.</p>` : ''}`;
     }
   },
 
   // ══ TRIN 13 ══════════════════════════════════════════════════════════════════
   'opsummering-3': {
-    title: 'Runde 3 — Opsummering',
+    title: 'Runde 3 — Status',
     body: () => {
       const placed = new Set([...FINAL_KEYS].map(k => k.split('-')[0]));
       const placedCount = placed.size;
@@ -1817,13 +1777,12 @@ ${unplacedPids.length ? `<p>Endnu uden plads: <strong>${[...unplacedPids].slice(
         s + Object.entries(grps).reduce((a, [g, v]) => +g === 49 ? a : a + v, 0), 0);
       const ledige = totalCap - placedCount;
       return `
-<p>Runde 3 er afsluttet. Algoritmen kørte <strong>${lastIterations} indre løkker</strong> af midlertidig fordeling og clearing inden stabilt resultat:</p>
+<p>Runde 3 afsluttet. Algoritmen kørte <strong>${lastIterations} indre løkker</strong> til stabilt resultat:</p>
 <ul style="margin:12px 0;padding-left:22px;display:flex;flex-direction:column;gap:7px;">
   <li><strong>${placedCount} optaget</strong></li>
-  <li><strong>${unplacedCount} afvist</strong></li>
+  <li><strong>${unplacedCount} uden plads</strong></li>
   <li><strong>${ledige} ledige pladser</strong></li>
-</ul>
-`;
+</ul>`;
     }
   },
 
@@ -1832,13 +1791,13 @@ ${unplacedPids.length ? `<p>Endnu uden plads: <strong>${[...unplacedPids].slice(
     title: 'Runde 4 — Stabilitetscheck',
     body: () => {
       const movedEx = lastRundeMoved.slice(0, 3).map(m =>
-        m.placed ? `<strong>${m.name}</strong> er rykket til gruppe ${m.grp} på <strong>${m.stn}</strong>`
+        m.placed ? `<strong>${m.name}</strong> → grp. ${m.grp} på <strong>${m.stn}</strong>`
                  : `<strong>${m.name}</strong> har mistet sin plads`);
       return `
-<p>KOT har nu kørt <strong>runde 4</strong> som stabilitetscheck — en ekstra runde for at bekræfte at ingen ansøgere kan flyttes til en højere prioritet.</p>
+<p>Algoritmen kører en ekstra runde for at bekræfte at resultatet er stabilt — at ingen ansøger kan flyttes til en højere prioritet, uanset hvilken gruppe eller hvilket udbud der kigges på.</p>
 ${lastRundeMoved.length
   ? `<p><strong>${lastRundeMoved.length} ansøger${lastRundeMoved.length === 1 ? '' : 'e'}</strong> er rykket til en bedre plads:</p>
-<p style="margin:10px 0 4px">F.eks.:</p><ul style="margin:0 0 12px;padding-left:22px;display:flex;flex-direction:column;gap:6px;">${movedEx.map(e => `<li>${e}</li>`).join('')}${lastRundeMoved.length > 3 ? `<li>... og ${lastRundeMoved.length - 3} andre</li>` : ''}</ul>`
+<ul style="margin:6px 0 10px;padding-left:22px;display:flex;flex-direction:column;gap:6px;">${movedEx.map(e => `<li>${e}</li>`).join('')}${lastRundeMoved.length > 3 ? `<li>... og ${lastRundeMoved.length - 3} andre</li>` : ''}</ul>`
   : '<p>Ingen ansøgere ændrede plads — fordelingen er stabil.</p>'}`;
     }
   },
@@ -1856,18 +1815,17 @@ ${lastRundeMoved.length
         return `<strong>${name}</strong> — ikke optaget`;
       });
       return `
-<p>Den ordinære fordeling er nu stabil, og <strong>kandidatrunden</strong> er kørt — en særlig runde for ansøgere med en kandidatuddannelse.</p>
-<p>Gruppe 33 er for ansøgere med en kandidatuddannelse. De kan kun optages hvis der er ledige pladser på den uddannelse de har søgt.</p>
+<p>Den ordinære fordeling er stabil, og kandidatrunden (grp. 33) køres nu. Gruppe 33 er for ansøgere med en kandidatuddannelse — de kan <em>kun</em> optages hvis der er ledige pladser tilbage efter den ordinære fordeling er afsluttet.</p>
 ${kandPids.length > 0
-  ? `<p>I denne fordeling er der <strong>${kandPids.length} ansøger${kandPids.length === 1 ? '' : 'e'}</strong> med gruppe 33:</p>
+  ? `<p><strong>${kandPids.length} ansøger${kandPids.length === 1 ? '' : 'e'}</strong> med gruppe 33 i denne fordeling:</p>
 <ul style="margin:10px 0;padding-left:22px;display:flex;flex-direction:column;gap:6px;">${kandLines.map(l => `<li>${l}</li>`).join('')}</ul>`
-  : '<p>I denne fordeling er der <strong>ingen</strong> ansøgere med gruppe 33, så runden er hurtig overstået.</p>'}`;
+  : '<p>Ingen ansøgere med gruppe 33 i denne fordeling.</p>'}`;
     }
   },
 
   // ══ TRIN 16 ══════════════════════════════════════════════════════════════════
   'slutopsummering': {
-    title: 'Slutresultat — Endelig fordeling',
+    title: 'Endelig fordeling — Matematisk stabil',
     body: () => {
       const placed = new Set([...FINAL_KEYS].map(k => k.split('-')[0]));
       const placedCount = placed.size;
@@ -1892,19 +1850,19 @@ ${kandPids.length > 0
         .map(k => {
           const parts = k.split('-');
           const pid = parts[0], stnId = parts.slice(1,-1).join('-'), grp = parts[parts.length-1];
-          return `<strong>${PERSONS[pid]?.name}</strong> (garanteret optagelse — ${STATIONS[stnId]?.name?.split(' ')[0]} grp.${grp})`;
+          return `<strong>${PERSONS[pid]?.name}</strong> (${STATIONS[stnId]?.name?.split(' ')[0]} grp.${grp})`;
         });
       return `
-<p>Algoritmen er <strong>stabil</strong> — ingen kan forbedre deres placering yderligere, og kandidatrunden er gennemført.</p>
-<p>Det endelige resultat:</p>
+<p>Fordelingen er <strong>matematisk stabil</strong>: der findes ingen ansøger og ingen uddannelse der gensidigt ville foretrække hinanden frem for deres nuværende match. Det er den garanterede egenskab ved Deferred Acceptance-algoritmen (Gale-Shapley, 1962).</p>
+<p>Alle ansøgere har fået en status:</p>
 <ul style="margin:12px 0;padding-left:22px;display:flex;flex-direction:column;gap:7px;">
   <li><strong>${placedCount} optaget</strong>${kandidat > 0 ? ` — heraf ${kandidat} via gruppe 33` : ''}</li>
-  ${unplacedCount > 0 ? `<li><strong>${unplacedCount} ikke optaget</strong></li>` : '<li>Alle ansøgere er optaget</li>'}
+  ${unplacedCount > 0 ? `<li><strong>${unplacedCount} ikke optaget</strong> — ingen plads matchede med tilstrækkelig kapacitet</li>` : '<li>Alle ansøgere er optaget</li>'}
   ${ledige > 0 ? `<li><strong>${ledige} ledige pladser</strong></li>` : '<li>Alle pladser er fyldt</li>'}
 </ul>
-${garFinal.length ? `<p style="background:var(--rang-gar-score-bg);border:1px solid var(--rang-gar-score-border);color:var(--rang-gar-color);border-radius:6px;padding:10px 14px;">${garFinal.join(' · ')} — optaget via garanteret optagelse.</p>` : ''}
 ${priLines ? `<p>Prioritetsfordeling: ${priLines}.</p>` : ''}
-<p>Dette er det resultat, ansøgerne ville modtage i deres optagelsesbrev.</p>`;
+${garFinal.length ? `<p style="background:var(--rang-gar-score-bg);border:1px solid var(--rang-gar-score-border);color:var(--rang-gar-color);border-radius:6px;padding:10px 14px;">${garFinal.join(' · ')} — optaget via garanteret optagelse.</p>` : ''}
+<p style="margin-top:10px;font-size:12px;color:var(--text-3);">Dette er det resultat der ligger til grund for optagelsesbrevene.</p>`;
     }
   },
 
