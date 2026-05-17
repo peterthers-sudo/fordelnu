@@ -1368,12 +1368,12 @@ Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, 
       <span style="color:white;font-size:13px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;">Læringsmode</span>
       <span id="learn-step-counter" style="margin-left:auto;color:rgba(255,255,255,0.78);font-size:13px;font-weight:600;"></span>
     </div>
-    <div style="padding:18px 28px 14px;overflow-y:auto;flex:1;">
+    <div id="learn-content" style="padding:18px 28px 14px;overflow-y:auto;flex:1;">
       <h2 id="learn-title" style="font-size:20px;font-weight:800;color:var(--modal-text);margin:0 0 10px;line-height:1.3;"></h2>
       <div id="learn-body" style="font-size:15px;line-height:1.65;color:var(--modal-body-text);"></div>
     </div>
     <div style="padding:18px 32px 24px;border-top:1px solid var(--modal-footer-border);display:flex;justify-content:flex-end;flex-shrink:0;">
-      <button onclick="closeLearningModal()" style="background:linear-gradient(135deg,#4f46e5,#7c3aed);color:white;border:none;border-radius:12px;padding:13px 32px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(79,70,229,0.3);">
+      <button id="learn-close-btn" onclick="closeLearningModal()" style="background:linear-gradient(135deg,#4f46e5,#7c3aed);color:white;border:none;border-radius:12px;padding:13px 32px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(79,70,229,0.3);">
         Forstået
       </button>
     </div>
@@ -1897,20 +1897,21 @@ function withLearning(key, fn) {
   return fn;
 }
 
-function showLearningModal(title, bodyOrFn) {
+function showLearningModal(title, bodyOrFn, key) {
   learningModalCount++;
-  const total = Object.keys(LEARNING_TEXTS).length;
+  const isLast = key === 'slutopsummering';
+  const total = isLast ? learningModalCount : Object.keys(LEARNING_TEXTS).length - 1; // -1 for legacy runde1-klar
   document.getElementById('learn-step-counter').textContent = `Trin ${learningModalCount} af ${total}`;
   document.getElementById('learn-title').textContent = title;
+  document.getElementById('learn-close-btn').textContent = isLast ? 'Afslut' : 'Forstået';
   try {
     document.getElementById('learn-body').innerHTML = typeof bodyOrFn === 'function' ? bodyOrFn() : bodyOrFn;
   } catch (e) {
     document.getElementById('learn-body').innerHTML = `<p>${title}</p>`;
     console.warn('Læringstekst fejl:', e);
   }
-  const el = document.getElementById('learning-modal');
-  el.style.display = 'flex';
-  el.scrollTop = 0;
+  document.getElementById('learning-modal').style.display = 'flex';
+  document.getElementById('learn-content').scrollTop = 0;
 }
 
 function closeLearningModal() {
@@ -4645,7 +4646,7 @@ function stepSlutOpsummering() {
       document.getElementById('status-bar').innerHTML =
         `<span class="step-badge" style="background:#6366f1">Læringsmode</span><span style="color:#e2e8f0">Tryk <strong>Ny fordeling</strong> for at lave dine egne simuleringer</span>`;
       const sluttxt = LEARNING_TEXTS['slutopsummering'];
-      if (sluttxt) showLearningModal(sluttxt.title, sluttxt.body);
+      if (sluttxt) showLearningModal(sluttxt.title, sluttxt.body, 'slutopsummering');
       learningMode = false;
       document.getElementById('lærings-cb').checked = false;
       savePrefs();
@@ -4970,7 +4971,7 @@ function afterStepDone(autoTrigger = true) {
     const txt = prevKey && LEARNING_TEXTS[prevKey];
     if (txt) {
       document.getElementById('btn-next').disabled = true;
-      showLearningModal(txt.title, txt.body);
+      showLearningModal(txt.title, txt.body, prevKey);
       if (autoTrigger && document.getElementById('autokør-cb')?.checked && !autokørPaused) {
         if (autokørTimerId) clearTimeout(autokørTimerId);
         autokørTimerId = setTimeout(() => {
@@ -4984,6 +4985,7 @@ function afterStepDone(autoTrigger = true) {
   }
   const auto = autoTrigger && document.getElementById('autokør-cb')?.checked;
   if (auto && !autokørPaused) {
+    document.getElementById('btn-next').disabled = true;
     if (autokørTimerId) clearTimeout(autokørTimerId);
     autokørTimerId = setTimeout(nextStep, getAutokørDelay());
   } else {
