@@ -2507,7 +2507,9 @@ function computeGroupProvisional(round1, grp) {
         if (curr === key) return true;
         return (prefRank[pid][key] ?? 999) < (prefRank[pid][curr] ?? 999);
       });
-      withinCap[key] = new Set(active.slice(0, cap).map(a => a.person));
+      withinCap[key] = grp === 49
+        ? new Set(active.map(a => a.person))
+        : new Set(active.slice(0, cap).map(a => a.person));
     }
     let changeCount = 0;
     for (const pid of allPersons) {
@@ -4062,6 +4064,7 @@ function buildWaypoints() {
 }
 
 function getGrpLabel(grp) {
+  if (grp === 49) return 'frit optag';
   if (grp >= 10 && grp <= 19) return 'kvote 1';
   if (grp >= 20 && grp <= 59) return 'kvote 2';
   if (grp >= 60 && grp <= 69) return 'kvote 1 standby';
@@ -4080,7 +4083,8 @@ function buildWaypointsGrp(grp, provKeys) {
       addStnToStateGrp(stnId, grp, provKeys);
       const stn = STATIONS[stnId];
       const cap = (CAPACITY[stnId] || {})[grp] || 0;
-      if (cap === 0) {
+      const isFritOptag = grp === 49;
+      if (!isFritOptag && cap === 0) {
         appendStatus(stn.name, `Grp. ${grp} (${grpLabel}): Ingen pladser på dette udbud.`);
         showTrainBubble(stnId, `Ingen pladser i denne kvote`);
         return;
@@ -4094,15 +4098,25 @@ function buildWaypointsGrp(grp, provKeys) {
         .filter(k => GARANTERET_SET.has(`${k.split('-')[0]}-${stnId}-${grp}`))
         .map(k => PERSONS[k.split('-')[0]]?.name).filter(Boolean);
       const garNote = garNames.length ? ` ${danishList(garNames)} er garanteret optagelse.` : '';
-      if (names.length) {
-        appendStatus(stn.name, `${danishList(names)} er foreløbigt placeret i grp. ${grp} (${grpLabel}).${garNote}`);
+      if (isFritOptag) {
+        if (names.length) {
+          appendStatus(stn.name, `${danishList(names)} er foreløbigt placeret i grp. ${grp} (${grpLabel}).${garNote}`);
+          showTrainBubble(stnId, `${names.length} frit optaget`);
+        } else {
+          appendStatus(stn.name, `Grp. ${grp} (${grpLabel}): Ingen ansøgere søgte frit optag her.`);
+          showTrainBubble(stnId, `Ingen søgte frit optag`);
+        }
       } else {
-        appendStatus(stn.name, `Grp. ${grp} (${grpLabel}): ${cap} plads${cap !== 1 ? 'er' : ''} — ingen søgte denne kvote her.`);
+        if (names.length) {
+          appendStatus(stn.name, `${danishList(names)} er foreløbigt placeret i grp. ${grp} (${grpLabel}).${garNote}`);
+        } else {
+          appendStatus(stn.name, `Grp. ${grp} (${grpLabel}): ${cap} plads${cap !== 1 ? 'er' : ''} — ingen søgte denne kvote her.`);
+        }
+        const ledige = cap - names.length;
+        showTrainBubble(stnId, names.length > 0
+          ? `${names.length} af ${cap} pladser foreløbigt optaget${ledige > 0 ? ` · ${ledige} ledig${ledige !== 1 ? 'e' : ''}` : ''}`
+          : `Ingen optaget — ${cap} plads${cap !== 1 ? 'er' : ''} ledig${cap !== 1 ? 'e' : ''}`);
       }
-      const ledige = cap - names.length;
-      showTrainBubble(stnId, names.length > 0
-        ? `${names.length} af ${cap} pladser foreløbigt optaget${ledige > 0 ? ` · ${ledige} ledig${ledige !== 1 ? 'e' : ''}` : ''}`
-        : `Ingen optaget — ${cap} plads${cap !== 1 ? 'er' : ''} ledig${cap !== 1 ? 'e' : ''}`);
     }
   }));
 }
@@ -4697,9 +4711,9 @@ function buildSteps() {
       renderStatistik({ antalAnsøgere, antalUdd, antalGrp, totalPladser, ratio });
       document.getElementById('btn-next').textContent = '▶ Næste';
 
-      // Discover groups present in ROUND1, excluding kandidat (33) and frit optag (49)
+      // Discover groups present in ROUND1, excluding kandidat (33)
       const groups = [...new Set(ROUND1.map(p => +p.grp))]
-        .filter(g => g !== 33 && g !== 49)
+        .filter(g => g !== 33)
         .sort((a, b) => a - b);
 
       for (const grp of groups) {
