@@ -1363,6 +1363,10 @@ Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, 
         <b>Gruppe 49 — frit optag</b><br>
         Gruppe 49 deltager i alle runder på samme måde som alle andre grupper, med én undtagelse: kapaciteten er ubegrænset. I den per-gruppe DA i runde 1 accepteres alle ansøgere der søgte frit optag på et udbud — der sker ingen frasortering pga. pladsmangel. I clearing og runde 2+ behandles gruppe 49 identisk med øvrige grupper: for hver ansøger vinder den placering (udbud + gruppe) der svarer til den højeste prioritet i ansøgerens ønskeliste. En ansøger kan godt have gruppe 49-placeringer på flere udbud samt placeringer i andre grupper — algoritmen finder korrekt den ene bedste.<br><br>
 
+        <b>Deferred Acceptance (DA)</b><br>
+        DA — på dansk "udskudt accept" — er den matching-algoritme KOT-fordelingen bygger på. Navnet kommer af at ingen pladser bekræftes endeligt undervejs: alle tildelinger er tentative indtil algoritmen konvergerer. Algoritmen er udviklet af David Gale og Lloyd Shapley i 1962; Shapley modtog Nobelprisen i økonomi i 2012 for arbejdet.<br><br>
+        I SimKOT køres DA separat per gruppe i runde 1. For én gruppe fungerer det sådan: hvert (udbud, gruppe)-slot sorterer sine ansøgere efter score og accepterer tentativt de øverste inden for kapaciteten — resten afvises med det samme uden nogensinde at blive "placeret". Afviste ansøgere rykker til deres næste prioritet, hvilket kan fortrænge en ansøger der hidtil var tentativt accepteret der. Denne kædeeffekt gentages i iterationer indtil ingen ansøgers tildeling ændrer sig — fordelingen er nu stabil. En stabil fordeling garanterer at ingen ansøger og institution gensidigt ville foretrække hinanden frem for deres nuværende match.<br><br>
+
         <b>Hvad består et clearingssæt af?</b><br>
         Efter runde 1 kan en ansøger sidde med foreløbige placeringer i flere grupper på tværs af udbud. Clearingen konvergerer disse til én placering per ansøger via gentagne sæt. Et enkelt sæt er én komplet synkron gennemgang af alle ansøgere og alle (udbud, gruppe)-pladser: hvert slot sorterer sine ansøgere efter score og beholder kun de øverste inden for kapaciteten — resten afvises. Afviste ansøgere rykker til deres næste ledige slot, hvilket kan fortrænge andre, og så videre. Alle fortrængninger sker "samtidigt" inden næste sæt starter. Sæt 1 klarer den største oprydning; efterfølgende sæt håndterer kaskadeeffekterne indtil ingen ansøgers placering længere ændrer sig.
       </div>
@@ -5438,5 +5442,8 @@ onLæringsChange();
   checkImportReady();
 })();
 </script>
+<footer style="text-align:center;padding:18px;font-size:12px;color:var(--text-3);font-family:'DM Sans',sans-serif;border-top:1px solid var(--border);margin-top:12px;">
+  &copy; SimKOT 2026
+</footer>
 </body>
 </html>
