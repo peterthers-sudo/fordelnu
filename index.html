@@ -1025,7 +1025,7 @@ Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, 
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
       <button onclick="document.getElementById('help-modal').style.display='flex'" title="Hjælp" style="background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:8px 14px;font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;color:var(--text-2);box-shadow:var(--shadow-sm);transition:background .15s,border-color .15s;display:flex;align-items:center;gap:6px;letter-spacing:.01em;">? Hjælp</button>
-      <button id="theme-toggle" onclick="toggleTheme()" title="Skift tema" style="background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:8px 16px;font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;color:var(--text-2);box-shadow:var(--shadow-sm);transition:background .15s,border-color .15s;flex-shrink:0;display:flex;align-items:center;gap:7px;letter-spacing:.01em;">☀ Lys</button>
+      <button id="theme-toggle" onclick="toggleTheme()" title="Skift tema" style="background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:8px 16px;font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;color:var(--text-2);box-shadow:var(--shadow-sm);transition:background .15s,border-color .15s;flex-shrink:0;display:flex;align-items:center;gap:7px;letter-spacing:.01em;">🌙 Mørk</button>
     </div>
   </div>
 
@@ -1403,7 +1403,7 @@ const CX = 300, CY = 260, R = 190, DEG = Math.PI / 180;
 
 function toggleTheme() {
   const isDark = document.documentElement.classList.toggle('dark');
-  document.getElementById('theme-toggle').textContent = isDark ? '🌙 Mørk' : '☀ Lys';
+  document.getElementById('theme-toggle').textContent = isDark ? '☀ Lys' : '🌙 Mørk';
   try { localStorage.setItem('kot_theme', isDark ? 'dark' : 'light'); } catch(e) {}
   renderSVGStations();
   if (grænsekvotientMap) renderGrænsekvotienter();
@@ -1420,7 +1420,7 @@ function toggleTheme() {
       document.documentElement.classList.add('dark');
       document.addEventListener('DOMContentLoaded', () => {
         const btn = document.getElementById('theme-toggle');
-        if (btn) btn.textContent = '🌙 Mørk';
+        if (btn) btn.textContent = '☀ Lys';
       });
     }
   } catch(e) {}
