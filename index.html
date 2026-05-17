@@ -1566,7 +1566,7 @@ ${garInfo.length ? `<p style="background:var(--rang-gar-score-bg);border:1px sol
           return `<strong>${PERSONS[pid]?.name}</strong> (${STATIONS[stnId]?.name?.split(' ')[0]} grp.${grp})`;
         });
       return `
-<p>Clearingen kørte <strong>${lastIterations} sæt</strong> — gentagne synkrone gennemløb hvor hvert (udbud, gruppe)-slot beholder sine bedste ansøgere inden for kapaciteten og afviser resten, til ingen placering ændrer sig. Resultatet: hver ansøger er reduceret til <em>én</em> plads — den bedste opnåede på tværs af alle grupper.</p>
+<p>Clearingen kørte <strong>${lastIterations} indre loops</strong> — gentagne synkrone gennemløb hvor hvert (udbud, gruppe)-slot beholder sine bedste ansøgere inden for kapaciteten og afviser resten, til ingen placering ændrer sig. Resultatet: hver ansøger er reduceret til <em>én</em> plads — den bedste opnåede på tværs af alle grupper.</p>
 ${examples.length ? `<p>F.eks.:</p><ul style="margin:6px 0 10px;padding-left:22px;display:flex;flex-direction:column;gap:6px;">${examples.map(e => `<li>${e}</li>`).join('')}</ul>` : ''}
 <p><strong>${totalPlaced} ansøgere</strong> har én plads${unplaced > 0 ? ` — <strong>${unplaced}</strong> er endnu uden plads` : ''}${garPlaced.length ? `. Garanteret optagelse: ${garPlaced.join(', ')}` : ''}.</p>`;
     }
@@ -1608,7 +1608,7 @@ ${unplacedPids.length ? `<p>Endnu uden plads: <strong>${unplacedNames.join(', ')
       }, []);
       const needsMore = notFirst.length > 0 || unplacedCount > 0;
       return `
-<p>Runde 1 afsluttet. Algoritmen kørte <strong>${lastIterations} indre løkker</strong> til stabilt resultat:</p>
+<p>Runde 1 afsluttet. Algoritmen kørte <strong>${lastIterations} indre loops</strong> til stabilt resultat:</p>
 <ul style="margin:12px 0;padding-left:22px;display:flex;flex-direction:column;gap:7px;">
   <li><strong>${placedCount} optaget</strong></li>
   <li><strong>${unplacedCount} uden plads</strong></li>
@@ -1661,7 +1661,7 @@ ${candidates.length ? `<p><strong>${candidates.length} ansøger${candidates.leng
         return acc;
       }, []) : [];
       return `
-<p>Clearingen kørte <strong>${lastIterations} sæt</strong> og reducerede igen til én plads per ansøger — den bedste opnåede på tværs af alle grupper.</p>
+<p>Clearingen kørte <strong>${lastIterations} indre loops</strong> og reducerede igen til én plads per ansøger — den bedste opnåede på tværs af alle grupper.</p>
 ${changed.length ? `<ul style="margin:6px 0 10px;padding-left:22px;display:flex;flex-direction:column;gap:6px;">${changed.slice(0, 3).map(e => `<li>${e}</li>`).join('')}${changed.length > 3 ? `<li>... og ${changed.length - 3} andre</li>` : ''}</ul>` : ''}
 <p><strong>${totalPlaced} ansøgere</strong> er tildelt én plads.</p>`;
     }
@@ -1702,7 +1702,7 @@ ${unplacedPids.length ? `<p>Endnu uden plads: <strong>${[...unplacedPids].slice(
       }, []);
       const needsMore = notFirst.length > 0 || unplacedCount > 0;
       return `
-<p>Runde 2 afsluttet. Algoritmen kørte <strong>${lastIterations} indre løkker</strong> til stabilt resultat:</p>
+<p>Runde 2 afsluttet. Algoritmen kørte <strong>${lastIterations} indre loops</strong> til stabilt resultat:</p>
 <ul style="margin:12px 0;padding-left:22px;display:flex;flex-direction:column;gap:7px;">
   <li><strong>${placedCount} optaget</strong></li>
   <li><strong>${unplacedCount} uden plads</strong></li>
@@ -1745,7 +1745,7 @@ ${lastRundeMoved.length
         return acc;
       }, []) : [];
       return `
-<p>Clearingen kørte <strong>${lastIterations} sæt</strong>. Alle ansøgere er reduceret til én plads.</p>
+<p>Clearingen kørte <strong>${lastIterations} indre loops</strong>. Alle ansøgere er reduceret til én plads.</p>
 ${changed.length ? `<ul style="margin:6px 0 10px;padding-left:22px;display:flex;flex-direction:column;gap:6px;">${changed.slice(0, 3).map(e => `<li>${e}</li>`).join('')}${changed.length > 3 ? `<li>... og ${changed.length - 3} andre</li>` : ''}</ul>` : '<p>Ingen ansøgere skiftede plads i clearingen.</p>'}
 <p><strong>${totalPlaced} ansøgere</strong> er tildelt én plads.</p>`;
     }
@@ -1777,7 +1777,7 @@ ${unplacedPids.length ? `<p>Endnu uden plads: <strong>${[...unplacedPids].slice(
         s + Object.entries(grps).reduce((a, [g, v]) => +g === 49 ? a : a + v, 0), 0);
       const ledige = totalCap - placedCount;
       return `
-<p>Runde 3 afsluttet. Algoritmen kørte <strong>${lastIterations} indre løkker</strong> til stabilt resultat:</p>
+<p>Runde 3 afsluttet. Algoritmen kørte <strong>${lastIterations} indre loops</strong> til stabilt resultat:</p>
 <ul style="margin:12px 0;padding-left:22px;display:flex;flex-direction:column;gap:7px;">
   <li><strong>${placedCount} optaget</strong></li>
   <li><strong>${unplacedCount} uden plads</strong></li>
@@ -2557,7 +2557,7 @@ function appendIterLog() {
   const n = lastIterLog.length;
   const lines = lastIterLog.map((changes, i) => {
     const sæt = i + 1;
-    const label = `Sæt ${sæt}/${n}`;
+    const label = `Loop ${sæt}/${n}`;
     if (changes === 0) return `<span style="color:var(--text-3);font-family:'DM Mono',monospace;font-size:11px;">${label}</span> <span style="color:#4ade80">✓ 0 ændringer — stabilt</span>`;
     return `<span style="color:var(--text-3);font-family:'DM Mono',monospace;font-size:11px;">${label}</span> ${changes} ansøger${changes !== 1 ? 'e' : ''} fandt bedre placering`;
   });
@@ -2619,7 +2619,7 @@ function animateSætTæller(count) {
   lbl.setAttribute('x', CX); lbl.setAttribute('y', String(CY - 15));
   lbl.setAttribute('text-anchor', 'middle'); lbl.setAttribute('fill', '#94a3b8');
   lbl.setAttribute('font-size', '11'); lbl.setAttribute('font-family', 'DM Sans, sans-serif');
-  lbl.textContent = 'indre sæt';
+  lbl.textContent = 'indre loops';
   g.appendChild(lbl);
   const num = document.createElementNS(NS, 'text');
   num.setAttribute('x', CX); num.setAttribute('y', String(CY + 22));
@@ -4820,7 +4820,7 @@ function buildWaypointsPladsflyt(rNr) {
 
 // Fabrik: clearing-trin (vises som "Clearing efter runde N")
 function doClearing(rNr, onDone) {
-  setStatus(`Runde ${rNr} — Clearing`, 'Algoritmen kører sæt af midlertidig fordeling og clearing til antallet af optagne er stabilt i to sæt i træk. Lavere prioriteter fjernes, og kun den bedste plads beholdes.');
+  setStatus(`Runde ${rNr} — Clearing`, 'Algoritmen kører indre loops af midlertidig fordeling og clearing til antallet af optagne er stabilt i to loops i træk. Lavere prioriteter fjernes, og kun den bedste plads beholdes.');
   setCenter(`Runde ${rNr}`, 'Indre loop', 'Clearing');
   document.getElementById('btn-next').disabled = true;
   animateTrain(trainAngle, 360, 3000, buildWaypointsClearing(rNr), () => {
@@ -4838,7 +4838,7 @@ function doClearing(rNr, onDone) {
     setCenter(`Runde ${rNr}`, 'Indre loops afsluttet');
     animateSætTæller(lastIterations);
     appendIterLog();
-    appendStatus('✓', `Clearing færdig — ${lastIterations} sæt kørte internt (se ovenfor). Hver ansøger er nu placeret på deres højest prioriterede plads.`);
+    appendStatus('✓', `Clearing færdig — ${lastIterations} indre loops kørte (se ovenfor). Hver ansøger er nu placeret på deres højest prioriterede plads.`);
     if (onDone) onDone();
   });
 }
@@ -4854,7 +4854,7 @@ function stepInnerStabilCheck(rNr) {
     const pladserFlyttet = lastPladsflytMoves.reduce((s, m) => s + m.antal, 0);
     renderRunde1Statistik({ rNr, optaget, afvist, ledige, pladserFlyttet });
     setCenter(`Runde ${rNr}`, 'Afsluttet');
-    const løkkerTekst = `Algoritmen kørte ${lastIterations} indre løkker${lastIterations === 1 ? ' (stabilt efter første sæt)' : ''}.`;
+    const løkkerTekst = `Algoritmen kørte ${lastIterations} indre loops${lastIterations === 1 ? ' (stabilt efter første loop)' : ''}.`;
     const msg = afvist > 0
       ? `Fordelingen er stabil. ${løkkerTekst} ${optaget} optaget, ${afvist} ansøger${afvist !== 1 ? 'e' : ''} har ingen plads. I det virkelige KOT-system med 85.000 ansøgere kan dette tage mange runder — her gik det hurtigt. Pladsflyt undersøger om der kan frigives yderligere pladser.`
       : `Fordelingen er stabil. ${løkkerTekst} Alle ${optaget} ansøgere er placeret på deres højeste prioritet.`;
@@ -4870,10 +4870,10 @@ function stepSubRunde(rNr) {
     roundNumber = rNr;
     const udenPlads = selected.size - countPlaced();
     setStatus(`Runde ${rNr}`, udenPlads > 0
-      ? `Pladsflyt kan have åbnet nye muligheder — ${udenPlads} ansøger${udenPlads !== 1 ? 'e' : ''} uden plads køres nu igennem indre løkker (midlertidig fordeling + clearing) til stabilt resultat.`
-      : `Pladsflyt er gennemført. Kører indre løkker for at tjekke om nogen kan flyttes til en højere prioritet.`
+      ? `Pladsflyt kan have åbnet nye muligheder — ${udenPlads} ansøger${udenPlads !== 1 ? 'e' : ''} uden plads køres nu igennem indre loops (midlertidig fordeling + clearing) til stabilt resultat.`
+      : `Pladsflyt er gennemført. Kører indre loops for at tjekke om nogen kan flyttes til en højere prioritet.`
     );
-    setCenter(`Runde ${rNr}`, 'Indre loop', 'Ny fordeling');
+    setCenter(`Runde ${rNr}`, 'Ydre loop', 'Ny fordeling');
 
     const wps = buildWaypoints2(rNr);
     animateTrain(trainAngle, 360, 6000, wps, () => {
@@ -4924,7 +4924,7 @@ function stepPladsflyt() {
   const rNr = roundNumber; // fanges ved oprettelse
   return withLearning(`pladsflyt-${rNr}`, () => {
     setStatus(`Runde ${rNr} — Pladsflyt`, 'Tjekker om ledige pladser kan flyttes mellem grupper...');
-    setCenter(`Runde ${rNr}`, 'Pladsflyt');
+    setCenter(`Runde ${rNr}`, 'Ydre loop', 'Pladsflyt');
     clearStatistik();
     document.getElementById('btn-next').disabled = true;
 
