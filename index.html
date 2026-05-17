@@ -1802,9 +1802,23 @@ ${lastRundeMoved.length
     }
   },
 
-  // ══ TRIN 15 ══════════════════════════════════════════════════════════════════
-  'kandidatrunde': {
+  // ══ TRIN 15a ═════════════════════════════════════════════════════════════════
+  'kandidatrunde-intro': {
     title: 'Kandidatrunden — Gruppe 33',
+    body: () => {
+      const kandPids = ROUND1 ? [...new Set(ROUND1.filter(p => +p.grp === 33).map(p => p.person))] : [];
+      return `
+<p>Den ordinære fordeling er stabil. Nu køres <strong>kandidatrunden</strong> (grp. 33) — en særlig runde for ansøgere med en kandidatuddannelse.</p>
+<p>Gruppe 33-ansøgere kan <em>kun</em> optages hvis der er ledige pladser tilbage efter den ordinære fordeling. De konkurrerer ikke med de ordinære ansøgere og påvirker ikke de placeringer der allerede er fastlagt.</p>
+${kandPids.length > 0
+  ? `<p>Der er <strong>${kandPids.length} ansøger${kandPids.length === 1 ? '' : 'e'}</strong> med gruppe 33 i denne fordeling. Tryk Næste for at se hvem der optages.</p>`
+  : '<p>Der er ingen ansøgere med gruppe 33 i denne fordeling — runden afsluttes hurtigt.</p>'}`;
+    }
+  },
+
+  // ══ TRIN 15b ═════════════════════════════════════════════════════════════════
+  'kandidatrunde': {
+    title: 'Kandidatrunden — Resultat',
     body: () => {
       const kandPids = ROUND1 ? [...new Set(ROUND1.filter(p => +p.grp === 33).map(p => p.person))] : [];
       const kandLines = kandPids.map(pid => {
@@ -1815,11 +1829,10 @@ ${lastRundeMoved.length
         return `<strong>${name}</strong> — ikke optaget`;
       });
       return `
-<p>Den ordinære fordeling er stabil, og kandidatrunden (grp. 33) køres nu. Gruppe 33 er for ansøgere med en kandidatuddannelse — de kan <em>kun</em> optages hvis der er ledige pladser tilbage efter den ordinære fordeling er afsluttet.</p>
+<p>Kandidatrunden er afsluttet.</p>
 ${kandPids.length > 0
-  ? `<p><strong>${kandPids.length} ansøger${kandPids.length === 1 ? '' : 'e'}</strong> med gruppe 33 i denne fordeling:</p>
-<ul style="margin:10px 0;padding-left:22px;display:flex;flex-direction:column;gap:6px;">${kandLines.map(l => `<li>${l}</li>`).join('')}</ul>`
-  : '<p>Ingen ansøgere med gruppe 33 i denne fordeling.</p>'}`;
+  ? `<ul style="margin:10px 0;padding-left:22px;display:flex;flex-direction:column;gap:6px;">${kandLines.map(l => `<li>${l}</li>`).join('')}</ul>`
+  : '<p>Ingen ansøgere med gruppe 33 — runden ændrede intet.</p>'}`;
     }
   },
 
@@ -4469,6 +4482,14 @@ function addKandidatCircle(pid, stnId) {
   setTimeout(() => { g.style.opacity = '1'; }, 50);
 }
 
+function stepKandidatrundeIntro() {
+  return withLearning('kandidatrunde-intro', () => {
+    setStatus('Kandidat', 'Kandidatrunden klar — tryk Næste for at køre grp. 33-fordelingen.');
+    setCenter('Kandidat', 'Grp. 33');
+    enableNextBtn();
+  });
+}
+
 function stepKandidatrunde() {
   return withLearning('kandidatrunde', () => {
     if (learningMode) {
@@ -4836,6 +4857,7 @@ function stepSubRunde(rNr) {
         setCenter('Stabil!', `Optaget: ${_optaget} · Afvist: ${_afvist}`);
         updateCardResults();
         for (const pid of selected) document.getElementById(`card-${pid}`)?.classList.add('done');
+        if (learningMode) steps.push(stepKandidatrundeIntro());
         steps.push(stepKandidatrunde());
       } else {
         const fmtKey = k => {
@@ -4896,6 +4918,7 @@ function stepPladsflyt() {
           appendStatus('✓', `Ingen pladser at flytte. Fordelingen er nu stabil — ${_optaget} optaget${_afvist > 0 ? `, ${_afvist} har ingen plads` : ', alle placeret'}.`);
           updateCardResults();
           for (const pid of selected) document.getElementById(`card-${pid}`)?.classList.add('done');
+          if (learningMode) steps.push(stepKandidatrundeIntro());
           steps.push(stepKandidatrunde());
         } else {
           const total = moves.reduce((s, m) => s + m.antal, 0);
