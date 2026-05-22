@@ -1362,7 +1362,7 @@ Når en runde er afsluttet, ryddes der op i placeringerne, så hver ansøger kun
       <div style="background:var(--surface-2);border-radius:10px;padding:14px 18px;margin-bottom:4px;font-size:13px;line-height:1.8;color:var(--modal-body-text);">
 
         <b>Runde 1 vs. runde 2+</b><br>
-        Runde 1 viser én togkørsel per gruppe (grp. 10, grp. 20, grp. 49 osv.) fordi grupperne er fuldstændigt uafhængige i den midlertidige fordeling: de har hvert sit kapacitetsloft og sin egen rangeringslogik (karaktergennemsnit i kvote 1, rangeringsnummer/kval_p i kvote 2). En ansøger kan godt forekomme i flere grupper på samme udbud — de konkurrerer ikke på tværs af grupper. Efter alle gruppe-kørsler rydder clearing op, så hver ansøger kun beholder sin bedste placering.<br><br>
+        Runde 1 viser én togkørsel per gruppe (grp. 10, grp. 20, grp. 49 osv.) fordi grupperne er fuldstændigt uafhængige i den midlertidige fordeling: de har hvert sit kapacitetsloft og sin egen rangeringslogik (lodtrækningsnummer i kvote 1, rangeringsnummer i kvote 2). En ansøger kan godt forekomme i flere grupper på samme udbud — de konkurrerer ikke på tværs af grupper. Efter alle gruppe-kørsler rydder clearing op, så hver ansøger kun beholder sin bedste placering.<br><br>
         Runde 2 og frem viser én samlet kørsel fordi de løser et andet problem: de tjekker om den eksisterende fordeling er global stabil efter pladsflyt. Det er en global operation over alle grupper og udbud samtidigt — der er ingen naturlig per-gruppe opdeling. Resultatet er enten "ingen ændringer → stabilt og slut" eller "N ansøgere rykket → kør endnu en runde".<br><br>
 
         <b>Gruppe 49 — frit optag</b><br>
@@ -1463,7 +1463,7 @@ const LEARNING_TEXTS = {
       const grp10apps = [...selected].filter(pid => ROUND1.some(p => p.person === pid && +p.grp === 10));
       const rejected = grp10apps.filter(pid => !placed.has(pid));
       return `
-<p><strong>${grp10apps.length} ansøgere</strong> er indberettet på mindst ét udbud i kvote 1 (grp. 10). DA-algoritmen kørte for denne gruppe: hvert udbud sorterede sine ansøgere efter karaktergennemsnit og accepterede tentativt de øverste inden for kapaciteten. Ansøgere uden for kapaciteten blev afvist straks og rykkede til deres næste ønske — de er aldrig formelt placeret.</p>
+<p><strong>${grp10apps.length} ansøgere</strong> er indberettet på mindst ét udbud i kvote 1 (grp. 10). DA-algoritmen kørte for denne gruppe: hvert udbud sorterede sine ansøgere efter lodtrækningsnummer og accepterede tentativt de øverste inden for kapaciteten. Ansøgere uden for kapaciteten blev afvist straks og rykkede til deres næste ønske — de er aldrig formelt placeret.</p>
 <p><strong>${total > 0 ? total + ' tentative pladser' : 'Ingen pladser'}</strong> tildelt i kvote 1. Disse tildelinger er foreløbige og kan ændres i de efterfølgende trin.</p>
 ${rejected.length ? `<p><strong>${rejected.length} ansøger${rejected.length === 1 ? '' : 'e'}</strong> søgte kvote 1 men kom ikke inden for kapaciteten på noget udbud. De indgår stadig i fordelingen på andre grupper og udbud.</p>` : ''}
 <p>Tryk Forstået for at se kvote 2 (grp. 20).</p>`;
@@ -1472,18 +1472,30 @@ ${rejected.length ? `<p><strong>${rejected.length} ansøger${rejected.length ===
 
   'grp20-runde1': {
     title: 'Runde 1 — DA for kvote 2 (Grp. 20)',
-    body: `
-<p><strong>25 ansøgere</strong> er indberettet i kvote 2 (grp. 20). Her bruger DA-algoritmen institutionernes indberettede kvalifikationspoint — i stedet for karaktergennemsnit. Mekanismen er identisk: hvert udbud accepterer tentativt de øverste inden for kapaciteten, resten afvises og rykker videre.</p>
-<p><strong>12 tentative pladser</strong> tildelt i kvote 2. En ansøger kan på dette tidspunkt have tentative placeringer i <em>både</em> kvote 1 og kvote 2 — clearingen afgør hvilken der beholdes.</p>
-<p>Tryk Forstået for at se kvote 1 standby (grp. 60).</p>`
+    body: () => {
+      const prov = lastGroupProvisional[20] || new Set();
+      const placed = new Set([...prov].map(k => k.split('-')[0]));
+      const total = placed.size;
+      const grp20apps = [...selected].filter(pid => ROUND1.some(p => p.person === pid && +p.grp === 20));
+      return `
+<p><strong>${grp20apps.length} ansøgere</strong> er indberettet i kvote 2 (grp. 20). Her bruger DA-algoritmen institutionernes indberettede rangeringsnummer — laveste rangeringsnummer vinder. Mekanismen er identisk med kvote 1: hvert udbud accepterer tentativt de øverste inden for kapaciteten, resten afvises og rykker videre.</p>
+<p><strong>${total > 0 ? total + ' tentative pladser' : 'Ingen pladser'}</strong> tildelt i kvote 2. En ansøger kan på dette tidspunkt have tentative placeringer i <em>både</em> kvote 1 og kvote 2 — clearingen afgør hvilken der beholdes.</p>
+<p>Tryk Forstået for at se kvote 1 standby (grp. 60).</p>`;
+    }
   },
 
   'grp60-runde1': {
     title: 'Runde 1 — DA for kvote 1 standby (Grp. 60)',
-    body: `
-<p><strong>25 ansøgere</strong> er indberettet i kvote 1 standby (grp. 60). DA-algoritmen kørte identisk med kvote 1 — ansøgere rangeres efter karaktergennemsnit og accepteres tentativt inden for kapaciteten.</p>
-<p>Der er tildelt <strong>5 tentative standbypladser</strong>.</p>
-<p>Tryk Forstået for at se kvote 2 standby (grp. 70).</p>`
+    body: () => {
+      const prov = lastGroupProvisional[60] || new Set();
+      const placed = new Set([...prov].map(k => k.split('-')[0]));
+      const total = placed.size;
+      const grp60apps = [...selected].filter(pid => ROUND1.some(p => p.person === pid && +p.grp === 60));
+      return `
+<p><strong>${grp60apps.length} ansøgere</strong> er indberettet i kvote 1 standby (grp. 60). DA-algoritmen kørte identisk med kvote 1 — ansøgere rangeres efter lodtrækningsnummer og accepteres tentativt inden for kapaciteten.</p>
+<p><strong>${total > 0 ? total + ' tentative standbypladser' : 'Ingen standbypladser'}</strong> tildelt.</p>
+<p>Tryk Forstået for at se kvote 2 standby (grp. 70).</p>`;
+    }
   },
 
   'grp70-runde1': {
@@ -1494,7 +1506,7 @@ ${rejected.length ? `<p><strong>${rejected.length} ansøger${rejected.length ===
       const total = placed.size;
       const grp70apps = [...selected].filter(pid => ROUND1.some(p => p.person === pid && +p.grp === 70));
       return `
-<p><strong>${grp70apps.length} ansøgere</strong> er indberettet i kvote 2 standby (grp. 70). Mekanismen er identisk med kvote 2 — institutionens rangering afgør rækkefølgen.</p>
+<p><strong>${grp70apps.length} ansøgere</strong> er indberettet i kvote 2 standby (grp. 70). Mekanismen er identisk med kvote 2 — rangeringsnummer afgør rækkefølgen, laveste vinder.</p>
 <p><strong>${total > 0 ? total + ' tentative standbypladser' : 'Ingen standbypladser'}</strong> tildelt.</p>
 <p>Alle gruppers DA-løkker i runde 1 er nu afviklede. En ansøger kan have tentative placeringer på tværs af grupper og udbud — næste trin er clearing, der konvergerer til én plads per ansøger.</p>`;
     }
@@ -1775,10 +1787,10 @@ ${lastRundeMoved.length
       const moves = lastKandidatFlytMoves || [];
       const totalFlyt = moves.reduce((s, m) => s + m.antal, 0);
       const flytHtml = totalFlyt > 0
-        ? `<p>Alle ledige pladser er nu flyttet til gruppe 33:<br>${moves.map(m =>
+        ? `<p>Ledige pladser fra uddannelser uden ventende ansøgere er nu flyttet til gruppe 33:<br>${moves.map(m =>
             `<strong>${STATIONS[m.stnId]?.name?.split(' ')[0]}</strong>: ${m.antal} plads${m.antal !== 1 ? 'er' : ''} fra grp.${m.fra} → grp.33`
           ).join('<br>')}</p>`
-        : `<p>Der er ingen ledige pladser at flytte til gruppe 33 i denne fordeling.</p>`;
+        : `<p>Der er ingen ledige pladser at flytte til gruppe 33 i denne fordeling — enten er alle pladser besat, eller har alle uddannelser med gruppe 33 stadig ventende ansøgere i ordinære grupper.</p>`;
       return `
 <p>Den ordinære fordeling er stabil. Nu køres <strong>kandidatrunden</strong> (grp. 33) — en særlig runde for ansøgere med en kandidatuddannelse.</p>
 <p>Gruppe 33-ansøgere kan <em>kun</em> optages hvis der er ledige pladser tilbage efter den ordinære fordeling. De konkurrerer ikke med de ordinære ansøgere og påvirker ikke de placeringer der allerede er fastlagt.</p>
