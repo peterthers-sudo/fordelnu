@@ -1019,8 +1019,7 @@ html.dark .person-card.done { background: rgba(99,102,241,0.1); border-color: va
           <button class="intro-toggle" id="intro-toggle" onclick="toggleIntro()" title="Skjul/vis beskrivelse">▾</button>
         </h1>
         <p class="subtitle" id="intro-text">KOT-fordelingen gennemføres i en række fordelingsrunder, hvor ansøgerne løbende vurderes på de uddannelser og grupper, de har søgt. I hver runde placeres ansøgerne dér, hvor de kan få en plads ud fra institutionernes rangeringer, deres egen prioriteringer, karakterer eller kvalifikationsspoint.<br>
-Når en runde er afsluttet, ryddes der op i placeringerne, så hver ansøger kun står på den højest prioriterede uddannelse, hvor vedkommende har fået en plads. Ansøgere kan ikke miste en plads som er tildelt under fordelingen, men kan rykkes til en højere prioritet hvis der kommer en ledig plads når de flyttes mellem grupper for at sikre den bedst mulige udnyttelse af kapaciteten.<br>
-Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, hvordan grupper fyldes op, og hvordan fordelingen gradvist finder frem til det endelige resultat. Processen fortsætter automatisk, indtil alle ansøgere enten er optaget på deres højest mulige prioritet eller har fået afslag på alle ønsker.</p>
+Når en runde er afsluttet, ryddes der op i placeringerne, så hver ansøger kun står på den højest prioriterede uddannelse, hvor vedkommende har fået en plads. Ansøgere kan ikke miste en plads som er tildelt under fordelingen, men kan rykkes til en højere prioritet hvis der kommer en ledig plads når de flyttes mellem grupper for at sikre den bedst mulige udnyttelse af kapaciteten. <br>Visualiseringen viser trin for trin, hvordan ansøgere flyttes gennem systemet, hvordan grupper fyldes op, og hvordan fordelingen gradvist finder frem til det endelige resultat. Processen fortsætter automatisk, indtil alle ansøgere enten er optaget på deres højest mulige prioritet eller har fået afslag på alle ønsker.</p>
       </div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
@@ -1942,6 +1941,8 @@ let lastKandidatFlytMoves = null;
 let IMPORT_MODE = false;
 let IMPORT_WISH_ORIGINAL = null;
 let STATION_INST = {}; // stnId → instId
+let PLADSFLYT_I_KV  = {}; // import: pf_i_kv  regler — udbud → {grp → dest}
+let PLADSFLYT_ML_KV = {}; // import: pf_ml_kv regler — udbud → {grp → dest}
 
 function applyStationConfig() {
   for (const [stnId, cap] of Object.entries(CAPACITY)) {
@@ -2062,6 +2063,8 @@ function onModelSelect(n) {
   WISH_OVERRIDE = null;
   IMPORT_MODE = false;
   STATION_INST = {};
+  PLADSFLYT_I_KV  = {};
+  PLADSFLYT_ML_KV = {};
   const metroSvg = document.getElementById('metro-svg');
   const modelSel = document.getElementById('model-selector');
   const importMsg = document.getElementById('import-metro-msg');
@@ -2347,8 +2350,9 @@ function buildRound1(selSet) {
 function computeFinalKeys(round1) {
   const getScore = (pid, grp, stn, wishScore) => {
     if (GARANTERET_SET.has(`${pid}-${stn}-${grp}`)) return Infinity;
-    if (grp == 10 || grp == 60) return PERSONS[pid].kvotient;
-    return wishScore !== undefined ? wishScore : PERSONS[pid].point;
+    if (wishScore !== undefined) return wishScore;
+    if ((grp >= 10 && grp <= 19) || (grp >= 60 && grp <= 69)) return PERSONS[pid].kvotient;
+    return PERSONS[pid].point;
   };
   const allPersons = [...new Set(round1.map(p => p.person))];
   const round1Set = new Set(round1.map(p => `${p.person}-${p.stn}-${p.grp}`));
@@ -2434,9 +2438,10 @@ function computeGroupProvisional(round1, grp) {
   if (!grpEntries.length) return new Set();
   const getScore = (pid, stn) => {
     if (GARANTERET_SET.has(`${pid}-${stn}-${grp}`)) return Infinity;
-    if ((grp >= 10 && grp <= 19) || (grp >= 60 && grp <= 69)) return PERSONS[pid].kvotient;
     const e = grpEntries.find(p => p.person === pid && p.stn === stn);
-    return e?.score !== undefined ? e.score : PERSONS[pid].point;
+    if (e?.score !== undefined) return e.score;
+    if ((grp >= 10 && grp <= 19) || (grp >= 60 && grp <= 69)) return PERSONS[pid].kvotient;
+    return PERSONS[pid].point;
   };
   const allPersons = [...new Set(grpEntries.map(p => p.person))];
   const prefList = {};
@@ -4180,34 +4185,52 @@ function applyRunde2Changes() {
 
 /* ── Pladsflyt ── */
 // Beregn hvilke flytninger der skal ske.
-// Regler: kun mellem (10↔20) og (60↔70) på samme station.
-// Flytning sker KUN hvis én af grupperne er fyldt op og den anden har ledige pladser.
-// Ledige pladser fra den fyldte gruppe "gives" til den ledige gruppe.
-// placedState opdateres med de ekstra virtuelle pladser.
+//
+// Import-tilstand: bruger pf_i_kv + pf_ml_kv regler fra pladser.csv.
+//   Trigger: kilde har surplus (free > 0) — matcher fordel.py apply_pladsflyt_pass.
+//   Retning: ensidig (defineret af pf-reglerne).
+//   pf_i_kv køres før pf_ml_kv i én samlet pass.
+//
+// Demo-tilstand: hardkodede par [10↔20] og [60↔70].
+//   Trigger: præcis én er fyldt op (undgår frem-og-tilbage ved bilateral flyt).
 function computePladsflyt() {
-  const PAIRS = [[10, 20], [60, 70]];
   const moves = [];
 
-  for (const [stnId, stn] of Object.entries(STATIONS)) {
-    for (const [grpA, grpB] of PAIRS) {
-      const capA = stn.capacity[grpA];
-      const capB = stn.capacity[grpB];
-      if (!capA || !capB) continue; // en af grupperne eksisterer ikke
-
-      const occA = (placedState[`${stnId}-${grpA}`] || []).length;
-      const occB = (placedState[`${stnId}-${grpB}`] || []).length;
-      const freeA = capA - occA;
-      const freeB = capB - occB;
-
-      // Kun flyt hvis præcis én er fyldt op
-      if (freeA === 0 && freeB > 0) {
-        // A er fyldt → flyt ledige pladser fra B til A
-        moves.push({ stnId, fra: grpB, til: grpA, antal: freeB });
-      } else if (freeB === 0 && freeA > 0) {
-        // B er fyldt → flyt ledige pladser fra A til B
-        moves.push({ stnId, fra: grpA, til: grpB, antal: freeA });
+  if (IMPORT_MODE && (Object.keys(PLADSFLYT_I_KV).length || Object.keys(PLADSFLYT_ML_KV).length)) {
+    // Import: brug CSV-regler. Kør pf_i_kv først, derefter pf_ml_kv.
+    for (const pfMap of [PLADSFLYT_I_KV, PLADSFLYT_ML_KV]) {
+      for (const [stnId, stn] of Object.entries(STATIONS)) {
+        const rules = pfMap[stnId];
+        if (!rules) continue;
+        for (const [srcGrp, dstGrp] of Object.entries(rules)) {
+          const src = parseInt(srcGrp);
+          const cap = stn.capacity[src];
+          if (!cap) continue;
+          const occ  = (placedState[`${stnId}-${src}`] || []).length;
+          const free = cap - occ;
+          if (free <= 0) continue;
+          moves.push({ stnId, fra: src, til: dstGrp, antal: free });
+        }
       }
-      // Begge ledige eller begge fyldt → ingen flytning
+    }
+  } else {
+    // Demo: hardkodede bidirektionale par, trigger kun når præcis én er fyldt.
+    const PAIRS = [[10, 20], [60, 70]];
+    for (const [stnId, stn] of Object.entries(STATIONS)) {
+      for (const [grpA, grpB] of PAIRS) {
+        const capA = stn.capacity[grpA];
+        const capB = stn.capacity[grpB];
+        if (!capA || !capB) continue;
+        const occA = (placedState[`${stnId}-${grpA}`] || []).length;
+        const occB = (placedState[`${stnId}-${grpB}`] || []).length;
+        const freeA = capA - occA;
+        const freeB = capB - occB;
+        if (freeA === 0 && freeB > 0) {
+          moves.push({ stnId, fra: grpB, til: grpA, antal: freeB });
+        } else if (freeB === 0 && freeA > 0) {
+          moves.push({ stnId, fra: grpA, til: grpB, antal: freeA });
+        }
+      }
     }
   }
   return moves;
@@ -4310,21 +4333,70 @@ function keysEqual(a, b) {
 // Fast første del af steps (Klar + Runde 1 + Clearing)
 
 /* ── Kandidatrunden ── */
-// Trin 1: Flyt alle ledige pladser på grp.33-uddannelser til grp.33
+
+// Beregner hvilke (stnId-grp) slots der har "afventende" ansøgere.
+// En ansøger afventer et slot hvis de er på rangeringslisten men IKKE
+// placeret på et mindst ligeså godt slot (bedre prioritet eller samme
+// udbud med lavere/ens gruppenummer). Matches fordel.py apply_kandidatrunde.
+function computeAfventerBySlot() {
+  const afventer = {};
+  for (const pid of selected) {
+    const wishes = getWishes(pid);
+    // Prioritet pr. station (1 = bedste)
+    const stnPri = {};
+    let pri = 1;
+    for (const w of wishes) {
+      if (!(w.stn in stnPri)) stnPri[w.stn] = pri++;
+    }
+    // Nuværende placering
+    const finalKey = [...FINAL_KEYS].find(k => k.startsWith(pid + '-'));
+    let placedStn = null, placedGrp = null, placedPri = Infinity;
+    if (finalKey) {
+      const parts = finalKey.split('-');
+      placedGrp = parseInt(parts[parts.length - 1]);
+      placedStn = parts.slice(1, -1).join('-');
+      placedPri = stnPri[placedStn] ?? Infinity;
+    }
+    for (const w of wishes) {
+      if (w.grp === 33 || w.grp === 49 || w.grp === 83) continue;
+      const wPri = stnPri[w.stn] ?? Infinity;
+      if (finalKey !== null) {
+        if (placedPri < wPri) continue; // placeret på bedre prioritet
+        if (placedStn === w.stn && placedGrp <= w.grp) continue; // placeret på ens/bedre grp
+      }
+      afventer[`${w.stn}-${w.grp}`] = true;
+    }
+  }
+  return afventer;
+}
+
+// Trin 1: Flyt ledige pladser fra ordinære grupper til grp.33.
+// Springer udbud over hvis nogen ordinær gruppe stadig har "afventende"
+// ansøgere (jf. fordel.py apply_kandidatrunde). Ekskluderer grp49/83.
 function applyKandidatPladsflyt() {
   CAPACITY_PRE_GRP33 = JSON.parse(JSON.stringify(CAPACITY));
   const moves = [];
+  const afventer = computeAfventerBySlot();
+  const initCap = CAPACITY_ORIGINAL;
   for (const [stnId, stn] of Object.entries(STATIONS)) {
-    // Denne uddannelse har grp.33 hvis CAPACITY[stnId][33] eksisterer (selv om den er 0)
     if (!(33 in CAPACITY[stnId])) continue;
+    // Spring over hvis nogen ordinær gruppe har afventende ansøgere
+    const hasAfventer = Object.keys(stn.capacity).some(g => {
+      const gn = parseInt(g);
+      return gn !== 33 && gn !== 49 && gn !== 83
+             && (stn.capacity[g] || 0) > 0
+             && afventer[`${stnId}-${g}`];
+    });
+    if (hasAfventer) continue;
     for (const [grp, cap] of Object.entries(stn.capacity)) {
       const grpNum = parseInt(grp);
-      if (grpNum === 33) continue;
+      if (grpNum === 33 || grpNum === 49 || grpNum === 83) continue;
+      if ((initCap[stnId]?.[grpNum] ?? 0) >= 999) continue; // ubegrænset — bidrag ikke
       const occ = (placedState[`${stnId}-${grp}`] || []).length;
       const free = cap - occ;
       if (free > 0) {
         moves.push({ stnId, fra: grpNum, til: 33, antal: free });
-        stn.capacity[grpNum] = occ; // Reducer til præcis det antal der er besat
+        stn.capacity[grpNum] = occ;
         stn.capacity[33] = (stn.capacity[33] || 0) + free;
         CAPACITY[stnId][grpNum] = occ;
         CAPACITY[stnId][33] = (CAPACITY[stnId][33] || 0) + free;
@@ -5040,6 +5112,151 @@ function afterStepDone(autoTrigger = true) {
   }
 }
 
+function runFastPath() {
+  const nStn = Object.keys(STATIONS).length;
+  const nAns = selected.size;
+  setStatus('⚡', `Beregner fordeling af ${nAns} ansøgere på ${nStn} udbud — kører Gale-Shapley...`);
+  setTimeout(() => {
+    ROUND1 = buildRound1(selected);
+    FINAL_KEYS = computeFinalKeys(ROUND1);
+    lastIterations = FINAL_KEYS._iterations || 1;
+    lastIterLog = FINAL_KEYS._iterLog || [];
+    prevFinalKeys = null;
+
+    // Build occupancy map from FINAL_KEYS (replacement for placedState)
+    const occMap = {};
+    for (const pid of selected) {
+      const key = [...FINAL_KEYS].find(k => k.startsWith(pid + '-'));
+      if (key) {
+        const slot = key.slice(pid.length + 1);
+        occMap[slot] = (occMap[slot] || 0) + 1;
+      }
+    }
+
+    // Apply grp.33 kandidatrunde (fast version of applyKandidatPladsflyt)
+    // Bruger computeAfventerBySlot + ekskluderer grp49/83, som den animerede version.
+    CAPACITY_PRE_GRP33 = JSON.parse(JSON.stringify(CAPACITY));
+    const afventer33 = computeAfventerBySlot();
+    const initCap33 = CAPACITY_ORIGINAL;
+    let anyGrp33 = false;
+    for (const [stnId, stn] of Object.entries(STATIONS)) {
+      if (!(33 in CAPACITY[stnId])) continue;
+      const hasAfventer33 = Object.keys(stn.capacity).some(g => {
+        const gn = parseInt(g);
+        return gn !== 33 && gn !== 49 && gn !== 83
+               && (stn.capacity[g] || 0) > 0
+               && afventer33[`${stnId}-${g}`];
+      });
+      if (hasAfventer33) continue;
+      for (const [grp, cap] of Object.entries(stn.capacity)) {
+        const grpNum = parseInt(grp);
+        if (grpNum === 33 || grpNum === 49 || grpNum === 83) continue;
+        if ((initCap33[stnId]?.[grpNum] ?? 0) >= 999) continue;
+        const slotOcc = occMap[`${stnId}-${grpNum}`] || 0;
+        const free = cap - slotOcc;
+        if (free > 0) {
+          stn.capacity[grpNum] = slotOcc;
+          stn.capacity[33] = (stn.capacity[33] || 0) + free;
+          CAPACITY[stnId][grpNum] = slotOcc;
+          CAPACITY[stnId][33] = (CAPACITY[stnId][33] || 0) + free;
+          anyGrp33 = true;
+        }
+      }
+    }
+    if (anyGrp33) FINAL_KEYS = computeFinalKeys(ROUND1);
+
+    showFastPathResult(nStn, nAns);
+  }, 50);
+}
+
+function showFastPathResult(nStn, nAns) {
+  let optagetCount = 0;
+  for (const pid of selected) {
+    if ([...FINAL_KEYS].find(k => k.startsWith(pid + '-'))) optagetCount++;
+  }
+  const afvist = nAns - optagetCount;
+  const kandidat = [...FINAL_KEYS].filter(k => k.endsWith('-33')).length;
+  const capSrc = CAPACITY_PRE_GRP33 || CAPACITY_DEFAULTS;
+  const totalCap = Object.values(capSrc).reduce((s, grps) =>
+    s + Object.entries(grps).reduce((a, [g, v]) => (+g === 49 || +g === 33) ? a : a + v, 0), 0);
+  let regularOptaget = 0;
+  for (const pid of selected) {
+    const key = [...FINAL_KEYS].find(k => k.startsWith(pid + '-'));
+    if (key && !key.endsWith('-49')) regularOptaget++;
+  }
+  const ledige = totalCap - regularOptaget;
+
+  renderResultPanel();
+  document.getElementById('result-note').innerHTML =
+    `<b>Fast Path:</b> Beregnet direkte — ${nAns} ansøgere fordelt på ${nStn} udbud (uden trin-for-trin animation).`;
+  document.getElementById('result-panel').classList.add('show');
+
+  const priCounts = {};
+  for (const pid of selected) {
+    const finalKey = [...FINAL_KEYS].find(k => k.startsWith(pid + '-'));
+    if (!finalKey) continue;
+    const rest = finalKey.slice(pid.length + 1);
+    const stnId = rest.slice(0, rest.lastIndexOf('-'));
+    const wishes = getWishes(pid);
+    const seenStns = [];
+    for (const w of wishes) { if (!seenStns.includes(w.stn)) seenStns.push(w.stn); }
+    const pri = seenStns.indexOf(stnId) + 1;
+    if (pri > 0) priCounts[pri] = (priCounts[pri] || 0) + 1;
+  }
+  const pb = document.getElementById('priority-breakdown');
+  pb.style.display = 'flex';
+  pb.style.flexWrap = 'wrap';
+  pb.innerHTML = '<span style="font-size:13px;font-weight:700;color:var(--text-2);margin-right:4px;">Prioritet:</span>' +
+    Object.entries(priCounts).sort(([a],[b]) => +a - +b).map(([pri, n]) =>
+      `<span style="background:#f1f5f9;border:1.5px solid var(--border);border-radius:20px;padding:3px 12px;font-size:13px;font-weight:700;color:var(--text-3);">${pri}. prioritet: <span style="color:#4f46e5">${n}</span></span>`
+    ).join('');
+
+  grænsekvotientMap = computeGrænsekvotient();
+  renderGrænsekvotienter();
+  setCenter('Færdig', 'Fast Path');
+  if (IMPORT_MODE) {
+    const metroSvg = document.getElementById('metro-svg');
+    const importMsg = document.getElementById('import-metro-msg');
+    if (metroSvg) metroSvg.style.display = '';
+    if (importMsg) importMsg.style.display = 'none';
+  }
+  const bar = document.getElementById('status-bar');
+  bar.innerHTML = `<div class="status-log-line"><span class="step-badge">⚡ Resultat</span><span style="color:#e2e8f0">${optagetCount} optaget (heraf ${kandidat} på grp.33) · ${afvist} afvist · ${ledige} ledige pladser.</span><button onclick="exportResultCSV()" style="margin-left:12px;padding:3px 12px;background:#4f46e5;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">⬇ Download CSV</button></div>`;
+  document.getElementById('btn-next').disabled = true;
+  if (kioskMode) startKioskRestart();
+  locked = false;
+  document.querySelectorAll('.model-btn').forEach(b => b.disabled = false);
+}
+
+function exportResultCSV() {
+  const lines = ['cpr;udbud;udbudsnavn;gruppe;prioritet;status'];
+  for (const pid of selected) {
+    const key = [...FINAL_KEYS].find(k => k.startsWith(pid + '-'));
+    if (key) {
+      const rest = key.slice(pid.length + 1);
+      const lastDash = rest.lastIndexOf('-');
+      const stnId = rest.slice(0, lastDash);
+      const grp = rest.slice(lastDash + 1);
+      const udbudsnavn = STATIONS[stnId]?.name || stnId;
+      const wishes = getWishes(pid);
+      const seenStns = [];
+      for (const w of wishes) { if (!seenStns.includes(w.stn)) seenStns.push(w.stn); }
+      const pri = seenStns.indexOf(stnId) + 1 || '';
+      lines.push(`${pid};${stnId};${udbudsnavn};${grp};${pri};optaget`);
+    } else {
+      lines.push(`${pid};;;;;afvist`);
+    }
+  }
+  const csv = '﻿' + lines.join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'simkot_resultat.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function nextStep() {
   if (animating) return;
   for (const pid of followedPids) {
@@ -5048,6 +5265,16 @@ function nextStep() {
   document.getElementById('btn-next').disabled = false;
   if (step === 0) {
     document.getElementById('lærings-cb').disabled = true;
+    if (IMPORT_MODE && Object.keys(STATIONS).length > 12) {
+      locked = true;
+      document.getElementById('btn-next').disabled = true;
+      document.querySelectorAll('.btn-sel').forEach(b => b.disabled = true);
+      document.getElementById('autokør-cb').disabled = true;
+      document.getElementById('autokør-delay').disabled = true;
+      document.querySelectorAll('.model-btn').forEach(b => b.disabled = true);
+      runFastPath();
+      return;
+    }
     ROUND1 = buildRound1(selected);
     FINAL_KEYS = computeFinalKeys(ROUND1); lastIterations = FINAL_KEYS._iterations || 1; lastIterLog = FINAL_KEYS._iterLog || [];
     prevFinalKeys = null;
@@ -5265,14 +5492,20 @@ function applyImportedData(uRows, pRows, aRows, rRows) {
   STATIONS = newStations;
   STATION_INST = newStationInst;
 
-  // 2. CAPACITY from pladser.csv
+  // 2. CAPACITY + pladsflyt-regler fra pladser.csv
   const newCap = {};
   for (const stnId of Object.keys(STATIONS)) newCap[stnId] = {};
+  PLADSFLYT_I_KV  = {};
+  PLADSFLYT_ML_KV = {};
   for (const row of pRows) {
     const stnId = String(row.udbud).trim();
     const grp   = parseInt(row.gruppe);
     const count = parseInt(row.pladser) || 0;
     if (newCap[stnId]) newCap[stnId][grp] = count;
+    const pfI  = String(row.pf_i_kv  ?? '').trim();
+    const pfM  = String(row.pf_ml_kv ?? '').trim();
+    if (pfI  && !isNaN(+pfI))  { if (!PLADSFLYT_I_KV[stnId])  PLADSFLYT_I_KV[stnId]  = {}; PLADSFLYT_I_KV[stnId][grp]  = +pfI;  }
+    if (pfM  && !isNaN(+pfM))  { if (!PLADSFLYT_ML_KV[stnId]) PLADSFLYT_ML_KV[stnId] = {}; PLADSFLYT_ML_KV[stnId][grp] = +pfM;  }
   }
   CAPACITY          = newCap;
   CAPACITY_DEFAULTS = JSON.parse(JSON.stringify(newCap));
@@ -5319,11 +5552,15 @@ function applyImportedData(uRows, pRows, aRows, rRows) {
     const udbud = String(row.udbud).trim();
     const key   = `${pid}|${udbud}`;
     if (!rangByKey[key]) rangByKey[key] = [];
+    const rangNrRaw = String(row.rang_nr ?? '').trim();
+    const lodNrRaw  = String(row.lod_nr  ?? '').trim();
     rangByKey[key].push({
       grp:       parseInt(row.gruppe),
       standby:   row.standby === 'x',
-      garanteret: row.rang_nr === '0',
-      kval_p:    row.kval_p ? parseInt(row.kval_p) : null,
+      garanteret: rangNrRaw === '0',
+      kval_p:    row.kval_p  ? parseInt(row.kval_p)  : null,
+      rang_nr:   (rangNrRaw && rangNrRaw !== '0') ? parseInt(rangNrRaw) : null,
+      lod_nr:    lodNrRaw   ? parseInt(lodNrRaw)  : null,
     });
   }
 
@@ -5334,8 +5571,20 @@ function applyImportedData(uRows, pRows, aRows, rRows) {
     for (const { udbud } of udbuds) {
       if (!(udbud in STATIONS)) continue;
       const groups = (rangByKey[`${pid}|${udbud}`] || []).sort((a, b) => a.grp - b.grp);
-      for (const { grp, standby, garanteret, kval_p } of groups) {
-        const scoreObj = (grp >= 20 && grp < 60 && kval_p != null) ? { score: kval_p } : {};
+      for (const { grp, standby, garanteret, kval_p, rang_nr, lod_nr } of groups) {
+        // Score-logik matcher fordel.py:
+        //   grp10-19, grp60-69 (kvote 1): score = -lod_nr (laveste vinder)
+        //   øvrige:                        score = -rang_nr (laveste vinder)
+        //   rang_nr = 0:                   garanteret (Infinity i DA)
+        let scoreObj = {};
+        if (!garanteret) {
+          if ((grp >= 10 && grp <= 19) || (grp >= 60 && grp <= 69)) {
+            if (lod_nr != null && !isNaN(lod_nr)) scoreObj = { score: -lod_nr };
+          } else if (grp !== 33 && grp !== 49) {
+            if (rang_nr != null && !isNaN(rang_nr)) scoreObj = { score: -rang_nr };
+            else if (kval_p != null) scoreObj = { score: kval_p };
+          }
+        }
         wishList.push({ stn: udbud, grp, ...scoreObj, ...(garanteret ? { garanteret: true } : {}) });
         if (standby && grp < 60 && (CAPACITY[udbud]?.[grp + 50] || 0) > 0) {
           wishList.push({ stn: udbud, grp: grp + 50 });
