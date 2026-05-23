@@ -1,0 +1,217 @@
+1/19
+Start — KOT-fordelingen
+I læringsmode fordeles 26 ansøgere på 5 uddannelser med i alt 39 pladser (ca. 1,5 plads pr. ansøger).
+
+Fordelingen bruger Deferred Acceptance — en algoritme der garanterer at alle ansøgere ender på den højest mulige prioritet, givet den kapacitet og de rangeringer der er indberettet.
+
+Algoritmen kører i runder med tre faste trin per runde: (1) midlertidig fordeling per gruppe, (2) clearing som reducerer til én plads per ansøger, og (3) pladsflyt som omfordeler ubrugt kapacitet. Runderne gentages til resultatet er stabilt.
+
+
+2/19
+Runde 1 — Fordeling i kvote 1 (Grp. 10)
+26 ansøgere er indberettet på mindst ét udbud i kvote 1 (grp. 10). Algoritmen kørte for denne gruppe: i hvert udbud er ansøgerne sorteret efter karaktergennemsnit og de højeste blev  accepteret tentativt inden for kapaciteten. Ansøgere uden for kapaciteten blev afvist.
+
+15 tentative pladser tildelt i kvote 1. Disse tildelinger er foreløbige og kan ændres i de efterfølgende trin.
+
+11 ansøgere søgte kvote 1 men kom ikke inden for kapaciteten på noget udbud. De indgår stadig i fordelingen på andre grupper og udbud.
+
+Tryk Forstået for at se fordelingen i kvote 2 (grp. 20).
+
+
+3/19
+Runde 1 — Fordling i kvote 2 (Grp. 20)
+25 ansøgere er indberettet i kvote 2 (grp. 20). Her bruger algoritmen institutionernes indberettede rangeringsnumre. Mekanismen er identisk med kvote 1: hvert udbud accepterer tentativt de øverste inden for kapaciteten, resten afvises og rykker videre.
+
+12 tentative pladser tildelt i kvote 2. En ansøger kan på dette tidspunkt have tentative placeringer i både kvote 1 og kvote 2. Det er clearingen som afgør hvilken der beholdes.
+
+Tryk Forstået for at se kvote 1 standby (grp. 60).
+
+
+4/19
+Runde 1 — Fordeling i kvote 1 standby (Grp. 60)
+25 ansøgere er indberettet i kvote 1 standby (grp. 60). Algoritmen kørte identisk med gruppe 10. Ansøgere rangeres efter karaktergennemsnit og accepteres tentativt inden for kapaciteten.
+
+5 tentative standbypladser tildelt.
+
+Tryk Forstået for at se kvote 2 standby (grp. 70).
+
+
+5/19
+Runde 1 — Fordeling i kvote 2 standby (Grp. 70)
+24 ansøgere er indberettet i kvote 2 standby (grp. 70). Mekanismen er identisk med gruppe 20, det er rangeringsnummeret som afgør rækkefølgen.
+
+5 tentative standbypladser tildelt.
+
+Alle gruppers løkker i runde 1 er nu afviklede. En ansøger kan have tentative placeringer på tværs af grupper og udbud. Næste trin er clearing, der konvergerer til én plads per ansøger.
+
+
+6/19
+Runde 1 — Clearing: Én plads per ansøger
+Clearingen kørte 10 indre loops. Gentagne synkrone gennemløb hvor hver kombination af udbud og gruppe beholder sine højest rangerede ansøgere inden for kapaciteten og afviser resten, indtil ingen placering ændrer sig. Resultatet: hver ansøger er reduceret til én plads, som er den bedste opnåede på tværs af alle grupper.
+
+F.eks.:
+
+Anders → beholder grp. 10 på Legoland
+Bente → beholder grp. 10 på Legoland
+25 ansøgere har én plads. 1 er endnu uden plads. Garanteret optagelse: Xavier (Lærer grp.10).
+
+Tryk Forstået for at se runde 1's status.
+
+
+7/19
+Runde 1 — Status
+Runde 1 afsluttet. Algoritmen kørte 10 indre loops til stabilt resultat:
+
+25 optaget
+1 uden plads
+14 ledige pladser
+13 ansøgere er ikke placeret på deres højeste prioritet, og 1 mangler plads. Pladsflyttet kan have åbnet nye muligheder. Fordelingen kører runde 2 for at undersøge det.
+
+
+8/19
+Runde 1 — Pladsflyt
+Pladsflyt omfordeler ledige pladser inden for samme udbud, styret af reglerne for pladsflyt inden for kvoten og pladsflyt mellem kvoter som er indberettet fra institutionrne. Ledige pladser i én gruppe kan flyttes til en anden gruppe og åbne for ansøgere der ellers ikke ville blive optaget.
+
+12 pladser flyttet:
+
+Legoland: 2 pladser fra grp.20 → grp.10
+Legoland: 1 plads fra grp.70 → grp.60
+Medicin: 1 plads fra grp.70 → grp.60
+Tivoli: 1 plads fra grp.10 → grp.20
+Lærer: 3 pladser fra grp.20 → grp.10
+Lærer: 1 plads fra grp.70 → grp.60
+Bon-Bon: 2 pladser fra grp.10 → grp.20
+Bon-Bon: 1 plads fra grp.60 → grp.70
+Endnu uden plads: Zara — de vil få en ny chance i næste runde.
+
+Tryk Forstået for at starte runde 2.
+
+
+
+9/19
+Runde 2 — Kan nogen rykke op?
+Pladsflyttet frigjorde kapacitet. Algoritmen kørte en global fordeling for alle grupper og udbud. Ikke per gruppe som i runde 1, men samlet, og tjekkede om nogen ansøgere kunne rykke til en højere prioritet.
+
+16 ansøgere er rykket til en bedre plads:
+
+Bente → grp. 20 på Bon-Bon
+Dorte → grp. 10 på Legoland
+Gustav → grp. 10 på Legoland
+... og 13 andre
+Tryk Forstået for at se clearingen for runde 2.
+
+
+10/19
+Runde 2 — Clearing
+Clearingen kørte 7 indre loops og reducerede igen til én plads per ansøger. Den bedste mulige på tværs af alle grupper.
+
+25 ansøgere er tildelt én plads.
+
+Tryk Forstået for at se status efter runde 2.
+
+
+11/19
+Runde 2 — Status
+Runde 2 afsluttet. Algoritmen kørte 7 indre loops til stabilt resultat:
+
+25 optaget
+1 uden plads
+14 ledige pladser
+Tryk Forstået for at køre pladsflyt igen.
+
+
+12/19
+Runde 2 — Pladsflyt
+Pladsflyttet kørte igen — ansøgere der rykkede til en bedre plads i runde 2 frigjorde kapacitet i lavere grupper, som nu er omfordelt.
+
+5 pladser flyttet: Medicin: 2 pladser fra grp.20 → grp.10, Tivoli: 2 pladser fra grp.10 → grp.20, Bon-Bon: 1 plads fra grp.10 → grp.20.
+
+Endnu uden plads: Zara.
+
+Tryk Forstået for at starte runde 3.
+
+
+13/19
+Runde 3
+Algoritmen kørte runde 3 — samme mekanisme som runde 2: global fordeling i alle grupper og udbud for at tjekke om pladsflyttet i runde 2 åbnede for yderligere forbedringer.
+
+2 ansøgere er rykket til en bedre plads:
+
+Niels → grp. 10 på Medicin
+Rasmus → grp. 10 på Medicin
+Tryk Forstået for at se clearingen for runde 3.
+
+
+14/19
+Runde 3 — Clearing
+Clearingen kørte 7 indre loops. Alle ansøgere er reduceret til én plads.
+
+Ingen ansøgere skiftede plads i clearingen.
+
+25 ansøgere er tildelt én plads.
+
+Tryk Forstået for at se status efter runde 3.
+
+
+15/19
+Runde 3 — Status
+Runde 3 afsluttet. Algoritmen kørte 7 indre loops til stabilt resultat:
+
+25 optaget
+1 uden plads
+14 ledige pladser
+Tryk Forstået for et Pladsflyt.
+
+
+
+16/19
+Runde 3 — Pladsflyt
+Pladsflyttet kørte for tredje gang. Ansøgere der rykkede i runde 3 kan have frigjort kapacitet, som nu er omfordelt.
+
+Ingen pladser blev omfordelt.
+
+Endnu uden plads: Zara.
+
+Tryk Forstået for et stabilitetscheck — KOT bekræfter at alle er på deres højest mulige prioritet.
+
+SPØRGSMÅL: SKAL VI VISE ET STABILITETSCHECK?
+
+17/19
+Kandidatrunden — Gruppe 33
+Den ordinære fordeling er stabil. Nu køres kandidatrunden (grp. 33). En særlig runde for ansøgere med en kandidatuddannelse.
+
+Gruppe 33-ansøgere kan kun optages hvis der er ledige pladser tilbage efter den ordinære fordeling. De konkurrerer ikke med de ordinære ansøgere og påvirker ikke de placeringer der allerede er fastlagt.
+
+Ledige pladser fra uddannelser uden kø er nu flyttet til gruppe 33:
+Tivoli: 2 pladser fra grp.20 → grp.33
+Tivoli: 1 plads fra grp.60 → grp.33
+Tivoli: 1 plads fra grp.70 → grp.33
+Lærer: 1 plads fra grp.10 → grp.33
+Lærer: 1 plads fra grp.20 → grp.33
+Lærer: 2 pladser fra grp.60 → grp.33
+Bon-Bon: 2 pladser fra grp.20 → grp.33
+Bon-Bon: 2 pladser fra grp.70 → grp.33
+
+Der er 1 ansøger med gruppe 33 i denne fordeling. Tryk Næste for at se hvem der optages.
+
+
+18/19
+Kandidatrunden — Resultat
+Kandidatrunden er afsluttet.
+
+Zara — optaget via gruppe 33
+Tryk Forstået for den endelige opsummering.
+
+
+19/19
+Endelig fordeling — Matematisk stabil
+Fordelingen er matematisk stabil: der findes ingen ansøger og ingen uddannelse der gensidigt ville foretrække hinanden frem for deres nuværende match. Det er den garanterede egenskab ved Deferred Acceptance-algoritmen (Gale-Shapley, 1962).
+
+Alle ansøgere har fået en status:
+
+26 optaget — heraf 1 via gruppe 33
+Alle ansøgere er optaget
+13 ledige pladser
+Prioritetsfordeling: 24 fik 1. prioritet, 1 fik 2. prioritet, 1 fik 3. prioritet.
+
+Dette er det resultat der ligger til grund for optagelsesbrevene.
