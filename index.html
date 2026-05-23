@@ -4994,15 +4994,25 @@ function stepSubRunde(rNr) {
   });
 }
 
-// Fabrik: stabilitetscheck — vises efter pladsflyt når ingen pladser blev omfordelt
+// Fabrik: stabilitetscheck — animerer en ekstra runde for at bekræfte at ingen kan rykke
 function stepStabilitetstjek() {
+  const rNr = roundNumber + 1;
   return withLearning('stabilitetscheck', () => {
-    const optaget = countPlaced();
-    const afvist = selected.size - optaget;
-    setCenter('Stabil!', `${roundNumber} runder · Optaget: ${optaget}${afvist > 0 ? ' · Afvist: ' + afvist : ''}`);
-    appendStatus('✓', `Stabilitetscheck: ingen yderligere pladsflyt mulig efter runde ${roundNumber}. Fordelingen er stabil — klar til kandidatrunden.`);
-    if (learningMode) steps.push(stepKandidatrundeIntro());
-    steps.push(stepKandidatrunde());
+    clearStatistik();
+    setStatus('Stabilitetscheck', 'Kører en ekstra runde for at bekræfte at ingen ansøger kan flyttes til en højere prioritet...');
+    setCenter('Stabil?', 'Tjekker...', '');
+    document.getElementById('btn-next').disabled = true;
+
+    const wps = buildWaypoints2(rNr);
+    animateTrain(trainAngle, 360, 5000, wps, () => {
+      hideTrainBubble();
+      const optaget = countPlaced();
+      const afvist = selected.size - optaget;
+      setCenter('Stabil!', `${roundNumber} runder · Optaget: ${optaget}${afvist > 0 ? ' · Afvist: ' + afvist : ''}`);
+      appendStatus('✓', `Stabilitetscheck: ingen ansøger kan flyttes til en højere prioritet efter ${roundNumber} runder. Fordelingen er stabil — klar til kandidatrunden.`);
+      if (learningMode) steps.push(stepKandidatrundeIntro());
+      steps.push(stepKandidatrunde());
+    });
   });
 }
 
