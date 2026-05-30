@@ -4928,7 +4928,7 @@ function stepInnerStabilCheck(rNr) {
     const ledige = totalCap - optaget;
     const pladserFlyttet = lastPladsflytMoves.reduce((s, m) => s + m.antal, 0);
     renderRunde1Statistik({ rNr, optaget, afvist, ledige, pladserFlyttet });
-    setCenter(`Runde ${rNr}`, 'Afsluttet');
+    setCenter(`Runde ${rNr}`, 'Fordeling stabil');
     const løkkerTekst = `Algoritmen kørte ${lastIterations} indre loops${lastIterations === 1 ? ' (stabilt efter første loop)' : ''}.`;
     const msg = afvist > 0
       ? `Fordelingen er stabil. ${løkkerTekst} ${optaget} optaget, ${afvist} ansøger${afvist !== 1 ? 'e' : ''} har ingen plads. I det virkelige KOT-system med 85.000 ansøgere kan dette tage mange runder — her gik det hurtigt. Pladsflyt undersøger om der kan frigives yderligere pladser.`
@@ -4948,7 +4948,7 @@ function stepSubRunde(rNr) {
       ? `Pladsflyt kan have åbnet nye muligheder — ${udenPlads} ansøger${udenPlads !== 1 ? 'e' : ''} uden plads køres nu igennem indre loops (midlertidig fordeling + clearing) til stabilt resultat.`
       : `Pladsflyt er gennemført. Kører indre loops for at tjekke om nogen kan flyttes til en højere prioritet.`
     );
-    setCenter(`Runde ${rNr}`, 'Ydre loop', 'Ny fordeling');
+    setCenter(`Runde ${rNr}`, 'Indre loop', 'Ny fordeling');
 
     const wps = buildWaypoints2(rNr);
     animateTrain(trainAngle, 360, 6000, wps, () => {
